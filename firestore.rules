@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null && request.auth.token.email != null;
+    }
+    function me() {
+      return get(/databases/$(database)/documents/users/$(request.auth.token.email.lower())).data;
+    }
+    function hasProfile() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.token.email.lower()));
+    }
+    function isOwner()  { return hasProfile() && me().role == 'owner'; }
+    function myClient() { return hasProfile() ? me().get('clientId', '~none~') : '~none~'; }
+    function myEditor() { return hasProfile() ? me().get('editorName', '~none~') : '~none~'; }
+    function changedOnly(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    // who can log in and as what — only the owner writes this
+    match /users/{email} {
+      allow read:  if isOwner() || (signedIn() && request.auth.token.email.lower() == email);
+      allow write: if isOwner();
+    }
+
+    // clients: owner writes; a client reads only their own record
+    match /clients/{id} {
+      allow read:  if isOwner() || (hasProfile() && myClient() == id)
+                   || (hasProfile() && me().role == 'editor');
+      allow write: if isOwner();
+    }
+
+    // projects: client reads own, editor reads assigned
+    match /projects/{id} {
+      allow read: if isOwner()
+                  || (hasProfile() && resource.data.clientId == myClient())
+                  || (hasProfile() && resource.data.editor == myEditor());
+      allow create, delete: if isOwner();
+      allow update: if isOwner()
+        // editor may only move piece status along
+        || (hasProfile() && resource.data.editor == myEditor()
+            && changedOnly(['pieces','editStart']))
+        // client may only mark approvals
+        || (hasProfile() && resource.data.clientId == myClient()
+            && changedOnly(['approvals']));
+    }
+
+    // money: owner writes, client reads only their own invoices
+    match /invoices/{id} {
+      allow read:  if isOwner() || (hasProfile() && resource.data.clientId == myClient());
+      allow write: if isOwner();
+    }
+
+    // editor pay: owner writes, editor reads only their own
+    match /payables/{id} {
+      allow read:  if isOwner() || (hasProfile() && resource.data.editor == myEditor());
+      allow write: if isOwner();
+    }
+
+    // activity feed
+    match /activity/{id} {
+      allow read:   if isOwner() || (hasProfile() && resource.data.clientId == myClient());
+      allow create: if hasProfile();
+      allow update, delete: if isOwner();
+    }
+
+    // nothing else is reachable
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
