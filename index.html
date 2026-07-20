@@ -103,6 +103,26 @@ header{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-
 
 main{max-width:1120px;margin:0 auto;padding:22px 18px 60px;display:grid;gap:16px;position:relative;z-index:1}
 
+/* ── wide monitors: use the room instead of a 1120px column ── */
+@media (min-width:1500px){
+  main{max-width:1440px;gap:18px;padding:26px 28px 70px}
+  header{padding:13px 32px}
+  .cards{grid-template-columns:repeat(auto-fit,minmax(520px,1fr));gap:12px}
+  .stats{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+  .stat .v{font-size:26px}
+}
+@media (min-width:1900px){
+  main{max-width:1760px;padding:30px 40px 80px}
+  header{padding:14px 44px}
+  .cards{grid-template-columns:repeat(auto-fit,minmax(560px,1fr))}
+}
+@media (min-width:2400px){
+  main{max-width:2100px;padding:34px 56px 90px}
+  header{padding:15px 60px}
+  .cards{grid-template-columns:repeat(auto-fit,minmax(600px,1fr))}
+  h1{font-size:clamp(30px,2.4vw,46px)}
+}
+
 /* ── cards & panels ── */
 .panel,.card{background:linear-gradient(180deg,var(--panel-up),var(--panel));border:1px solid var(--line-soft);
   border-radius:16px;position:relative;overflow:hidden;
@@ -203,6 +223,8 @@ main{max-width:1120px;margin:0 auto;padding:22px 18px 60px;display:grid;gap:16px
 
 .two-col{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
 .grid-gap{display:grid;gap:10px}
+.cards{grid-template-columns:1fr;align-items:start}
+.cards>.card{height:100%}
 /* ── balance tracker ── */
 .bal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
 .bal-cell .l{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:.12em}
@@ -230,7 +252,19 @@ main{max-width:1120px;margin:0 auto;padding:22px 18px 60px;display:grid;gap:16px
 .f input:focus,.f textarea:focus,.f select:focus{border-color:var(--gold)}
 .f textarea{resize:vertical;min-height:64px;font-family:var(--mono);font-size:12px;line-height:1.6}
 .f .hint{font-family:var(--mono);font-size:9.5px;color:var(--dim);margin-top:4px;letter-spacing:.04em}
-.modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.sel{background:var(--panel);color:var(--cream);border:1px solid var(--line);border-radius:8px;
+  padding:5px 8px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;outline:none}
+.sel:focus{border-color:var(--gold)}
+.pf-row{display:flex;gap:8px;align-items:center;margin-bottom:7px}
+.pf-row input{flex:1;min-width:0;background:var(--panel);color:var(--cream);border:1px solid var(--line);
+  border-radius:8px;padding:8px 10px;font-family:var(--body);font-size:13px;outline:none}
+.pf-row input:focus{border-color:var(--gold)}
+.paybar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;padding-top:9px;border-top:1px dashed var(--line)}
+.paybar .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+.btn.paid-on{background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.4);color:var(--green);font-weight:700}
+.deliv{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:8px 10px;border:1px solid var(--line-soft);border-radius:9px;margin-bottom:6px}
 .span2{grid-column:1/-1}
 /* ── client database ── */
 .db-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
@@ -430,17 +464,19 @@ function sandbox(){
 const T={gold:"#f2c94c",goldSoft:"#d8b654",cream:"#f2f0ea",muted:"#9195a0",dim:"#5c606a",green:"#4ade80",red:"#f0556b",bg:"#0a0b0d",line:"#2a2d34"};
 const STAGES=["Pre-Pro","Shoot","Edit","Review","Delivered"];
 const SLA=7;
-const PIECE_SCORE={queued:0,editing:.4,review:.75,done:1};
-const PIECE_LABEL={queued:"QUEUED",editing:"IN EDIT",review:"IN REVIEW",done:"DONE"};
-const NEXT={queued:"editing",editing:"review",review:"done"};
-const NEXT_ACTION={queued:"START EDIT",editing:"SEND TO REVIEW",review:"MARK DONE"};
-const STATUS_COLOR={queued:T.dim,editing:T.gold,review:T.goldSoft,done:T.green};
+const PIECE_SCORE={queued:0,editing:.4,review:.75,revisions:.55,done:1};
+const PIECE_LABEL={queued:"QUEUED",editing:"IN EDIT",review:"IN REVIEW",revisions:"CLIENT REVISIONS",done:"DONE"};
+const PIECE_ORDER=["queued","editing","review","revisions","done"];
+const NEXT={queued:"editing",editing:"review",review:"done",revisions:"editing"};
+const NEXT_ACTION={queued:"START EDIT",editing:"SEND TO REVIEW",review:"MARK DONE",revisions:"BACK TO EDIT"};
+const STATUS_COLOR={queued:T.dim,editing:T.gold,review:T.goldSoft,revisions:T.red,done:T.green};
 const TYPES=["YouTube","Reels","Social","Commercial","Event","Other"];
 const LOGO=document.getElementById("brandLogoSrc").textContent.trim();
 
 /* ── state ── */
 let authUser=null, me=null, booting=true, gateMsg=null;
 let clients=[], projects=[], invoices=[], payables=[], activity=[], users=[];
+let settings={}, smsPub={};   /* config/sms (owner only) + config/public (everyone) */
 let view="owner", previewClient=null, previewEditor=null;
 let unsubs=[];
 
@@ -456,13 +492,19 @@ const fv=id=>document.getElementById(id)?.value.trim()||"";
 const byId=(arr,id)=>arr.find(x=>x.id===id);
 
 function pct(p){
-  if(p.stage>=4) return 100;
-  if(p.stage<2)  return [5,20][p.stage];
+  const st=+p.stage||0;
+  if(st>=4) return 100;                 /* only Delivered reads 100% */
+  if(st<2)  return st===0?5:15;
   const list=p.pieces||[];
-  if(!list.length) return 20;
+  if(!list.length) return 15;
   const s=list.reduce((a,pc)=>a+(PIECE_SCORE[pc.status]??0),0)/list.length;
-  return Math.round(20+80*s);
+  return Math.min(95,Math.round(15+80*s));
 }
+/* 50% deposit / 50% final */
+const halfOf=p=>Math.round((+p.cost||0)/2);
+const collected=p=>(p.depositPaid?halfOf(p):0)+(p.finalPaid?((+p.cost||0)-halfOf(p)):0);
+const projOutstanding=p=>(+p.cost||0)-collected(p);
+const needsRev=p=>(p.pieces||[]).some(x=>x.status==="revisions");
 const projectsOf=cid=>projects.filter(p=>p.clientId===cid);
 const invoicesOf=cid=>invoices.filter(i=>i.clientId===cid);
 const activityOf=cid=>activity.filter(a=>a.clientId===cid).slice(0,8);
@@ -472,6 +514,21 @@ const editorNames=()=>{
   projects.forEach(p=>{ if(p.editor&&p.editor!=="Cody") s.add(p.editor); });
   return [...s].sort();
 };
+
+/* ═══════════ SMS ═══════════
+   Browser posts to a Twilio Function (endpoint + token live in config/public
+   so every role can fire one). Real numbers live in config/sms, owner-only —
+   kind:"studio" is routed to your number by the Function, so clients and
+   editors never see it. */
+async function sendSMS(kind,body,to){
+  const url=smsPub.endpoint; if(!url) return;
+  try{
+    await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({kind,to:to||null,body,token:smsPub.token||""})});
+  }catch(e){ console.warn("SMS failed",e); }
+}
+const editorPhone=n=>(settings.editors||{})[n]||null;
+const clientPhone=c=>(settings.clients||{})[c]||null;
 
 function toast(txt){
   const el=document.getElementById("toast");
@@ -532,9 +589,11 @@ async function loadFor(user){
   }
   me={email,...profSnap.data()};
   booting=false;
+  unsubs.push(onSnapshot(doc(db,"config","public"),d=>{ smsPub=d.exists()?d.data():{}; paint(); }));
 
   if(me.role==="owner"){
     view="owner";
+    unsubs.push(onSnapshot(doc(db,"config","sms"),d=>{ settings=d.exists()?d.data():{}; paint(); }));
     unsubs.push(live(collection(db,"clients"),  v=>clients=v));
     unsubs.push(live(collection(db,"projects"), v=>projects=v));
     unsubs.push(live(collection(db,"invoices"), v=>invoices=v));
@@ -565,19 +624,82 @@ async function loadFor(user){
 const logActivity=(clientId,what)=>addDoc(collection(db,"activity"),
   {clientId,what,when:isoShort(todayISO()),ts:Date.now()}).catch(()=>{});
 
-async function advancePiece(pid,i){
+async function setPieceStatus(pid,i,status){
   const p=byId(projects,pid); if(!p) return;
-  const pieces=p.pieces.map((x,ix)=>ix===i?{...x,status:NEXT[x.status]||x.status}:x);
+  const was=p.pieces?.[i]?.status; if(was===status) return;
+  const nm=p.pieces?.[i]?.name||"";
+  const pieces=p.pieces.map((x,ix)=>ix===i?{...x,status}:x);
   const patch={pieces};
   if(!p.editStart && pieces.some(x=>x.status!=="queued")) patch.editStart=todayISO();
-  await guard(()=>updateDoc(doc(db,"projects",pid),patch));
-  if(pieces[i].status==="review") logActivity(p.clientId,`${p.pieces[i].name} posted for review`);
-  /* Twilio SMS to Cody hooks in here as a Cloud Function on this write */
+  if(status!=="revisions" && !pieces.some(x=>x.status==="revisions")) patch.revisionNote=null;
+  const approvals={...(p.approvals||{})};
+  if(status==="revisions"||status==="editing"){ delete approvals[i]; patch.approvals=approvals; }
+  await guard(()=>updateDoc(doc(db,"projects",pid),patch),PIECE_LABEL[status]);
+  if(status==="review"){
+    logActivity(p.clientId,`${nm} posted for review`);
+    if(me.role==="editor")                    /* editor posted it → text the studio */
+      sendSMS("studio",`REVIEW READY — ${p.title}: ${nm} (${me.editorName||"editor"})${p.frameUrl?" "+p.frameUrl:""}`);
+    if(me.role==="owner"){                    /* you posted it → text the client */
+      const ph=clientPhone(p.clientId);
+      if(ph) sendSMS("client",`New cut ready for your review — ${nm} (${p.title}). Approve or request revisions in the portal.`,ph);
+    }
+  }
+  if(status==="done") logActivity(p.clientId,`${nm} delivered`);
 }
 async function approvePiece(pid,i){
   const p=byId(projects,pid); if(!p) return;
   const approvals={...(p.approvals||{}),[i]:todayISO()};
+  const nm=p.pieces?.[i]?.name||"";
   await guard(()=>updateDoc(doc(db,"projects",pid),{approvals}),"Approved");
+  logActivity(p.clientId,`${nm} approved by client`);
+  sendSMS("studio",`APPROVED — ${clientName(p.clientId)} signed off on ${nm} (${p.title}).`);
+}
+function revisionForm(pid,i){
+  const p=byId(projects,pid)||{};
+  showModal(`<h3>Revisions Needed</h3>
+  <div class="f-grid">
+    <div class="f"><label>${esc(p.pieces?.[i]?.name||"")} — ${esc(p.title||"")}</label>
+      <textarea id="rv-note" placeholder="Quick note (optional) — full notes go in Frame.io"></textarea>
+      <div class="hint">this texts the studio right away</div></div>
+  </div>
+  <div class="actions"><button class="btn ghost" data-close="1">CANCEL</button>
+    <button class="btn gold" data-save-rev="${esc(pid)}:${i}">SEND REQUEST</button></div>`);
+}
+async function requestRevision(pid,i){
+  const p=byId(projects,pid); if(!p) return;
+  const note=fv("rv-note");
+  const nm=p.pieces?.[i]?.name||"";
+  const pieces=p.pieces.map((x,ix)=>ix===i?{...x,status:"revisions"}:x);
+  const approvals={...(p.approvals||{})}; delete approvals[i];
+  await guard(()=>updateDoc(doc(db,"projects",pid),
+    {pieces,approvals,revisionNote:note||null,revisionAt:todayISO()}),"Sent — revisions requested");
+  logActivity(p.clientId,`Revisions requested on ${nm}`);
+  sendSMS("studio",`REVISIONS NEEDED — ${clientName(p.clientId)} on ${p.title}: ${nm}. Notes in Frame.io${p.frameUrl?" "+p.frameUrl:""}${note?` — "${note}"`:""}`);
+  closeModal();
+}
+async function togglePay(pid,which){
+  const p=byId(projects,pid); if(!p) return;
+  const k=which==="deposit"?"depositPaid":"finalPaid";
+  const val=!p[k];
+  await guard(()=>updateDoc(doc(db,"projects",pid),{[k]:val,[k+"On"]:val?todayISO():null}),
+    val?(which==="deposit"?"Deposit paid":"Final paid"):"Marked unpaid");
+  if(val) logActivity(p.clientId,`${which==="deposit"?"Deposit":"Final payment"} received — ${p.title}`);
+}
+function linkForm(pid,kind){
+  const p=byId(projects,pid)||{};
+  const isFrame=kind==="frame";
+  showModal(`<h3>${isFrame?"Frame.io Link":"Dropbox / Raw Footage"}</h3>
+  <div class="f-grid"><div class="f"><label>${esc(p.title||"")}</label>
+    <input id="lk-url" value="${esc((isFrame?p.frameUrl:p.footageUrl)||"")}" placeholder="${isFrame?"https://f.io/...":"https://dropbox.com/..."}">
+    <div class="hint">${isFrame?"clients and editors get an OPEN IN FRAME.IO button":"editors get a download button"}</div></div></div>
+  <div class="actions"><button class="btn ghost" data-close="1">CANCEL</button>
+    <button class="btn gold" data-save-link="${esc(pid)}:${esc(kind)}">SAVE LINK</button></div>`);
+}
+async function saveLink(pid,kind){
+  let u=fv("lk-url"); if(u&&!/^https?:/.test(u)) u="https://"+u;
+  await guard(()=>updateDoc(doc(db,"projects",pid),
+    kind==="frame"?{frameUrl:u||null}:{footageUrl:u||null}),"Link saved");
+  closeModal();
 }
 
 async function saveClient(id){
@@ -600,17 +722,23 @@ async function saveProject(id){
   const clientId=fv("pf-client"), title=fv("pf-title");
   if(!clientId||!title) return toast("Client and title required");
   const stage=+fv("pf-stage");
-  const names=fv("pf-pieces").split("\n").map(x=>x.trim()).filter(Boolean);
   const prev=id?byId(projects,id):null;
-  const pieces=names.length
-    ? names.map((n,i)=>({name:n,status:prev?.pieces?.[i]?.status||"queued"}))
-    : [{name:"Main Cut",status:"queued"}];
+  pfSync();
+  let pieces=PF.filter(x=>x.name.trim()).map(x=>({name:x.name.trim(),status:x.status||"queued"}));
+  if(!pieces.length) pieces=[{name:"Main Cut",status:"queued"}];
+  let frame=fv("pf-frame"), raw=fv("pf-raw");
+  if(frame&&!/^https?:/.test(frame)) frame="https://"+frame;
+  if(raw&&!/^https?:/.test(raw))     raw="https://"+raw;
+  const editor=fv("pf-editor");
   const data={clientId,title,pieces,type:fv("pf-type"),stage,
     dueISO:fv("pf-due"), due:isoShort(fv("pf-due")),
     editStart: prev?.editStart || (stage>=2?todayISO():null),
     note:fv("pf-note")||"Just added to the board.",
-    footageUrl:fv("pf-raw")||null, frameUrl:fv("pf-frame")||null,
-    editor:fv("pf-editor"), editCost:+fv("pf-cost")||0,
+    footageUrl:raw||null, frameUrl:frame||null,
+    editor, editCost:+fv("pf-cost")||0,
+    cost:+fv("pf-price")||0,
+    depositPaid:document.getElementById("pf-dep")?.checked||false,
+    finalPaid:document.getElementById("pf-fin")?.checked||false,
     code:fv("pf-code").toUpperCase()||null,
     approvals:prev?.approvals||{}};
   await guard(async()=>{
@@ -618,6 +746,10 @@ async function saveProject(id){
     else{ await addDoc(collection(db,"projects"),data);
           logActivity(clientId,`${title} added to production`); }
   },id?"Project updated":"Project added");
+  if(editor&&editor!=="Cody"&&editor!==prev?.editor){
+    const ph=editorPhone(editor);
+    if(ph) sendSMS("editor",`New assignment — ${title} (${clientName(clientId)}), due ${isoShort(fv("pf-due"))}. Details in the portal.`,ph);
+  }
   closeModal();
 }
 async function removeProject(id){
@@ -698,31 +830,58 @@ function clientForm(id){
   </div>`);
 }
 
+let PF=[];
+function pfSync(){
+  PF=PF.map((x,i)=>({name:document.getElementById("pf-n"+i)?.value ?? x.name,
+                     status:document.getElementById("pf-s"+i)?.value ?? x.status}));
+}
+function pfRender(){
+  const box=document.getElementById("pf-box"); if(!box) return;
+  box.innerHTML=PF.map((pc,i)=>`<div class="pf-row">
+      <input id="pf-n${i}" value="${esc(pc.name)}" placeholder="Deliverable name">
+      <select class="sel" id="pf-s${i}">${PIECE_ORDER.map(st=>
+        `<option value="${st}" ${pc.status===st?"selected":""}>${PIECE_LABEL[st]}</option>`).join("")}</select>
+      <button class="btn ghost mini" data-pf-del="${i}" title="remove">&#10005;</button>
+    </div>`).join("")
+    +`<button class="btn outline mini" data-pf-add="1">+ ADD DELIVERABLE</button>`;
+}
 function projectForm(id,preClient){
   const p=id?byId(projects,id)||{}:{};
   const d=new Date(); d.setDate(d.getDate()+7);
   const due=p.dueISO||d.toISOString().slice(0,10);
   const eds=["Cody",...editorNames()];
+  PF=(p.pieces&&p.pieces.length?p.pieces:[{name:"Main Cut",status:"queued"}])
+      .map(x=>({name:x.name||"",status:x.status||"queued"}));
+  const price=+p.cost||0, half=Math.round(price/2);
   showModal(`<h3>${id?"Edit Project":"New Project"}</h3>
   <div class="f-grid cols">
     <div class="f span2"><label>Client</label><select id="pf-client">${clientOpts(p.clientId||preClient)}</select></div>
     <div class="f span2"><label>Project title</label><input id="pf-title" value="${esc(p.title||"")}" placeholder="Nothing to Hyde | Vol. 5"></div>
     <div class="f"><label>Code</label><input id="pf-code" value="${esc(p.code||"")}" placeholder="NTH-05"></div>
     <div class="f"><label>Type</label><select id="pf-type">${TYPES.map(t=>`<option ${p.type===t?"selected":""}>${t}</option>`).join("")}</select></div>
-    <div class="f"><label>Stage</label><select id="pf-stage">${STAGES.map((s,i)=>`<option value="${i}" ${(p.stage??0)===i?"selected":""}>${s}</option>`).join("")}</select></div>
+    <div class="f"><label>Stage</label><select id="pf-stage">${STAGES.map((st,i)=>`<option value="${i}" ${(p.stage??0)===i?"selected":""}>${st}</option>`).join("")}</select></div>
     <div class="f"><label>Due date</label><input id="pf-due" type="date" value="${due}"></div>
     <div class="f"><label>Editor</label><select id="pf-editor">${eds.map(e=>`<option ${p.editor===e?"selected":""}>${esc(e)}</option>`).join("")}</select></div>
     <div class="f"><label>Edit cost ($)</label><input id="pf-cost" type="number" min="0" step="25" value="${p.editCost??0}"><div class="hint">0 = in-house</div></div>
-    <div class="f span2"><label>Pieces — one per line</label><textarea id="pf-pieces">${esc((p.pieces||[{name:"Main Cut"}]).map(x=>x.name).join("\n"))}</textarea><div class="hint">statuses are kept when you edit</div></div>
+    <div class="f span2"><label>Deliverables &amp; status</label><div id="pf-box"></div></div>
+    <div class="f"><label>Project price ($)</label><input id="pf-price" type="number" min="0" step="50" value="${price||""}" placeholder="2500"><div class="hint">split 50 / 50</div></div>
+    <div class="f"><label>Payments</label>
+      <label class="hint" style="display:flex;gap:7px;align-items:center;text-transform:none;letter-spacing:0;font-size:12px;color:var(--cream);margin-bottom:6px">
+        <input type="checkbox" id="pf-dep" ${p.depositPaid?"checked":""} style="width:auto">Deposit paid ($${half})</label>
+      <label class="hint" style="display:flex;gap:7px;align-items:center;text-transform:none;letter-spacing:0;font-size:12px;color:var(--cream)">
+        <input type="checkbox" id="pf-fin" ${p.finalPaid?"checked":""} style="width:auto">Final paid ($${price-half})</label></div>
     <div class="f span2"><label>Frame.io review link</label><input id="pf-frame" value="${esc(p.frameUrl||"")}" placeholder="https://f.io/..."></div>
-    <div class="f span2"><label>Raw footage link</label><input id="pf-raw" value="${esc(p.footageUrl||"")}" placeholder="Dropbox / Drive URL"></div>
+    <div class="f span2"><label>Dropbox / raw footage link</label><input id="pf-raw" value="${esc(p.footageUrl||"")}" placeholder="https://dropbox.com/..."></div>
     <div class="f span2"><label>Note to client</label><input id="pf-note" value="${esc(p.note||"")}" placeholder="What's happening right now"></div>
+    ${p.revisionNote?`<div class="f span2"><label>Client revision note (${esc(p.revisionAt||"")})</label>
+      <div style="font-size:13px;color:var(--red);border:1px solid rgba(240,85,107,.3);background:rgba(240,85,107,.08);border-radius:9px;padding:9px 11px">${esc(p.revisionNote)}</div></div>`:""}
   </div>
   <div class="actions">
     ${id?`<button class="btn ghost danger" data-del-project="${esc(id)}">DELETE</button>`:""}
     <button class="btn ghost" data-close="1">CANCEL</button>
     <button class="btn gold" data-save-project="${esc(id||"")}">${id?"SAVE":"ADD PROJECT"}</button>
   </div>`);
+  pfRender();
 }
 
 function invoiceForm(id,preClient){
@@ -792,6 +951,48 @@ function accessForm(email){
   document.getElementById("af-role").addEventListener("change",sync); sync();
 }
 
+function smsForm(){
+  const eds=editorNames();
+  showModal(`<h3>Alerts &amp; Numbers</h3>
+  <div class="f-grid">
+    <div class="f"><label>Twilio Function URL</label><input id="sf-ep" value="${esc(smsPub.endpoint||"")}" placeholder="https://uts-sms-1234.twil.io/notify">
+      <div class="hint">every role's browser posts here — safe to be public</div></div>
+    <div class="f"><label>Shared token</label><input id="sf-tok" value="${esc(smsPub.token||"")}" placeholder="pick any random string">
+      <div class="hint">must match TOKEN inside the Twilio Function</div></div>
+    <div class="f"><label>Studio phone — yours</label><input id="sf-studio" value="${esc(settings.studio||"")}" placeholder="+15625550123">
+      <div class="hint">clients and editors never see this</div></div>
+    ${eds.length?`<div class="f"><label style="color:var(--gold)">Editors</label></div>`:""}
+    ${eds.map((e,i)=>`<div class="f"><label>${esc(e)}</label><input id="sf-ed${i}" value="${esc((settings.editors||{})[e]||"")}" placeholder="+1..."></div>`).join("")}
+    ${clients.length?`<div class="f"><label style="color:var(--gold)">Clients</label></div>`:""}
+    ${clients.map((c,i)=>`<div class="f"><label>${esc(c.name)}</label><input id="sf-cl${i}" value="${esc((settings.clients||{})[c.id]||"")}" placeholder="+1..."></div>`).join("")}
+  </div>
+  <div class="actions">
+    <button class="btn ghost" data-sms-test="1">SEND TEST</button>
+    <button class="btn ghost" data-close="1">CANCEL</button>
+    <button class="btn gold" data-save-sms="1">SAVE</button>
+  </div>`);
+}
+async function saveSMS(){
+  const eds=editorNames(), editors={}, cls={};
+  eds.forEach((e,i)=>{ const v=fv("sf-ed"+i); if(v) editors[e]=v; });
+  clients.forEach((c,i)=>{ const v=fv("sf-cl"+i); if(v) cls[c.id]=v; });
+  let ep=fv("sf-ep"); if(ep&&!/^https?:/.test(ep)) ep="https://"+ep;
+  await guard(async()=>{
+    await setDoc(doc(db,"config","public"),{endpoint:ep||null,token:fv("sf-tok")||null});
+    await setDoc(doc(db,"config","sms"),{studio:fv("sf-studio")||null,editors,clients:cls});
+  },"Alerts saved");
+  closeModal();
+}
+async function smsTest(){
+  let ep=fv("sf-ep"); if(ep&&!/^https?:/.test(ep)) ep="https://"+ep;
+  if(!ep) return toast("Add the Function URL first");
+  try{
+    const r=await fetch(ep,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({kind:"studio",body:"Client OS test — alerts are wired up.",token:fv("sf-tok")})});
+    toast(r.ok?"Test sent — check your phone":"Endpoint returned "+r.status);
+  }catch(e){ toast("Couldn't reach that URL"); }
+}
+
 /* ═══════════ SHARED RENDER PIECES ═══════════ */
 function arc(p){
   const f=p/100, r=26, cx=36, cy=34, a=Math.PI-f*(Math.PI*.85);
@@ -824,24 +1025,59 @@ function slaChip(p){
   const over=d>SLA, warn=d>=5&&!over, c=over?T.red:warn?T.gold:T.muted;
   return `<span class="sla" style="color:${c};border:1px solid ${c}55;background:${c}12">${over?`⚠ DAY ${d} — OVER SLA`:`EDIT DAY ${d}/${SLA}`}</span>`;
 }
+function delivRows(p,editable){
+  const list=p.pieces||[];
+  return list.map((pc,i)=>{
+    const c=STATUS_COLOR[pc.status]||T.dim;
+    const ok=(p.approvals||{})[i];
+    return `<div class="deliv">
+      <div style="display:flex;align-items:center;gap:8px;min-width:0">
+        <span class="dot" style="width:7px;height:7px;border-radius:50%;flex:none;background:${pc.status==="queued"?"transparent":c};border:1.5px solid ${c}"></span>
+        <span style="font-size:13px;font-weight:600;color:${pc.status==="done"?"var(--muted)":"var(--cream)"}">${esc(pc.name)}</span>
+        ${ok?`<span class="done-note" style="font-size:10px">&#10003; APPROVED</span>`:""}
+      </div>
+      ${editable
+        ? `<select class="sel" data-pstatus="${esc(p.id)}:${i}" style="color:${c}">${PIECE_ORDER.map(st=>
+            `<option value="${st}" ${pc.status===st?"selected":""}>${PIECE_LABEL[st]}</option>`).join("")}</select>`
+        : `<span class="chip" style="color:${pc.status==="queued"?T.dim:c};border:1px solid ${c}55;background:${c}10">${PIECE_LABEL[pc.status]}</span>`}
+    </div>`;}).join("");
+}
+function payBar(p){
+  const price=+p.cost||0;
+  if(!price) return `<div class="paybar"><span class="lbl">no price set</span>
+    <button class="btn ghost mini" data-form="project" data-id="${esc(p.id)}">ADD PRICE</button></div>`;
+  const h=halfOf(p);
+  return `<div class="paybar">
+    <span class="lbl">${money(price)} &middot; collected ${money(collected(p))}${projOutstanding(p)?` &middot; open ${money(projOutstanding(p))}`:""}</span>
+    <button class="btn ${p.depositPaid?"paid-on":"ghost"} mini" data-pay="${esc(p.id)}:deposit">${p.depositPaid?"&#10003; ":""}DEPOSIT ${money(h)}</button>
+    <button class="btn ${p.finalPaid?"paid-on":"ghost"} mini" data-pay="${esc(p.id)}:final">${p.finalPaid?"&#10003; ":""}FINAL ${money(price-h)}</button>
+  </div>`;
+}
 function projectCard(p,owner){
   const list=p.pieces||[];
   const done=list.filter(x=>x.status==="done").length;
-  const multi=list.length>1?` · ${done}/${list.length} PIECES DONE`:"";
-  const internal=owner?`<div class="card-internal">INTERNAL — editor: ${esc(p.editor||"—")}${p.editStart?` · in edit since ${p.editStart.slice(5).replace("-","/")}`:""}${p.editCost>0?` · edit cost $${p.editCost}`:" · in-house"}</div>`:"";
+  const multi=list.length>1?` &middot; ${done}/${list.length} DONE`:"";
+  const rev=needsRev(p);
+  const internal=owner?`<div class="card-internal">INTERNAL &mdash; editor: ${esc(p.editor||"\u2014")}${p.editStart?` &middot; in edit since ${p.editStart.slice(5).replace("-","/")}`:""}${p.editCost>0?` &middot; edit cost $${p.editCost}`:" &middot; in-house"}</div>`:"";
   return `<div class="card">${arc(pct(p))}
     <div class="body">
       <div class="row-top">
-        <div><div class="card-id">${esc(p.code||p.type||"")}${p.code?` · ${esc(p.type||"")}`:""}${multi}</div>
-          <div class="card-title">${esc(p.title)}</div></div>
-        <div class="card-right"><span class="due">due ${esc(p.due||isoShort(p.dueISO))}</span>${slaChip(p)}</div>
+        <div><div class="card-id">${esc(p.code||p.type||"")}${p.code?` &middot; ${esc(p.type||"")}`:""}${multi}</div>
+          <div class="card-title" ${owner?`data-form="project" data-id="${esc(p.id)}" style="cursor:pointer"`:""}>${esc(p.title)}</div></div>
+        <div class="card-right"><span class="due">due ${esc(p.due||isoShort(p.dueISO))}</span>${slaChip(p)}
+          ${rev?`<span class="sla" style="color:${T.red};border:1px solid ${T.red}55;background:${T.red}12">CLIENT REVISIONS</span>`:""}</div>
       </div>
-      ${pips(p.stage)}${chips(p)}
+      ${pips(p.stage)}
+      <div style="margin:10px 0 2px">${delivRows(p,owner)}</div>
+      ${rev&&p.revisionNote?`<div style="font-size:12.5px;color:${T.red};margin-bottom:6px">&ldquo;${esc(p.revisionNote)}&rdquo;</div>`:""}
       <div class="card-note">${esc(p.note||"")}</div>${internal}
-      ${owner?`<div class="editbar">
-        <button class="btn ghost mini" data-form="project" data-id="${esc(p.id)}">EDIT</button>
-        ${(p.pieces||[]).map((pc,i)=>pc.status!=="done"
-          ?`<button class="btn ${pc.status==="review"?"green":"outline"} mini" data-adv="${esc(p.id)}:${i}">${NEXT_ACTION[pc.status]}: ${esc(pc.name.split(" — ")[0])}</button>`:"").join("")}
+      ${owner?`${payBar(p)}
+      <div class="editbar">
+        <button class="btn ghost mini" data-form="project" data-id="${esc(p.id)}">EDIT PROJECT</button>
+        <button class="btn ${p.frameUrl?"outline":"ghost"} mini" data-link="${esc(p.id)}:frame">${p.frameUrl?"FRAME.IO LINK":"+ FRAME.IO"}</button>
+        <button class="btn ${p.footageUrl?"outline":"ghost"} mini" data-link="${esc(p.id)}:raw">${p.footageUrl?"DROPBOX LINK":"+ DROPBOX"}</button>
+        ${p.frameUrl?`<a class="btn outline mini link" href="${esc(p.frameUrl)}" target="_blank" rel="noopener">OPEN FRAME &#8599;</a>`:""}
+        ${p.footageUrl?`<a class="btn ghost mini link" href="${esc(p.footageUrl)}" target="_blank" rel="noopener">OPEN DROPBOX &#8599;</a>`:""}
       </div>`:""}
     </div></div>`;
 }
@@ -861,15 +1097,16 @@ function clientView(cid){
 
   const reviewRows=waiting.length===0
     ? `<div style="font-size:13px;color:var(--dim)">Nothing waiting on you right now. New cuts land here the moment they're posted.</div>`
-    : `<div class="grid-gap">`+waiting.map(({p,pc,i})=>{
+    : `<div class="grid-gap cards">`+waiting.map(({p,pc,i})=>{
         const ok=(p.approvals||{})[i];
         return `<div class="card" style="align-items:center;justify-content:space-between">
         <div><div style="font-size:14px;font-weight:700">${esc(pc.name)}</div>
           <div class="inv-meta" style="margin-top:2px">${esc(p.title)}</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           ${p.frameUrl?`<a class="btn outline link" href="${esc(p.frameUrl)}" target="_blank" rel="noopener">OPEN IN FRAME.IO ↗</a>`:""}
-          ${ok?`<span class="done-note">✓ APPROVED</span>`
-              :`<button class="btn gold" data-approve="${esc(p.id)}:${i}">APPROVE</button>`}
+          ${ok?`<span class="done-note">&#10003; APPROVED</span>`
+              :`<button class="btn ghost" style="border-color:rgba(240,85,107,.45);color:var(--red)" data-revform="${esc(p.id)}:${i}">REVISIONS NEEDED</button>
+                <button class="btn gold" data-approve="${esc(p.id)}:${i}">APPROVE</button>`}
         </div></div>`;}).join("")+`</div>`;
 
   const acts=activityOf(cid);
@@ -882,7 +1119,7 @@ function clientView(cid){
   </div>
   <section class="panel"><div class="eyebrow">Ready for Your Review${waiting.length?` — ${waiting.length} waiting`:""}</div>${reviewRows}</section>
   <section class="panel"><div class="eyebrow">In Production — ${mine.length} active</div>
-    ${mine.length?`<div class="grid-gap">${mine.map(p=>projectCard(p,false)).join("")}</div>`
+    ${mine.length?`<div class="grid-gap cards">${mine.map(p=>projectCard(p,false)).join("")}</div>`
       :`<div style="font-size:13px;color:var(--dim)">No active projects right now.</div>`}</section>
   <div class="two-col">
     <section class="panel"><div class="eyebrow">Payments &amp; Balance</div>
@@ -917,7 +1154,7 @@ function editorView(name){
 
   const cards=jobs.length===0
     ? `<div class="empty-state"><div class="t">Queue's clear</div><div class="s">New assignments land here the moment Cody assigns them.</div></div>`
-    : `<div class="grid-gap">`+jobs.map(j=>{
+    : `<div class="grid-gap cards">`+jobs.map(j=>{
       const inEdit=j.stage>=2;
       const board=!inEdit?"":`<div class="grid-gap" style="gap:6px">`+(j.pieces||[]).map((pc,i)=>{
         const c=STATUS_COLOR[pc.status];
@@ -927,9 +1164,8 @@ function editorView(name){
             <span class="piece-name" style="color:${pc.status==="done"?"var(--muted)":"var(--cream)"}">${esc(pc.name)}</span>
             <span class="piece-status" style="color:${pc.status==="queued"?T.dim:c}">${PIECE_LABEL[pc.status]}</span>
           </div>
-          ${pc.status!=="done"
-            ?`<button class="btn ${pc.status==="review"?"green":"gold"}" data-adv="${esc(j.id)}:${i}" style="font-size:10.5px;padding:6px 12px">${NEXT_ACTION[pc.status]} →</button>`
-            :`<span class="done-note" style="font-size:10.5px">✓ DONE</span>`}
+          <select class="sel" data-pstatus="${esc(j.id)}:${i}" style="color:${c}">${PIECE_ORDER.map(st=>
+            `<option value="${st}" ${pc.status===st?"selected":""}>${PIECE_LABEL[st]}</option>`).join("")}</select>
         </div>`;}).join("")+`</div>`;
       const cl=byId(clients,j.clientId);
       return `<div class="card" style="display:grid;gap:12px">
@@ -981,6 +1217,8 @@ function ownerView(){
   const apOwed=payables.filter(p=>p.status==="owed").reduce((s,p)=>s+(+p.amount||0),0);
   const onDel=open.reduce((s,p)=>s+(+p.editCost||0),0);
   const risk=projects.filter(p=>p.editStart&&p.stage>=2&&pct(p)<100&&daysIn(p.editStart)>=5).length;
+  const projDue=projects.reduce((s,p)=>s+projOutstanding(p),0);
+  const revs=projects.filter(needsRev);
 
   if(!clients.length){
     return `<div class="hero"><div><h1>Studio<span>.</span></h1>
@@ -1039,6 +1277,7 @@ function ownerView(){
     ${stat("OUTSTANDING (A/R)",money(outst),outst?T.gold:T.green)}
     ${stat("ACCOUNTS PAYABLE",money(apOwed),apOwed?T.red:T.green)}
     ${stat("SLA WATCH (DAY 5+)",risk,risk?T.red:T.green)}
+    ${stat("PROJECT $ UNCOLLECTED",money(projDue),projDue?T.gold:T.green)}
   </div>
   <div class="two-col">
     <section class="panel"><div class="eyebrow">Delivery Radar</div>${radar}</section>
@@ -1078,7 +1317,7 @@ function ownerView(){
           <button class="btn gold mini" data-form="project" data-client="${esc(c.id)}">+ PROJECT</button>
           <button class="btn outline mini" data-preview="${esc(c.id)}">VIEW AS CLIENT →</button></div>
       </div>
-      ${ps.length?`<div class="grid-gap">${ps.map(p=>projectCard(p,true)).join("")}</div>`
+      ${ps.length?`<div class="grid-gap cards">${ps.map(p=>projectCard(p,true)).join("")}</div>`
         :`<div style="font-size:13px;color:var(--dim);padding-bottom:8px">No projects yet.</div>`}
       ${iv.length?`<div style="margin-top:14px">${iv.map(i=>`<div class="list-row">
         <div><div class="inv-label">${esc(i.label)}</div><div class="inv-meta">${esc(i.date||"")}</div></div>
@@ -1087,6 +1326,26 @@ function ownerView(){
           <span class="amount">${money(i.amount)}</span>
           <span class="tag ${i.status==="Paid"?"paid":"due-t"}">${esc(i.status)}</span></div></div>`).join("")}</div>`:""}
     </section>`;}).join("")}
+
+  ${revs.length?`<section class="panel"><div class="eyebrow" style="color:var(--red)">Client Revisions Requested — ${revs.length}</div>
+    ${revs.map(p=>`<div class="list-row"><div><div class="inv-label">${esc(p.title)}</div>
+      <div class="inv-meta">${esc(clientName(p.clientId))}${p.revisionNote?` &middot; &ldquo;${esc(p.revisionNote)}&rdquo;`:""}</div></div>
+      <button class="btn ghost mini" data-form="project" data-id="${esc(p.id)}">OPEN</button></div>`).join("")}
+  </section>`:""}
+
+  <section class="panel"><div class="eyebrow">Alerts &amp; SMS
+    <span class="spacer"></span><button class="btn outline mini" data-form="sms">EDIT NUMBERS</button></div>
+    <div class="list-row"><span style="font-size:13px;color:var(--muted)">Text alerts</span>
+      <span class="tag ${smsPub.endpoint?"paid":"due-t"}">${smsPub.endpoint?"LIVE":"NOT CONNECTED"}</span></div>
+    <div class="list-row"><span style="font-size:13px;color:var(--muted)">Studio phone</span>
+      <span class="inv-meta">${esc(settings.studio||"not set")}</span></div>
+    <div class="list-row"><span style="font-size:13px;color:var(--muted)">Editors with a number</span>
+      <span class="inv-meta">${Object.keys(settings.editors||{}).length}</span></div>
+    <div class="list-row"><span style="font-size:13px;color:var(--muted)">Clients with a number</span>
+      <span class="inv-meta">${Object.keys(settings.clients||{}).length}</span></div>
+    <div class="inv-meta" style="padding-top:10px">Editor posts a cut &rarr; texts you. You post a cut &rarr; texts that client.
+      Client approves or asks for revisions &rarr; texts you. New assignment &rarr; texts the editor.</div>
+  </section>
 
   <section class="panel"><div class="eyebrow">Access — Who Can Log In
     <span class="spacer"></span><button class="btn outline mini" data-form="access">+ GIVE ACCESS</button></div>
@@ -1160,7 +1419,7 @@ function paint(){
 
 /* ── events ── */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-demo],[data-view],[data-adv],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access]");
+  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-save-sms],[data-sms-test]");
   if(!t) return;
   const d=t.dataset;
   if(d.close!==undefined){ if(t===e.target||t.tagName==="BUTTON") closeModal(); return; }
@@ -1171,8 +1430,17 @@ document.addEventListener("click",e=>{
   if(d.logout){ doLogout(); return; }
   if(d.view){ view=d.view; paint(); return; }
   if(d.preview){ previewClient=d.preview; view="client"; paint(); return; }
-  if(d.adv){ const [id,i]=d.adv.split(":"); advancePiece(id,+i); return; }
   if(d.approve){ const [id,i]=d.approve.split(":"); approvePiece(id,+i); return; }
+  if(d.pfAdd){ pfSync(); PF.push({name:"",status:"queued"}); pfRender(); return; }
+  if(d.pfDel!==undefined){ pfSync(); PF.splice(+d.pfDel,1); if(!PF.length) PF.push({name:"",status:"queued"}); pfRender(); return; }
+  if(d.pay){ const [id,w]=d.pay.split(":"); togglePay(id,w); return; }
+  if(d.link){ const [id,k]=d.link.split(":"); return linkForm(id,k); }
+  if(d.saveLink){ const [id,k]=d.saveLink.split(":"); return saveLink(id,k); }
+  if(d.revform){ const [id,i]=d.revform.split(":"); return revisionForm(id,+i); }
+  if(d.saveRev){ const [id,i]=d.saveRev.split(":"); return requestRevision(id,+i); }
+  if(d.saveSms){ return saveSMS(); }
+  if(d.smsTest){ return smsTest(); }
+  if(d.form==="sms") return smsForm();
   if(d.form==="client")  return clientForm(d.id||null);
   if(d.form==="project") return projectForm(d.id||null,d.client||null);
   if(d.form==="invoice") return invoiceForm(d.id||null,d.client||null);
@@ -1192,6 +1460,15 @@ document.addEventListener("click",e=>{
 document.addEventListener("change",e=>{
   if(e.target.id==="cSel"){ previewClient=e.target.value; paint(); }
   if(e.target.id==="eSel"){ previewEditor=e.target.value; paint(); }
+  const ps=e.target.dataset?.pstatus;
+  if(ps){ const [id,i]=ps.split(":"); setPieceStatus(id,+i,e.target.value); }
+  if(e.target.id==="pf-price"){
+    const v=+e.target.value||0, h=Math.round(v/2);
+    const box=e.target.closest(".f-grid");
+    const labs=box?box.querySelectorAll("#pf-dep,#pf-fin"):[];
+    if(labs[0]) labs[0].parentNode.lastChild.textContent="Deposit paid ($"+h+")";
+    if(labs[1]) labs[1].parentNode.lastChild.textContent="Final paid ($"+(v-h)+")";
+  }
 });
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape") closeModal();
