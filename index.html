@@ -233,6 +233,40 @@ main{max-width:1120px;margin:0 auto;padding:22px 18px 60px;display:grid;gap:16px
 .bal-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-pale));border-radius:4px;transition:width .5s cubic-bezier(.4,1.4,.5,1)}
 
 /* ── modals & forms ── */
+/* ── inbound ── */
+.lead-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;align-items:start}
+.lead-col-h{display:flex;align-items:baseline;gap:8px;padding:0 2px 9px;margin-bottom:11px;
+  border-bottom:1px solid var(--line);font-family:var(--display);font-weight:700;font-size:12px;
+  letter-spacing:.1em;text-transform:uppercase}
+.lead-col-h span{color:var(--dim);font-size:11px}
+.lead-card{background:linear-gradient(180deg,var(--panel-up),var(--panel));border:1px solid var(--line-soft);
+  border-left:2px solid var(--dim);border-radius:0 10px 10px 0;padding:13px 15px;margin-bottom:10px}
+.lead-card.tk-ok{border-left-color:var(--green)}
+.lead-card.tk-warn{border-left-color:var(--gold)}
+.lead-card.tk-bad{border-left-color:var(--red)}
+.lead-card .nm{font-size:14px;font-weight:800;color:var(--cream)}
+.lead-card .ask{font-size:12.5px;color:var(--muted);margin-top:2px}
+.lead-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:9px}
+.lead-clock{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase}
+.stagebar{display:flex;gap:5px;margin-top:11px;padding-top:11px;border-top:1px solid var(--line-soft)}
+.stagebar button{flex:1;padding:6px 0;border-radius:5px;border:1px solid var(--line);background:none;
+  color:var(--dim);font-family:var(--display);font-weight:700;font-size:10.5px;letter-spacing:.07em;
+  text-transform:uppercase;cursor:pointer}
+.stagebar button:hover{color:var(--cream)}
+.stagebar button.on{border-color:rgba(242,201,76,.5);background:rgba(242,201,76,.13);color:var(--gold)}
+.lead-last{display:flex;justify-content:space-between;gap:8px;margin-top:9px;font-size:11.5px;color:var(--muted)}
+.lead-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tl{list-style:none;margin:12px 0 0;padding:0;border-left:1px solid var(--line)}
+.tl li{position:relative;padding:0 0 15px 17px}
+.tl li::before{content:'';position:absolute;left:-4px;top:6px;width:7px;height:7px;border-radius:50%;background:var(--gold)}
+.tl li.sys::before{background:var(--dim)}
+.tl .when{font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim)}
+.tl .what{font-size:13.5px;color:var(--cream);margin-top:1px}
+.tl .note{font-size:12.5px;color:var(--muted);margin-top:2px;white-space:pre-wrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{padding:6px 12px;border-radius:16px;border:1px solid var(--line);background:none;color:var(--muted);
+  font-family:var(--display);font-weight:700;font-size:11px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer}
+.chips button.on{border-color:rgba(242,201,76,.5);background:rgba(242,201,76,.13);color:var(--gold)}
 .modal-wrap{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-start;justify-content:center;
   padding:6vh 16px 16px;background:rgba(6,7,9,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
   overflow-y:auto}
@@ -394,6 +428,7 @@ function sandbox(){
   const iso=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);};
   const short=i=>{const d=new Date(i+"T00:00:00");
     return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]+" "+d.getDate();};
+  const isoT=d=>new Date(Date.now()+d*864e5).toISOString();
   const DB={ __seq:0,
     logins:[{email:"cody@demo.com",pw:"demo"},{email:"harrison@demo.com",pw:"demo"},{email:"pedro@demo.com",pw:"demo"}],
     users:{ "cody@demo.com":{role:"owner"},
@@ -423,7 +458,24 @@ function sandbox(){
       p4:{clientId:"c2",title:"Tip Tuesday — ALE Coverage",code:"TT-ALE",type:"Social",stage:0,
           dueISO:iso(16),due:short(iso(16)),editStart:null,editor:"Faizan",editCost:100,
           note:"Cut sheet built from transcript.",approvals:{},
-          pieces:[{name:"Main Cut",status:"queued"}]} },
+          pieces:[{name:"Main Cut",status:"queued"}]},
+      L1:{pipeline:"lead",leadStage:"lead",clientId:null,editor:null,name:"Vista Dental Group",
+          ask:"3 reels plus a brand day",channel:"Form",budget:"$3-6k",contact:"(555) 555-0188",
+          createdAt:isoT(-0.02),firstReplyAt:null,touches:[]},
+      L2:{pipeline:"lead",leadStage:"lead",clientId:null,editor:null,name:"Harbor Realty",
+          ask:"Listing walkthrough video",channel:"Referral",budget:"$1-3k",contact:"tom@harborre.com",
+          createdAt:isoT(-0.09),firstReplyAt:null,touches:[]},
+      L3:{pipeline:"lead",leadStage:"qualified",clientId:null,editor:null,name:"@ortegaroofing",
+          ask:"Monthly content retainer",channel:"DM",budget:"Retainer",contact:"IG DM",
+          createdAt:isoT(-3),firstReplyAt:isoT(-2.9),nextFollowUp:iso(1),
+          touches:[{at:isoT(-2.9),type:"DM'd",note:"Sent rates, wants a call"},
+                   {at:isoT(-1),type:"Called",note:"4 reels a month, deciding Friday"}]},
+      L4:{pipeline:"lead",leadStage:"proposal",clientId:null,editor:null,name:"Sunset Fitness",
+          ask:"Launch video for new location",channel:"Call",budget:"$3-6k",contact:"(555) 555-0143",
+          createdAt:isoT(-7),firstReplyAt:isoT(-6.9),nextFollowUp:iso(-1),
+          touches:[{at:isoT(-6.9),type:"Called",note:"Opening Sept 1"},
+                   {at:isoT(-3),type:"Sent proposal",note:"$4,500, two shoot days"}]} },
+    leadsSeed:1,
     invoices:{
       i1:{clientId:"c1",label:"July Retainer",amount:2500,status:"Paid",date:short(iso(-18)),dateISO:iso(-18)},
       i2:{clientId:"c1",label:"July Reels Package",amount:1300,status:"Due "+short(iso(6)),date:short(iso(-9)),
@@ -468,6 +520,13 @@ function sandbox(){
 /* ── constants ── */
 const T={gold:"#f2c94c",goldSoft:"#d8b654",cream:"#f2f0ea",muted:"#9195a0",dim:"#5c606a",green:"#4ade80",red:"#f0556b",bg:"#0a0b0d",line:"#2a2d34"};
 const STAGES=["Pre-Pro","Shoot","Edit","Review","Delivered"];
+/* ── inbound ── */
+const LEAD_STAGES=[["lead","New"],["qualified","Qualified"],["proposal","Proposal Out"]];
+const LEAD_CHANNELS=["DM","Text","Call","Email","Referral","Form","In person"];
+const LEAD_BUDGETS=["Unknown","$1-3k","$3-6k","$6k+","Retainer"];
+const TOUCH_TYPES=["Called","Texted","DM'd","Emailed","Met up","Sent proposal","Left voicemail"];
+const SLA_MIN=60, STALE_DAYS=4;
+const isLead=p=>p.pipeline==="lead";
 const SLA=7;
 const PIECE_SCORE={queued:0,editing:.4,review:.75,revisions:.55,done:1};
 const PIECE_LABEL={queued:"QUEUED",editing:"IN EDIT",review:"IN REVIEW",revisions:"CLIENT REVISIONS",done:"DONE"};
@@ -481,6 +540,7 @@ const LOGO=document.getElementById("brandLogoSrc").textContent.trim();
 /* ── state ── */
 let authUser=null, me=null, booting=true, gateMsg=null;
 let clients=[], projects=[], invoices=[], payables=[], activity=[], users=[];
+let leads=[];
 let settings={}, smsPub={};   /* config/sms (owner only) + config/public (everyone) */
 let view="owner", previewClient=null, previewEditor=null;
 let unsubs=[];
@@ -618,7 +678,7 @@ async function loadFor(user){
     view="owner";
     unsubs.push(onSnapshot(doc(db,"config","sms"),d=>{ settings=d.exists()?d.data():{}; paint(); }));
     unsubs.push(live(collection(db,"clients"),  v=>clients=v));
-    unsubs.push(live(collection(db,"projects"), v=>projects=v));
+    unsubs.push(live(collection(db,"projects"), v=>{ leads=v.filter(isLead); projects=v.filter(p=>!isLead(p)); }));
     unsubs.push(live(collection(db,"invoices"), v=>invoices=v));
     unsubs.push(live(collection(db,"payables"), v=>payables=v));
     unsubs.push(live(collection(db,"activity"), v=>activity=v.sort((a,b)=>(b.ts||0)-(a.ts||0))));
@@ -628,7 +688,7 @@ async function loadFor(user){
     view="client";
     const cid=me.clientId;
     unsubs.push(onSnapshot(doc(db,"clients",cid),d=>{ clients=d.exists()?[{id:d.id,...d.data()}]:[]; paint(); }));
-    unsubs.push(live(query(collection(db,"projects"),where("clientId","==",cid)), v=>projects=v));
+    unsubs.push(live(query(collection(db,"projects"),where("clientId","==",cid)), v=>projects=v.filter(p=>!isLead(p))));
     unsubs.push(live(query(collection(db,"invoices"),where("clientId","==",cid)), v=>invoices=v));
     unsubs.push(live(query(collection(db,"activity"),where("clientId","==",cid)),
                      v=>activity=v.sort((a,b)=>(b.ts||0)-(a.ts||0))));
@@ -636,7 +696,7 @@ async function loadFor(user){
   else if(me.role==="editor"){
     view="editor";
     const nm=me.editorName;
-    unsubs.push(live(query(collection(db,"projects"),where("editor","==",nm)), v=>projects=v));
+    unsubs.push(live(query(collection(db,"projects"),where("editor","==",nm)), v=>projects=v.filter(p=>!isLead(p))));
     unsubs.push(live(query(collection(db,"payables"),where("editor","==",nm)), v=>payables=v));
     unsubs.push(live(collection(db,"clients"), v=>clients=v));
   }
@@ -1344,6 +1404,291 @@ function editorView(name){
   </section>`;
 }
 
+
+/* ═══════════ INBOUND (LEAD INTAKE) ═══════════ */
+const leadMins=iso=>Math.max(0,Math.round((Date.now()-new Date(iso).getTime())/6e4));
+const leadFmt=m=>m<60?m+"m":m<1440?Math.floor(m/60)+"h":Math.floor(m/1440)+"d";
+const leadStamp=iso=>new Date(iso).toLocaleString(undefined,{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+const lastTouch=l=>(l.touches||[]).slice().sort((a,b)=>new Date(b.at)-new Date(a.at))[0]||null;
+const leadOverdue=l=>l.nextFollowUp&&l.nextFollowUp<todayISO();
+
+function leadClock(l){
+  if(!l.firstReplyAt){
+    const m=leadMins(l.createdAt);
+    return {k:m<SLA_MIN?"ok":m<SLA_MIN*3?"warn":"bad",t:"NO REPLY · "+leadFmt(m),c:m<SLA_MIN?T.green:m<SLA_MIN*3?T.gold:T.red};
+  }
+  const tch=lastTouch(l);
+  if(!tch) return {k:"ok",t:"REPLIED",c:T.green};
+  const d=leadMins(tch.at)/1440;
+  return {k:d<STALE_DAYS?"ok":d<STALE_DAYS*2?"warn":"bad",
+          t:tch.type.toUpperCase()+" "+leadFmt(leadMins(tch.at))+" AGO",
+          c:d<STALE_DAYS?T.green:d<STALE_DAYS*2?T.gold:T.red};
+}
+function leadTemplates(l){
+  const who=(l.name||"there").replace(/^@/,"").split(" ")[0];
+  return [
+    ["Real prospect",`Hey ${who} — Cody with Under The Sun Studios. Thanks for reaching out about ${l.ask||"the project"}.
+
+Two quick questions so I can get you a real number: when do you need it live, and is this a one-off or something running monthly?
+
+Happy to jump on a 10 minute call today if that's easier.`],
+    ["Price shopper",`Hey ${who} — Cody at Under The Sun Studios. Appreciate you reaching out.
+
+Projects like this usually land between $2-6k depending on shoot days and how many cuts you need. If that's the right neighborhood, send me your deadline and I'll put an exact quote together.`],
+    ["Referral",`Hey ${who} — Cody with Under The Sun Studios. Glad the referral sent you my way.
+
+Tell me what you're picturing for ${l.ask||"this"} and roughly when you need it, and I'll come back with a plan and pricing today.`]
+  ];
+}
+
+function inboundView(){
+  const waiting=leads.filter(l=>!l.firstReplyAt).length;
+  const late=leads.filter(l=>!l.firstReplyAt&&leadMins(l.createdAt)>=SLA_MIN).length;
+  const due=leads.filter(leadOverdue).length;
+  const n=k=>leads.filter(l=>l.leadStage===k).length;
+  const stat=(l,v,c)=>`<div class="stat"><div class="l">${l}</div><div class="v" style="color:${c||"var(--cream)"}">${v}</div></div>`;
+
+  const cols=LEAD_STAGES.map(([key,label])=>{
+    const list=leads.filter(l=>l.leadStage===key).sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));
+    return `<section><div class="lead-col-h">${label}<span>${list.length}</span></div>
+      ${list.length?list.map(leadCard).join(""):`<div class="lead-card" style="border-left-color:var(--line)">
+        <div class="ask">Nothing here.</div></div>`}</section>`;
+  }).join("");
+
+  return `
+  <div class="hero"><div><h1>Inbound<span>.</span></h1>
+    <div class="sub">${leads.length} live lead${leads.length===1?"":"s"} · ${waiting} waiting on you</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn gold" data-lead-new="1">+ NEW LEAD</button>
+    </div></div>
+  <div class="stats">
+    ${stat("NEW",n("lead"))}
+    ${stat("QUALIFIED",n("qualified"))}
+    ${stat("PROPOSAL OUT",n("proposal"))}
+    ${stat("NEEDS A REPLY",waiting,waiting?T.gold:T.green)}
+    ${stat("PAST 1 HOUR",late,late?T.red:T.green)}
+    ${stat("FOLLOW-UP DUE",due,due?T.red:T.green)}
+  </div>
+  <div class="lead-cols">${cols}</div>`;
+}
+
+function leadCard(l){
+  const c=leadClock(l), tch=lastTouch(l), n=(l.touches||[]).length;
+  return `<article class="lead-card tk-${c.k}">
+    <div class="nm">${esc(l.name||"Unnamed")}</div>
+    <div class="ask">${esc(l.ask||"No detail yet")}</div>
+    <div class="lead-meta">
+      <span class="tag">${esc(l.channel||"—")}</span>
+      <span class="tag">${esc(l.budget||"Unknown")}</span>
+      <span class="lead-clock" style="color:${c.c}">${esc(c.t)}</span>
+    </div>
+    <div class="stagebar">
+      ${LEAD_STAGES.map(([k,lab])=>`<button class="${l.leadStage===k?"on":""}" data-lead-stage="${esc(l.id)}:${k}">${lab}</button>`).join("")}
+    </div>
+    <div class="lead-last">
+      <span>${tch?`${n} touch${n===1?"":"es"} · ${esc(leadStamp(tch.at))}`:"No touches logged"}</span>
+      <span style="color:${leadOverdue(l)?T.red:T.muted}">${l.nextFollowUp?(leadOverdue(l)?"FOLLOW UP OVERDUE":"NEXT "+esc(l.nextFollowUp)):""}</span>
+    </div>
+    <div class="lead-acts">
+      <button class="btn gold mini" data-lead-touch="${esc(l.id)}">LOG TOUCH</button>
+      ${l.firstReplyAt?"":`<button class="btn outline mini" data-lead-tmpl="${esc(l.id)}">TEMPLATES</button>`}
+      <button class="btn ghost mini" data-lead-hist="${esc(l.id)}">HISTORY</button>
+      <button class="btn ghost mini" data-lead-edit="${esc(l.id)}">EDIT</button>
+      ${l.leadStage==="proposal"?`<button class="btn gold mini" data-lead-won="${esc(l.id)}">WON &rarr;</button>`:""}
+      <button class="btn ghost mini" data-lead-lost="${esc(l.id)}">LOST</button>
+    </div>
+  </article>`;
+}
+
+/* ── writes ── */
+async function leadPush(id,entry,extra){
+  const l=byId(leads,id); if(!l) return;
+  await guard(()=>updateDoc(doc(db,"projects",id),
+    {touches:[...(l.touches||[]),entry],...(extra||{})}),null);
+}
+async function setLeadStage(id,stage){
+  const l=byId(leads,id); if(!l||l.leadStage===stage) return;
+  const label=stage==="lost"?"Marked lost":"Moved to "+(LEAD_STAGES.find(s=>s[0]===stage)||[,stage])[1];
+  const extra=stage==="lost"?{leadStage:"lost",pipeline:"lost",lostAt:todayISO()}:{leadStage:stage};
+  await leadPush(id,{at:new Date().toISOString(),type:label,note:"",sys:true},extra);
+}
+
+function leadForm(id){
+  const l=id?byId(leads,id)||{}:{};
+  const chip=(g,arr,sel)=>`<div class="chips" data-chipgroup="${g}">${arr.map(v=>
+    `<button type="button" class="${(sel||arr[0])===v?"on":""}" data-chip="${esc(v)}">${esc(v)}</button>`).join("")}</div>`;
+  showModal(`<h3>${id?"Edit Lead":"New Lead"}</h3>
+  <div class="f-grid">
+    <div class="f"><label>Name or handle</label><input id="lf-name" value="${esc(l.name||"")}" placeholder="@ortegaroofing"></div>
+    <div class="f"><label>Contact</label><input id="lf-contact" value="${esc(l.contact||"")}" placeholder="phone, email, or IG"></div>
+    <div class="f" style="grid-column:1/-1"><label>What they want</label>
+      <input id="lf-ask" value="${esc(l.ask||"")}" placeholder="Monthly reels, maybe a brand day"></div>
+    <div class="f" style="grid-column:1/-1"><label>Came in from</label>${chip("lf-ch",LEAD_CHANNELS,l.channel)}</div>
+    <div class="f" style="grid-column:1/-1"><label>Budget signal</label>${chip("lf-bd",LEAD_BUDGETS,l.budget)}</div>
+  </div>
+  <div class="modal-actions">
+    ${id?`<button class="btn ghost" data-lead-del="${esc(id)}">DELETE</button>`:""}
+    <button class="btn ghost" data-close="1">CANCEL</button>
+    <button class="btn gold" data-lead-save="${esc(id||"")}">${id?"SAVE":"SAVE & SHOW TEMPLATES"}</button>
+  </div>`);
+}
+async function saveLead(id){
+  const name=fv("lf-name").trim();
+  if(!name) return toast("Give the lead a name");
+  const data={name,contact:fv("lf-contact").trim(),ask:fv("lf-ask").trim(),
+    channel:chipVal("lf-ch"),budget:chipVal("lf-bd")};
+  if(id){ await guard(()=>updateDoc(doc(db,"projects",id),data),"Lead saved"); closeModal(); return; }
+  const now=new Date().toISOString();
+  const full={...data,pipeline:"lead",leadStage:"lead",clientId:null,editor:null,
+    createdAt:now,firstReplyAt:null,nextFollowUp:null,
+    touches:[{at:now,type:"Lead created",note:"",sys:true}]};
+  const r=await addDoc(collection(db,"projects"),full);
+  closeModal(); toast("Lead added — clock is running");
+  setTimeout(()=>leadTemplateForm(r.id||null,full),120);
+}
+
+function touchForm(id){
+  const l=byId(leads,id)||{};
+  const localNow=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);
+  showModal(`<h3>Log a touch</h3>
+  <div style="font-size:13px;color:var(--muted);margin:-8px 0 12px">${esc(l.name||"")}</div>
+  <div class="f-grid">
+    <div class="f" style="grid-column:1/-1"><label>What happened</label>
+      <div class="chips" data-chipgroup="tf-ty">${TOUCH_TYPES.map((v,i)=>
+        `<button type="button" class="${i===0?"on":""}" data-chip="${esc(v)}">${esc(v)}</button>`).join("")}</div></div>
+    <div class="f"><label>When</label><input type="datetime-local" id="tf-when" value="${localNow}"></div>
+    <div class="f"><label>Next follow-up</label><input type="date" id="tf-next" value="${esc(l.nextFollowUp||"")}"></div>
+    <div class="f" style="grid-column:1/-1"><label>Note</label>
+      <textarea id="tf-note" rows="3" placeholder="Wants 4 reels a month, deciding by Friday"></textarea></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn ghost" data-close="1">CANCEL</button>
+    <button class="btn gold" data-lead-savetouch="${esc(id)}">SAVE TOUCH</button>
+  </div>`);
+}
+async function saveTouch(id){
+  const l=byId(leads,id); if(!l) return;
+  const w=fv("tf-when");
+  const at=w?new Date(w).toISOString():new Date().toISOString();
+  const extra={nextFollowUp:fv("tf-next")||null};
+  if(!l.firstReplyAt) extra.firstReplyAt=at;
+  await leadPush(id,{at,type:chipVal("tf-ty"),note:fv("tf-note").trim()},extra);
+  closeModal(); toast("Touch logged");
+}
+
+function leadHistory(id){
+  const l=byId(leads,id)||{};
+  const list=(l.touches||[]).slice().sort((a,b)=>new Date(b.at)-new Date(a.at));
+  showModal(`<h3>History</h3>
+  <div style="font-size:13px;color:var(--muted);margin:-8px 0 4px">
+    ${esc(l.name||"")} · came in ${esc(l.createdAt?leadStamp(l.createdAt):"—")} via ${esc(l.channel||"—")}</div>
+  ${list.length?`<ul class="tl">${list.map(t=>`<li class="${t.sys?"sys":""}">
+      <div class="when">${esc(leadStamp(t.at))}</div>
+      <div class="what">${esc(t.type)}</div>
+      ${t.note?`<div class="note">${esc(t.note)}</div>`:""}</li>`).join("")}</ul>`
+    :`<div class="empty-state"><div class="s">No touches yet. Every call, text, and DM you log lands here with a date.</div></div>`}
+  <div class="modal-actions"><button class="btn ghost" data-close="1">CLOSE</button></div>`);
+}
+
+function leadTemplateForm(id,lead){
+  const l=lead||byId(leads,id)||{};
+  const tpl=leadTemplates(l);
+  showModal(`<h3>First reply</h3>
+  <div style="font-size:13px;color:var(--muted);margin:-8px 0 12px">${esc(l.name||"")} · ${esc(l.channel||"")}</div>
+  ${tpl.map(([lbl,body],i)=>`<div class="panel" style="margin-bottom:10px">
+    <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:6px">${esc(lbl)}</div>
+    <div style="font-size:13.5px;white-space:pre-wrap;color:var(--cream)">${esc(body)}</div>
+    <button class="btn outline mini" style="margin-top:9px;width:100%" data-lead-copy="${i}">COPY</button></div>`).join("")}
+  <div style="font-size:12px;color:var(--dim);text-align:center">Send it, then log the touch so the clock stops.</div>
+  <div class="modal-actions"><button class="btn ghost" data-close="1">CLOSE</button></div>`);
+  window.__leadTpl=tpl.map(t=>t[1]);
+}
+
+function convertForm(id){
+  const l=byId(leads,id)||{};
+  showModal(`<h3>Convert to project</h3>
+  <div class="f-grid">
+    <div class="f"><label>Client</label><select id="cv-client">
+      <option value="__new__">+ Create new client</option>${clientOpts(null)}</select></div>
+    <div class="f"><label>New client name</label>
+      <input id="cv-cname" value="${esc((l.name||"").replace(/^@/,""))}"></div>
+    <div class="f" style="grid-column:1/-1"><label>Project title</label>
+      <input id="cv-title" value="${esc(l.ask||"New project")}"></div>
+    <div class="f"><label>Code</label><input id="cv-code" placeholder="RLS-08"></div>
+    <div class="f"><label>Type</label><input id="cv-type" placeholder="Reels / YouTube / Social"></div>
+    <div class="f"><label>Total price</label><input type="number" id="cv-cost" placeholder="4500"></div>
+    <div class="f"><label>Due date</label><input type="date" id="cv-due" value="${esc(todayISO())}"></div>
+    <div class="f"><label>Editor</label><input id="cv-editor" placeholder="Pedro"></div>
+    <div class="f"><label>Editor cost</label><input type="number" id="cv-ecost" placeholder="100"></div>
+    <div class="f" style="grid-column:1/-1"><label>Deliverables (one per line)</label>
+      <textarea id="cv-pieces" rows="4" placeholder="Reel A&#10;Reel B&#10;Reel C"></textarea></div>
+  </div>
+  <div style="font-size:12px;color:var(--dim);margin-top:4px">
+    Creates the client if needed, drops this into Pre-Pro at 0%, splits the price 50/50 into deposit and final,
+    and keeps the whole touch history on the project.</div>
+  <div class="modal-actions">
+    <button class="btn ghost" data-close="1">CANCEL</button>
+    <button class="btn gold" data-lead-convert="${esc(id)}">CONVERT</button>
+  </div>`);
+}
+async function convertLead(id){
+  const l=byId(leads,id); if(!l) return;
+  const cost=+fv("cv-cost")||0;
+  let cid=fv("cv-client");
+  if(cid==="__new__"){
+    const nm=fv("cv-cname").trim()||l.name||"New client";
+    const r=await addDoc(collection(db,"clients"),
+      {name:nm,company:"",contact:l.contact||"",retainer:"",assetsUrl:""});
+    cid=r.id;
+  }
+  const names=fv("cv-pieces").split("\n").map(x=>x.trim()).filter(Boolean);
+  const pieces=(names.length?names:["Main Cut"]).map(n=>({name:n,status:"queued"}));
+  const due=fv("cv-due")||todayISO();
+  await guard(()=>updateDoc(doc(db,"projects",id),{
+    pipeline:null, leadStage:null,
+    clientId:cid, title:fv("cv-title").trim()||l.ask||"New project",
+    code:fv("cv-code").trim(), type:fv("cv-type").trim(),
+    stage:0, cost, dueISO:due, due:isoShort(due),
+    editor:fv("cv-editor").trim()||null, editCost:+fv("cv-ecost")||0,
+    editStart:null, pieces, approvals:{},
+    depositPaid:false, finalPaid:false, depositPaidOn:null, finalPaidOn:null,
+    convertedAt:new Date().toISOString(), nextFollowUp:null,
+    touches:[...(l.touches||[]),{at:new Date().toISOString(),type:"Won — converted to project",note:"",sys:true}]
+  }),"Converted — it's on the Studio board");
+  logActivity(cid,`New project started — ${fv("cv-title").trim()||l.ask||"project"}`);
+  closeModal(); view="owner"; paint();
+}
+
+/* ── inbound events (kept separate from the main handler on purpose) ── */
+document.addEventListener("click",e=>{
+  const chip=e.target.closest("[data-chip]");
+  if(chip){ const g=chip.closest("[data-chipgroup]");
+    [...g.children].forEach(b=>b.classList.toggle("on",b===chip)); return; }
+  const t=e.target.closest("[data-lead-new],[data-lead-stage],[data-lead-touch],[data-lead-tmpl],[data-lead-hist],[data-lead-edit],[data-lead-won],[data-lead-lost],[data-lead-save],[data-lead-savetouch],[data-lead-convert],[data-lead-copy],[data-lead-del]");
+  if(!t) return;
+  const d=t.dataset;
+  if(d.leadNew!==undefined) return leadForm(null);
+  if(d.leadStage){ const [id,st]=d.leadStage.split(":"); return setLeadStage(id,st); }
+  if(d.leadTouch)  return touchForm(d.leadTouch);
+  if(d.leadTmpl)   return leadTemplateForm(d.leadTmpl);
+  if(d.leadHist)   return leadHistory(d.leadHist);
+  if(d.leadEdit)   return leadForm(d.leadEdit);
+  if(d.leadWon)    return convertForm(d.leadWon);
+  if(d.leadLost)   return setLeadStage(d.leadLost,"lost");
+  if(d.leadSave!==undefined) return saveLead(d.leadSave||null);
+  if(d.leadSavetouch) return saveTouch(d.leadSavetouch);
+  if(d.leadConvert)   return convertLead(d.leadConvert);
+  if(d.leadCopy!==undefined){
+    const txt=(window.__leadTpl||[])[+d.leadCopy]||"";
+    navigator.clipboard?.writeText(txt);
+    t.textContent="COPIED"; setTimeout(()=>t.textContent="COPY",1400); return;
+  }
+  if(d.leadDel){ if(confirm("Delete this lead for good?"))
+    guard(()=>deleteDoc(doc(db,"projects",d.leadDel)),"Lead deleted").then(closeModal); return; }
+});
+const chipVal=g=>{const el=document.querySelector(`[data-chipgroup="${g}"] .on`);return el?el.dataset.chip:"";};
+
+
 /* ═══════════ OWNER VIEW ═══════════ */
 function ownerView(){
   const open=projects.filter(p=>pct(p)<100);
@@ -1543,6 +1888,7 @@ function paint(){
   const label=isOwner?"Owner":me.role==="editor"?"Editor":"Client";
   const tabs=isOwner?`
     <button class="tab ${view==="owner"?"on":""}" data-view="owner">Studio</button>
+    <button class="tab ${view==="inbound"?"on":""}" data-view="inbound">Inbound${leads.filter(l=>!l.firstReplyAt).length?` <span style="color:var(--gold)">&bull;</span>`:""}</button>
     <button class="tab ${view==="client"?"on":""}" data-view="client">Client</button>
     <button class="tab ${view==="editor"?"on":""}" data-view="editor">Editor</button>`:"";
   const pickers=isOwner&&view==="client"&&clients.length
@@ -1554,6 +1900,7 @@ function paint(){
   if(me.role==="client")      body=clientView(me.clientId);
   else if(me.role==="editor") body=editorView(me.editorName);
   else if(view==="client")    body=clientView(previewClient||clients[0]?.id);
+  else if(view==="inbound")   body=inboundView();
   else if(view==="editor")    body=editorView(previewEditor||editorNames()[0]);
   else                        body=ownerView();
 
