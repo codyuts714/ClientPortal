@@ -256,6 +256,11 @@ main{max-width:1120px;margin:0 auto;padding:22px 18px 60px;display:grid;gap:16px
 .sel{background:var(--panel);color:var(--cream);border:1px solid var(--line);border-radius:8px;
   padding:5px 8px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;outline:none}
 .sel:focus{border-color:var(--gold)}
+.inline-edit{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:9px 0 3px;
+  padding-top:9px;border-top:1px dashed var(--line)}
+.inline-edit .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+input.sel{font-family:var(--mono);font-size:10.5px;color-scheme:dark}
+.deliv-acts{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .pf-row{display:flex;gap:8px;align-items:center;margin-bottom:7px}
 .pf-row input{flex:1;min-width:0;background:var(--panel);color:var(--cream);border:1px solid var(--line);
   border-radius:8px;padding:8px 10px;font-family:var(--body);font-size:13px;outline:none}
@@ -505,6 +510,24 @@ const halfOf=p=>Math.round((+p.cost||0)/2);
 const collected=p=>(p.depositPaid?halfOf(p):0)+(p.finalPaid?((+p.cost||0)-halfOf(p)):0);
 const projOutstanding=p=>(+p.cost||0)-collected(p);
 const needsRev=p=>(p.pieces||[]).some(x=>x.status==="revisions");
+/* every payment, from either source, with the date it actually landed */
+function payments(){
+  const out=[];
+  projects.forEach(p=>{
+    const h=halfOf(p), price=+p.cost||0; if(!price) return;
+    if(p.depositPaid) out.push({when:p.depositPaidOn||p.dueISO||todayISO(),amount:h,
+      label:`${p.title} — deposit`,clientId:p.clientId,kind:"project",pid:p.id,which:"deposit"});
+    if(p.finalPaid)   out.push({when:p.finalPaidOn||p.dueISO||todayISO(),amount:price-h,
+      label:`${p.title} — final`,clientId:p.clientId,kind:"project",pid:p.id,which:"final"});
+  });
+  invoices.filter(i=>i.status==="Paid").forEach(i=>out.push(
+    {when:i.paidOnISO||i.dateISO||todayISO(),amount:+i.amount||0,
+     label:i.label||"Invoice",clientId:i.clientId,kind:"invoice",pid:i.id}));
+  return out.sort((a,b)=>(b.when||"").localeCompare(a.when||""));
+}
+const collectedMonth=m=>payments().filter(x=>(x.when||"").startsWith(m))
+  .reduce((s,x)=>s+x.amount,0);
+const paymentsOf=cid=>payments().filter(x=>x.clientId===cid);
 const projectsOf=cid=>projects.filter(p=>p.clientId===cid);
 const invoicesOf=cid=>invoices.filter(i=>i.clientId===cid);
 const activityOf=cid=>activity.filter(a=>a.clientId===cid).slice(0,8);
@@ -638,7 +661,7 @@ async function setPieceStatus(pid,i,status){
   if(status==="review"){
     logActivity(p.clientId,`${nm} posted for review`);
     if(me.role==="editor")                    /* editor posted it → text the studio */
-      sendSMS("studio",`REVIEW READY — ${p.title}: ${nm} (${me.editorName||"editor"})${p.frameUrl?" "+p.frameUrl:""}`);
+      sendSMS("studio",`REVIEW READY — ${p.title}: ${nm} (${me.editorName||"editor"})${reviewLink(p,pieces[i])?" "+reviewLink(p,pieces[i]):""}`);
     if(me.role==="owner"){                    /* you posted it → text the client */
       const ph=clientPhone(p.clientId);
       if(ph) sendSMS("client",`New cut ready for your review — ${nm} (${p.title}). Approve or request revisions in the portal.`,ph);
@@ -674,16 +697,41 @@ async function requestRevision(pid,i){
   await guard(()=>updateDoc(doc(db,"projects",pid),
     {pieces,approvals,revisionNote:note||null,revisionAt:todayISO()}),"Sent — revisions requested");
   logActivity(p.clientId,`Revisions requested on ${nm}`);
-  sendSMS("studio",`REVISIONS NEEDED — ${clientName(p.clientId)} on ${p.title}: ${nm}. Notes in Frame.io${p.frameUrl?" "+p.frameUrl:""}${note?` — "${note}"`:""}`);
+  sendSMS("studio",`REVISIONS NEEDED — ${clientName(p.clientId)} on ${p.title}: ${nm}. Notes in Frame.io${reviewLink(p,p.pieces?.[i])?" "+reviewLink(p,p.pieces[i]):""}${note?` — "${note}"`:""}`);
   closeModal();
 }
-async function togglePay(pid,which){
+function payDateForm(pid,which){
+  const p=byId(projects,pid)||{};
+  const dep=which==="deposit";
+  const amt=dep?halfOf(p):(+p.cost||0)-halfOf(p);
+  const on=dep?p.depositPaidOn:p.finalPaidOn;
+  const isPaid=dep?p.depositPaid:p.finalPaid;
+  showModal(`<h3>${dep?"Deposit":"Final Payment"} — ${money(amt)}</h3>
+  <div class="f-grid">
+    <div class="f"><label>${esc(p.title||"")} &middot; ${esc(clientName(p.clientId))}</label>
+      <input id="pd-date" type="date" value="${esc(on||todayISO())}">
+      <div class="hint">date the money actually landed — defaults to today</div></div>
+  </div>
+  <div class="actions">
+    ${isPaid?`<button class="btn ghost danger" data-clear-pay="${esc(pid)}:${which}">MARK UNPAID</button>`:""}
+    <button class="btn ghost" data-close="1">CANCEL</button>
+    <button class="btn gold" data-save-pay="${esc(pid)}:${which}">${isPaid?"UPDATE DATE":"MARK PAID"}</button>
+  </div>`);
+}
+async function savePayDate(pid,which){
   const p=byId(projects,pid); if(!p) return;
   const k=which==="deposit"?"depositPaid":"finalPaid";
-  const val=!p[k];
-  await guard(()=>updateDoc(doc(db,"projects",pid),{[k]:val,[k+"On"]:val?todayISO():null}),
-    val?(which==="deposit"?"Deposit paid":"Final paid"):"Marked unpaid");
-  if(val) logActivity(p.clientId,`${which==="deposit"?"Deposit":"Final payment"} received — ${p.title}`);
+  const was=p[k];
+  const dt=fv("pd-date")||todayISO();
+  await guard(()=>updateDoc(doc(db,"projects",pid),{[k]:true,[k+"On"]:dt}),
+    `${which==="deposit"?"Deposit":"Final payment"} — ${isoShort(dt)}`);
+  if(!was) logActivity(p.clientId,`${which==="deposit"?"Deposit":"Final payment"} received — ${p.title}`);
+  closeModal();
+}
+async function clearPay(pid,which){
+  const k=which==="deposit"?"depositPaid":"finalPaid";
+  await guard(()=>updateDoc(doc(db,"projects",pid),{[k]:false,[k+"On"]:null}),"Marked unpaid");
+  closeModal();
 }
 function linkForm(pid,kind){
   const p=byId(projects,pid)||{};
@@ -724,7 +772,9 @@ async function saveProject(id){
   const stage=+fv("pf-stage");
   const prev=id?byId(projects,id):null;
   pfSync();
-  let pieces=PF.filter(x=>x.name.trim()).map(x=>({name:x.name.trim(),status:x.status||"queued"}));
+  let pieces=PF.filter(x=>x.name.trim()).map(x=>{
+    let f=(x.frameUrl||"").trim(); if(f&&!/^https?:/.test(f)) f="https://"+f;
+    return {name:x.name.trim(),status:x.status||"queued",frameUrl:f||null};});
   if(!pieces.length) pieces=[{name:"Main Cut",status:"queued"}];
   let frame=fv("pf-frame"), raw=fv("pf-raw");
   if(frame&&!/^https?:/.test(frame)) frame="https://"+frame;
@@ -739,6 +789,8 @@ async function saveProject(id){
     cost:+fv("pf-price")||0,
     depositPaid:document.getElementById("pf-dep")?.checked||false,
     finalPaid:document.getElementById("pf-fin")?.checked||false,
+    depositPaidOn:document.getElementById("pf-dep")?.checked?(fv("pf-dep-on")||todayISO()):null,
+    finalPaidOn:document.getElementById("pf-fin")?.checked?(fv("pf-fin-on")||todayISO()):null,
     code:fv("pf-code").toUpperCase()||null,
     approvals:prev?.approvals||{}};
   await guard(async()=>{
@@ -764,7 +816,8 @@ async function saveInvoice(id){
   const data={clientId,label:fv("if-label")||"Invoice",amount,
     status:paid?"Paid":(dueISO?"Due "+isoShort(dueISO):"Due"),
     date:fv("if-date")?isoShort(fv("if-date")):isoShort(todayISO()),
-    dateISO:fv("if-date")||todayISO(), pay:pay||null};
+    dateISO:fv("if-date")||todayISO(), dueISO:dueISO||null,
+    paidOnISO:paid?(fv("if-paid")||todayISO()):null, pay:pay||null};
   await guard(async()=>{
     if(id) await updateDoc(doc(db,"invoices",id),data);
     else await addDoc(collection(db,"invoices"),data);
@@ -778,8 +831,10 @@ async function removeInvoice(id){
 async function savePayable(id){
   const editor=fv("yf-editor"), amount=+fv("yf-amt");
   if(!editor||!amount) return toast("Editor and amount required");
+  const isPaid=fv("yf-status")==="paid";
+  const on=fv("yf-date")||todayISO();
   const data={editor,ref:fv("yf-ref"),amount,status:fv("yf-status"),
-              paidOn:fv("yf-status")==="paid"?isoShort(todayISO()):null};
+              paidOnISO:isPaid?on:null, paidOn:isPaid?isoShort(on):null};
   await guard(async()=>{
     if(id) await updateDoc(doc(db,"payables",id),data);
     else await addDoc(collection(db,"payables"),data);
@@ -833,7 +888,8 @@ function clientForm(id){
 let PF=[];
 function pfSync(){
   PF=PF.map((x,i)=>({name:document.getElementById("pf-n"+i)?.value ?? x.name,
-                     status:document.getElementById("pf-s"+i)?.value ?? x.status}));
+                     status:document.getElementById("pf-s"+i)?.value ?? x.status,
+                     frameUrl:document.getElementById("pf-f"+i)?.value ?? x.frameUrl}));
 }
 function pfRender(){
   const box=document.getElementById("pf-box"); if(!box) return;
@@ -841,6 +897,7 @@ function pfRender(){
       <input id="pf-n${i}" value="${esc(pc.name)}" placeholder="Deliverable name">
       <select class="sel" id="pf-s${i}">${PIECE_ORDER.map(st=>
         `<option value="${st}" ${pc.status===st?"selected":""}>${PIECE_LABEL[st]}</option>`).join("")}</select>
+      <input id="pf-f${i}" value="${esc(pc.frameUrl||"")}" placeholder="Frame.io link" style="flex:1;min-width:110px">
       <button class="btn ghost mini" data-pf-del="${i}" title="remove">&#10005;</button>
     </div>`).join("")
     +`<button class="btn outline mini" data-pf-add="1">+ ADD DELIVERABLE</button>`;
@@ -851,7 +908,7 @@ function projectForm(id,preClient){
   const due=p.dueISO||d.toISOString().slice(0,10);
   const eds=["Cody",...editorNames()];
   PF=(p.pieces&&p.pieces.length?p.pieces:[{name:"Main Cut",status:"queued"}])
-      .map(x=>({name:x.name||"",status:x.status||"queued"}));
+      .map(x=>({name:x.name||"",status:x.status||"queued",frameUrl:x.frameUrl||""}));
   const price=+p.cost||0, half=Math.round(price/2);
   showModal(`<h3>${id?"Edit Project":"New Project"}</h3>
   <div class="f-grid cols">
@@ -863,14 +920,18 @@ function projectForm(id,preClient){
     <div class="f"><label>Due date</label><input id="pf-due" type="date" value="${due}"></div>
     <div class="f"><label>Editor</label><select id="pf-editor">${eds.map(e=>`<option ${p.editor===e?"selected":""}>${esc(e)}</option>`).join("")}</select></div>
     <div class="f"><label>Edit cost ($)</label><input id="pf-cost" type="number" min="0" step="25" value="${p.editCost??0}"><div class="hint">0 = in-house</div></div>
-    <div class="f span2"><label>Deliverables &amp; status</label><div id="pf-box"></div></div>
+    <div class="f span2"><label>Deliverables — name, status, own review link</label><div id="pf-box"></div></div>
     <div class="f"><label>Project price ($)</label><input id="pf-price" type="number" min="0" step="50" value="${price||""}" placeholder="2500"><div class="hint">split 50 / 50</div></div>
-    <div class="f"><label>Payments</label>
-      <label class="hint" style="display:flex;gap:7px;align-items:center;text-transform:none;letter-spacing:0;font-size:12px;color:var(--cream);margin-bottom:6px">
-        <input type="checkbox" id="pf-dep" ${p.depositPaid?"checked":""} style="width:auto">Deposit paid ($${half})</label>
-      <label class="hint" style="display:flex;gap:7px;align-items:center;text-transform:none;letter-spacing:0;font-size:12px;color:var(--cream)">
-        <input type="checkbox" id="pf-fin" ${p.finalPaid?"checked":""} style="width:auto">Final paid ($${price-half})</label></div>
-    <div class="f span2"><label>Frame.io review link</label><input id="pf-frame" value="${esc(p.frameUrl||"")}" placeholder="https://f.io/..."></div>
+    <div class="f"><label>Deposit ($${half})</label>
+      <div style="display:flex;gap:7px;align-items:center">
+        <input type="checkbox" id="pf-dep" ${p.depositPaid?"checked":""} style="width:auto;flex:none">
+        <input type="date" id="pf-dep-on" value="${esc(p.depositPaidOn||todayISO())}"></div>
+      <div class="hint">tick when paid — set the date it landed</div></div>
+    <div class="f"><label>Final ($${price-half})</label>
+      <div style="display:flex;gap:7px;align-items:center">
+        <input type="checkbox" id="pf-fin" ${p.finalPaid?"checked":""} style="width:auto;flex:none">
+        <input type="date" id="pf-fin-on" value="${esc(p.finalPaidOn||todayISO())}"></div></div>
+    <div class="f span2"><label>Frame.io link — whole project</label><input id="pf-frame" value="${esc(p.frameUrl||"")}" placeholder="https://f.io/..."><div class="hint">used for any deliverable without its own link</div></div>
     <div class="f span2"><label>Dropbox / raw footage link</label><input id="pf-raw" value="${esc(p.footageUrl||"")}" placeholder="https://dropbox.com/..."></div>
     <div class="f span2"><label>Note to client</label><input id="pf-note" value="${esc(p.note||"")}" placeholder="What's happening right now"></div>
     ${p.revisionNote?`<div class="f span2"><label>Client revision note (${esc(p.revisionAt||"")})</label>
@@ -896,7 +957,9 @@ function invoiceForm(id,preClient){
       <option value="due" ${!paid?"selected":""}>Due</option>
       <option value="paid" ${paid?"selected":""}>Paid</option></select></div>
     <div class="f"><label>Invoice date</label><input id="if-date" type="date" value="${v.dateISO||todayISO()}"></div>
-    <div class="f"><label>Due date</label><input id="if-due" type="date"></div>
+    <div class="f"><label>Due date</label><input id="if-due" type="date" value="${esc(v.dueISO||"")}"></div>
+    <div class="f span2"><label>Date paid</label><input id="if-paid" type="date" value="${esc(v.paidOnISO||todayISO())}">
+      <div class="hint">only used when status is Paid — this is what the revenue tracker counts</div></div>
     <div class="f span2"><label>PayPal link</label><input id="if-pay" value="${esc(v.pay||"")}" placeholder="paypal.me/you/500"></div>
   </div>
   <div class="actions">
@@ -914,9 +977,10 @@ function payableForm(id){
     <div class="f"><label>Editor</label><select id="yf-editor">${(eds.length?eds:["Pedro","Faizan"]).map(e=>`<option ${y.editor===e?"selected":""}>${esc(e)}</option>`).join("")}</select></div>
     <div class="f"><label>Amount ($)</label><input id="yf-amt" type="number" min="0" step="25" value="${y.amount||""}"></div>
     <div class="f span2"><label>What for</label><input id="yf-ref" value="${esc(y.ref||"")}" placeholder="NTH-02 — Vol. 2 (delivered Jun 30)"></div>
-    <div class="f span2"><label>Status</label><select id="yf-status">
+    <div class="f"><label>Status</label><select id="yf-status">
       <option value="owed" ${y.status==="owed"?"selected":""}>Owed now</option>
       <option value="paid" ${y.status==="paid"?"selected":""}>Paid</option></select></div>
+    <div class="f"><label>Date paid</label><input id="yf-date" type="date" value="${esc(y.paidOnISO||todayISO())}"></div>
   </div>
   <div class="actions">
     ${id?`<button class="btn ghost danger" data-del-payable="${esc(id)}">DELETE</button>`:""}
@@ -1025,6 +1089,59 @@ function slaChip(p){
   const over=d>SLA, warn=d>=5&&!over, c=over?T.red:warn?T.gold:T.muted;
   return `<span class="sla" style="color:${c};border:1px solid ${c}55;background:${c}12">${over?`⚠ DAY ${d} — OVER SLA`:`EDIT DAY ${d}/${SLA}`}</span>`;
 }
+const reviewLink=(p,pc)=>pc?.frameUrl||p.frameUrl||null;
+function pieceLinkForm(pid,i){
+  const p=byId(projects,pid)||{}; const pc=(p.pieces||[])[i]||{};
+  showModal(`<h3>Review Link — ${esc(pc.name||"")}</h3>
+  <div class="f-grid"><div class="f"><label>${esc(p.title||"")}</label>
+    <input id="pl-url" value="${esc(pc.frameUrl||"")}" placeholder="https://f.io/... for this piece only">
+    <div class="hint">${p.frameUrl?`falls back to the project link (${esc(p.frameUrl)}) when empty`:"leave empty to use the project-wide link"}</div></div></div>
+  <div class="actions"><button class="btn ghost" data-close="1">CANCEL</button>
+    <button class="btn gold" data-save-plink="${esc(pid)}:${i}">SAVE LINK</button></div>`);
+}
+async function savePieceLink(pid,i){
+  const p=byId(projects,pid); if(!p) return;
+  let u=fv("pl-url"); if(u&&!/^https?:/.test(u)) u="https://"+u;
+  const pieces=(p.pieces||[]).map((x,ix)=>ix===i?{...x,frameUrl:u||null}:x);
+  await guard(()=>updateDoc(doc(db,"projects",pid),{pieces}),"Review link saved");
+  closeModal();
+}
+/* anything on a project card can be changed without opening the form */
+async function setStage(pid,v){
+  const p=byId(projects,pid); if(!p) return;
+  const patch={stage:+v};
+  if(+v>=2 && !p.editStart) patch.editStart=todayISO();
+  await guard(()=>updateDoc(doc(db,"projects",pid),patch),STAGES[+v]);
+  if(+v===4) logActivity(p.clientId,`${p.title} delivered`);
+}
+async function setDue(pid,v){
+  await guard(()=>updateDoc(doc(db,"projects",pid),{dueISO:v||null,due:v?isoShort(v):""}),
+    v?`Due ${isoShort(v)}`:"Due date cleared");
+}
+async function setEditorOn(pid,v){
+  const p=byId(projects,pid); if(!p) return;
+  await guard(()=>updateDoc(doc(db,"projects",pid),{editor:v}),`Assigned to ${v}`);
+  if(v&&v!=="Cody"&&v!==p.editor){
+    const ph=editorPhone(v);
+    if(ph) sendSMS("editor",`New assignment — ${p.title} (${clientName(p.clientId)}), due ${p.due||""}. Details in the portal.`,ph);
+  }
+}
+function inlineEdit(p){
+  const eds=["Cody",...editorNames()];
+  return `<div class="inline-edit">
+    <span class="lbl">Stage</span>
+    <select class="sel" data-pstage="${esc(p.id)}">${STAGES.map((st,i)=>
+      `<option value="${i}" ${(+p.stage||0)===i?"selected":""}>${st}</option>`).join("")}</select>
+    <span class="lbl">Editor</span>
+    <select class="sel" data-peditor="${esc(p.id)}">${eds.map(e=>
+      `<option ${p.editor===e?"selected":""}>${esc(e)}</option>`).join("")}</select>
+    <span class="lbl">Due</span>
+    <input class="sel" type="date" data-pdue="${esc(p.id)}" value="${esc(p.dueISO||"")}">
+    <span class="lbl">Type</span>
+    <select class="sel" data-ptype="${esc(p.id)}">${TYPES.map(t=>
+      `<option ${p.type===t?"selected":""}>${t}</option>`).join("")}</select>
+  </div>`;
+}
 function delivRows(p,editable){
   const list=p.pieces||[];
   return list.map((pc,i)=>{
@@ -1036,10 +1153,14 @@ function delivRows(p,editable){
         <span style="font-size:13px;font-weight:600;color:${pc.status==="done"?"var(--muted)":"var(--cream)"}">${esc(pc.name)}</span>
         ${ok?`<span class="done-note" style="font-size:10px">&#10003; APPROVED</span>`:""}
       </div>
+      <div class="deliv-acts">
       ${editable
         ? `<select class="sel" data-pstatus="${esc(p.id)}:${i}" style="color:${c}">${PIECE_ORDER.map(st=>
-            `<option value="${st}" ${pc.status===st?"selected":""}>${PIECE_LABEL[st]}</option>`).join("")}</select>`
+            `<option value="${st}" ${pc.status===st?"selected":""}>${PIECE_LABEL[st]}</option>`).join("")}</select>
+           <button class="btn ${pc.frameUrl?"outline":"ghost"} mini" data-plink="${esc(p.id)}:${i}">${pc.frameUrl?"FRAME LINK":"+ FRAME"}</button>`
         : `<span class="chip" style="color:${pc.status==="queued"?T.dim:c};border:1px solid ${c}55;background:${c}10">${PIECE_LABEL[pc.status]}</span>`}
+      ${reviewLink(p,pc)?`<a class="btn outline mini link" href="${esc(reviewLink(p,pc))}" target="_blank" rel="noopener">REVIEW &#8599;</a>`:""}
+      </div>
     </div>`;}).join("");
 }
 function payBar(p){
@@ -1049,8 +1170,8 @@ function payBar(p){
   const h=halfOf(p);
   return `<div class="paybar">
     <span class="lbl">${money(price)} &middot; collected ${money(collected(p))}${projOutstanding(p)?` &middot; open ${money(projOutstanding(p))}`:""}</span>
-    <button class="btn ${p.depositPaid?"paid-on":"ghost"} mini" data-pay="${esc(p.id)}:deposit">${p.depositPaid?"&#10003; ":""}DEPOSIT ${money(h)}</button>
-    <button class="btn ${p.finalPaid?"paid-on":"ghost"} mini" data-pay="${esc(p.id)}:final">${p.finalPaid?"&#10003; ":""}FINAL ${money(price-h)}</button>
+    <button class="btn ${p.depositPaid?"paid-on":"ghost"} mini" data-paydate="${esc(p.id)}:deposit">${p.depositPaid?`&#10003; DEPOSIT ${money(h)} &middot; ${esc(isoShort(p.depositPaidOn)||"")}`:`DEPOSIT ${money(h)}`}</button>
+    <button class="btn ${p.finalPaid?"paid-on":"ghost"} mini" data-paydate="${esc(p.id)}:final">${p.finalPaid?`&#10003; FINAL ${money(price-h)} &middot; ${esc(isoShort(p.finalPaidOn)||"")}`:`FINAL ${money(price-h)}`}</button>
   </div>`;
 }
 function projectCard(p,owner){
@@ -1068,6 +1189,7 @@ function projectCard(p,owner){
           ${rev?`<span class="sla" style="color:${T.red};border:1px solid ${T.red}55;background:${T.red}12">CLIENT REVISIONS</span>`:""}</div>
       </div>
       ${pips(p.stage)}
+      ${owner?inlineEdit(p):""}
       <div style="margin:10px 0 2px">${delivRows(p,owner)}</div>
       ${rev&&p.revisionNote?`<div style="font-size:12.5px;color:${T.red};margin-bottom:6px">&ldquo;${esc(p.revisionNote)}&rdquo;</div>`:""}
       <div class="card-note">${esc(p.note||"")}</div>${internal}
@@ -1088,9 +1210,16 @@ function clientView(cid){
   if(!c) return `<div class="panel"><div class="empty-state"><div class="t">Nothing here yet</div>
     <div class="s">Your projects will show up here as soon as they're set up.</div></div></div>`;
   const mine=projectsOf(cid), inv=invoicesOf(cid);
-  const billed=inv.reduce((s,i)=>s+(+i.amount||0),0);
-  const paidT=inv.filter(i=>i.status==="Paid").reduce((s,i)=>s+(+i.amount||0),0);
+  const projBilled=mine.reduce((s,p)=>s+(+p.cost||0),0);
+  const projPaid=mine.reduce((s,p)=>s+collected(p),0);
+  const billed=inv.reduce((s,i)=>s+(+i.amount||0),0)+projBilled;
+  const paidT=inv.filter(i=>i.status==="Paid").reduce((s,i)=>s+(+i.amount||0),0)+projPaid;
   const due=billed-paidT, paidPct=billed?Math.round(paidT/billed*100):100;
+  const payRows=mine.filter(p=>+p.cost).map(p=>{
+    const h=halfOf(p), rest=(+p.cost||0)-h;
+    return [{lbl:`${p.title} — deposit`,amt:h,ok:p.depositPaid,on:p.depositPaidOn},
+            {lbl:`${p.title} — final payment`,amt:rest,ok:p.finalPaid,on:p.finalPaidOn}];
+  }).flat();
 
   const waiting=[];
   mine.forEach(p=>(p.pieces||[]).forEach((pc,i)=>{ if(pc.status==="review") waiting.push({p,pc,i}); }));
@@ -1103,7 +1232,7 @@ function clientView(cid){
         <div><div style="font-size:14px;font-weight:700">${esc(pc.name)}</div>
           <div class="inv-meta" style="margin-top:2px">${esc(p.title)}</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          ${p.frameUrl?`<a class="btn outline link" href="${esc(p.frameUrl)}" target="_blank" rel="noopener">OPEN IN FRAME.IO ↗</a>`:""}
+          ${reviewLink(p,pc)?`<a class="btn outline link" href="${esc(reviewLink(p,pc))}" target="_blank" rel="noopener">OPEN IN FRAME.IO ↗</a>`:""}
           ${ok?`<span class="done-note">&#10003; APPROVED</span>`
               :`<button class="btn ghost" style="border-color:rgba(240,85,107,.45);color:var(--red)" data-revform="${esc(p.id)}:${i}">REVISIONS NEEDED</button>
                 <button class="btn gold" data-approve="${esc(p.id)}:${i}">APPROVE</button>`}
@@ -1130,6 +1259,10 @@ function clientView(cid){
       </div>
       <div class="bal-bar"><i style="width:${paidPct}%"></i></div>
       <div class="inv-meta" style="margin-bottom:8px">${paidPct}% of billed total paid</div>
+      ${payRows.map(r=>`<div class="list-row">
+        <div><div class="inv-label">${esc(r.lbl)}</div><div class="inv-meta">${r.ok?`paid ${esc(isoShort(r.on)||"")}`:"not yet paid"}</div></div>
+        <div style="display:flex;align-items:center;gap:10px"><span class="amount">${money(r.amt)}</span>
+        <span class="tag ${r.ok?"paid":"due-t"}">${r.ok?"PAID":"DUE"}</span></div></div>`).join("")}
       ${inv.length?inv.map(i=>`<div class="list-row">
         <div><div class="inv-label">${esc(i.label)}</div><div class="inv-meta">${esc(i.date||"")}</div></div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="amount">${money(i.amount)}</span>
@@ -1164,8 +1297,12 @@ function editorView(name){
             <span class="piece-name" style="color:${pc.status==="done"?"var(--muted)":"var(--cream)"}">${esc(pc.name)}</span>
             <span class="piece-status" style="color:${pc.status==="queued"?T.dim:c}">${PIECE_LABEL[pc.status]}</span>
           </div>
-          <select class="sel" data-pstatus="${esc(j.id)}:${i}" style="color:${c}">${PIECE_ORDER.map(st=>
-            `<option value="${st}" ${pc.status===st?"selected":""}>${PIECE_LABEL[st]}</option>`).join("")}</select>
+          <div class="deliv-acts">
+            <select class="sel" data-pstatus="${esc(j.id)}:${i}" style="color:${c}">${PIECE_ORDER.map(st=>
+              `<option value="${st}" ${pc.status===st?"selected":""}>${PIECE_LABEL[st]}</option>`).join("")}</select>
+            <button class="btn ${pc.frameUrl?"outline":"ghost"} mini" data-plink="${esc(j.id)}:${i}">${pc.frameUrl?"FRAME LINK":"+ FRAME"}</button>
+            ${reviewLink(j,pc)?`<a class="btn outline mini link" href="${esc(reviewLink(j,pc))}" target="_blank" rel="noopener">REVIEW &#8599;</a>`:""}
+          </div>
         </div>`;}).join("")+`</div>`;
       const cl=byId(clients,j.clientId);
       return `<div class="card" style="display:grid;gap:12px">
@@ -1213,11 +1350,14 @@ function ownerView(){
   const thisMonth=new Date().toISOString().slice(0,7);
   const lastMonth=(()=>{const d=new Date();d.setMonth(d.getMonth()-1);return d.toISOString().slice(0,7);})();
   const sumMonth=m=>invoices.filter(i=>(i.dateISO||"").startsWith(m)).reduce((s,i)=>s+(+i.amount||0),0);
-  const outst=invoices.filter(i=>i.status!=="Paid").reduce((s,i)=>s+(+i.amount||0),0);
+  const outstInv=invoices.filter(i=>i.status!=="Paid").reduce((s,i)=>s+(+i.amount||0),0);
   const apOwed=payables.filter(p=>p.status==="owed").reduce((s,p)=>s+(+p.amount||0),0);
   const onDel=open.reduce((s,p)=>s+(+p.editCost||0),0);
   const risk=projects.filter(p=>p.editStart&&p.stage>=2&&pct(p)<100&&daysIn(p.editStart)>=5).length;
   const projDue=projects.reduce((s,p)=>s+projOutstanding(p),0);
+  const outst=outstInv+projDue;
+  const pays=payments();
+  const recentPays=pays.slice(0,10);
   const revs=projects.filter(needsRev);
 
   if(!clients.length){
@@ -1272,12 +1412,14 @@ function ownerView(){
     </div></div>
   <div class="stats">
     ${stat("OPEN PROJECTS",open.length)}
+    ${stat("COLLECTED THIS MONTH",money(collectedMonth(thisMonth)),T.green)}
+    ${stat("COLLECTED LAST MONTH",money(collectedMonth(lastMonth)),T.dim)}
     ${stat("BILLED THIS MONTH",money(sumMonth(thisMonth)),T.gold)}
-    ${stat("BILLED LAST MONTH",money(sumMonth(lastMonth)),T.dim)}
     ${stat("OUTSTANDING (A/R)",money(outst),outst?T.gold:T.green)}
     ${stat("ACCOUNTS PAYABLE",money(apOwed),apOwed?T.red:T.green)}
     ${stat("SLA WATCH (DAY 5+)",risk,risk?T.red:T.green)}
     ${stat("PROJECT $ UNCOLLECTED",money(projDue),projDue?T.gold:T.green)}
+    ${stat("INVOICES UNPAID",money(outstInv),outstInv?T.gold:T.green)}
   </div>
   <div class="two-col">
     <section class="panel"><div class="eyebrow">Delivery Radar</div>${radar}</section>
@@ -1289,6 +1431,17 @@ function ownerView(){
         <span class="amount" style="color:var(--gold);font-weight:600">${money(apOwed+onDel)}</span></div>
     </section>
   </div>
+
+  <section class="panel"><div class="eyebrow">Payments In — ${money(collectedMonth(thisMonth))} this month</div>
+    ${recentPays.length?recentPays.map(x=>`<div class="list-row">
+      <div><div class="inv-label">${esc(x.label)}</div>
+        <div class="inv-meta">${esc(clientName(x.clientId))} &middot; ${esc(isoShort(x.when)||x.when||"")} &middot; ${x.kind==="project"?"project payment":"invoice"}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn ghost mini" ${x.kind==="project"
+          ?`data-paydate="${esc(x.pid)}:${x.which}"`:`data-form="invoice" data-id="${esc(x.pid)}"`}>DATE</button>
+        <span class="amount" style="color:var(--green)">${money(x.amount)}</span></div></div>`).join("")
+      :`<div style="font-size:13px;color:var(--dim)">Nothing collected yet. Mark a deposit or final paid on a project card, or set an invoice to Paid.</div>`}
+  </section>
 
   <section class="panel"><div class="eyebrow">Client Database
     <span class="spacer"></span><button class="btn outline mini" data-form="client">+ ADD CLIENT</button></div>
@@ -1419,7 +1572,7 @@ function paint(){
 
 /* ── events ── */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-save-sms],[data-sms-test]");
+  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test]");
   if(!t) return;
   const d=t.dataset;
   if(d.close!==undefined){ if(t===e.target||t.tagName==="BUTTON") closeModal(); return; }
@@ -1433,8 +1586,12 @@ document.addEventListener("click",e=>{
   if(d.approve){ const [id,i]=d.approve.split(":"); approvePiece(id,+i); return; }
   if(d.pfAdd){ pfSync(); PF.push({name:"",status:"queued"}); pfRender(); return; }
   if(d.pfDel!==undefined){ pfSync(); PF.splice(+d.pfDel,1); if(!PF.length) PF.push({name:"",status:"queued"}); pfRender(); return; }
-  if(d.pay){ const [id,w]=d.pay.split(":"); togglePay(id,w); return; }
+  if(d.paydate){ const [id,w]=d.paydate.split(":"); return payDateForm(id,w); }
+  if(d.savePay){ const [id,w]=d.savePay.split(":"); return savePayDate(id,w); }
+  if(d.clearPay){ const [id,w]=d.clearPay.split(":"); return clearPay(id,w); }
   if(d.link){ const [id,k]=d.link.split(":"); return linkForm(id,k); }
+  if(d.plink){ const [id,i]=d.plink.split(":"); return pieceLinkForm(id,+i); }
+  if(d.savePlink){ const [id,i]=d.savePlink.split(":"); return savePieceLink(id,+i); }
   if(d.saveLink){ const [id,k]=d.saveLink.split(":"); return saveLink(id,k); }
   if(d.revform){ const [id,i]=d.revform.split(":"); return revisionForm(id,+i); }
   if(d.saveRev){ const [id,i]=d.saveRev.split(":"); return requestRevision(id,+i); }
@@ -1460,8 +1617,12 @@ document.addEventListener("click",e=>{
 document.addEventListener("change",e=>{
   if(e.target.id==="cSel"){ previewClient=e.target.value; paint(); }
   if(e.target.id==="eSel"){ previewEditor=e.target.value; paint(); }
-  const ps=e.target.dataset?.pstatus;
-  if(ps){ const [id,i]=ps.split(":"); setPieceStatus(id,+i,e.target.value); }
+  const ds=e.target.dataset||{};
+  if(ds.pstatus){ const [id,i]=ds.pstatus.split(":"); setPieceStatus(id,+i,e.target.value); }
+  if(ds.pstage)  setStage(ds.pstage,e.target.value);
+  if(ds.pdue)    setDue(ds.pdue,e.target.value);
+  if(ds.peditor) setEditorOn(ds.peditor,e.target.value);
+  if(ds.ptype)   guard(()=>updateDoc(doc(db,"projects",ds.ptype),{type:e.target.value}),e.target.value);
   if(e.target.id==="pf-price"){
     const v=+e.target.value||0, h=Math.round(v/2);
     const box=e.target.closest(".f-grid");

@@ -42,9 +42,9 @@ service cloud.firestore {
         // editor may only move piece status along
         || (hasProfile() && resource.data.editor == myEditor()
             && changedOnly(['pieces','editStart']))
-        // client may only mark approvals
+        // client may only approve or ask for revisions
         || (hasProfile() && resource.data.clientId == myClient()
-            && changedOnly(['approvals']));
+            && changedOnly(['approvals','pieces','revisionNote','revisionAt']));
     }
 
     // money: owner writes, client reads only their own invoices
@@ -64,6 +64,16 @@ service cloud.firestore {
       allow read:   if isOwner() || (hasProfile() && resource.data.clientId == myClient());
       allow create: if hasProfile();
       allow update, delete: if isOwner();
+    }
+
+    // SMS endpoint: everyone signed in needs the URL to fire an alert
+    match /config/public {
+      allow read:  if hasProfile();
+      allow write: if isOwner();
+    }
+    // real phone numbers: owner only
+    match /config/sms {
+      allow read, write: if isOwner();
     }
 
     // nothing else is reachable
