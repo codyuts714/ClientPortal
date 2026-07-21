@@ -254,6 +254,26 @@ main.wide{max-width:1520px}
   padding:2px 4px;border-radius:3px;background:rgba(242,201,76,.16);color:var(--gold);
   border:1px solid rgba(242,201,76,.3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cal-post.done{background:rgba(111,200,232,.14);color:#6fc8e8;border-color:rgba(111,200,232,.35)}
+.cal-post.rule{border-style:dashed}
+.cal-post.rule.done{border-style:solid}
+.rulebar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px}
+.rulechip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;
+  letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border-radius:20px;
+  border:1px dashed rgba(242,201,76,.45);color:var(--gold-soft);background:rgba(242,201,76,.07)}
+.rulechip button{background:none;border:none;color:var(--dim);cursor:pointer;font-size:11px;padding:0;line-height:1}
+.rulechip button:hover{color:var(--red)}
+.retbadge{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
+  text-transform:uppercase;padding:2px 7px;border-radius:20px;margin-left:7px;
+  border:1px solid rgba(242,201,76,.45);color:var(--gold);background:rgba(242,201,76,.1)}
+.retboxsm{border:1px solid rgba(242,201,76,.3);background:rgba(242,201,76,.06);border-radius:10px;
+  padding:10px 12px;margin:0 0 13px}
+.retboxsm .rt{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.retboxsm .rl{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--gold-soft);text-transform:uppercase}
+.retboxsm .rv{font-family:var(--mono);font-size:17px;font-weight:600;color:var(--gold)}
+.retboxsm ul{margin:7px 0 0;padding-left:16px;font-size:12.5px;color:var(--muted);line-height:1.65}
+.addonrow{display:flex;gap:7px;align-items:center;margin-bottom:6px}
+.addonrow input[type=text]{flex:1;min-width:90px}
+.addonrow input[type=number]{width:100px;flex:none}
 .cal-foot{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:9px}
 .socialtoggle{display:flex;align-items:center;gap:9px;padding:11px 13px;border:1px solid var(--line-soft);
   border-radius:10px;margin-bottom:13px;cursor:pointer}
@@ -1755,8 +1775,13 @@ function pct(p){
 }
 /* 50% deposit / 50% final */
 const halfOf=p=>Math.round((+p.cost||0)/2);
-const collected=p=>(p.depositPaid?halfOf(p):0)+(p.finalPaid?((+p.cost||0)-halfOf(p)):0);
-const projOutstanding=p=>(+p.cost||0)-collected(p);
+/* add-ons: extra charges logged mid-project — they sit on top of the 50/50 base */
+const addonsOf=p=>(p&&p.addons)||[];
+const addonTotal=p=>addonsOf(p).reduce((s,a)=>s+(+a.amount||0),0);
+const addonPaid=p=>addonsOf(p).filter(a=>a.paid).reduce((s,a)=>s+(+a.amount||0),0);
+const projTotal=p=>(+p.cost||0)+addonTotal(p);
+const collected=p=>(p.depositPaid?halfOf(p):0)+(p.finalPaid?((+p.cost||0)-halfOf(p)):0)+addonPaid(p);
+const projOutstanding=p=>projTotal(p)-collected(p);
 const needsRev=p=>(p.pieces||[]).some(x=>x.status==="revisions");
 /* every payment, from either source, with the date it actually landed */
 function payments(){
@@ -1767,6 +1792,13 @@ function payments(){
       label:`${p.title} — deposit`,clientId:p.clientId,kind:"project",pid:p.id,which:"deposit"});
     if(p.finalPaid)   out.push({when:p.finalPaidOn||p.dueISO||todayISO(),amount:price-h,
       label:`${p.title} — final`,clientId:p.clientId,kind:"project",pid:p.id,which:"final"});
+  });
+  /* add-ons live outside the deposit/final split, so they're counted on their own */
+  projects.forEach(p=>{
+    addonsOf(p).forEach((a,i)=>{ if(!a.paid) return;
+      out.push({when:a.paidOn||a.addedOn||p.dueISO||todayISO(),amount:+a.amount||0,
+        label:`${p.title} — ${a.label||"add-on"}`,clientId:p.clientId,
+        kind:"addon",pid:p.id,which:"addon:"+i}); });
   });
   invoices.filter(i=>i.status==="Paid").forEach(i=>out.push(
     {when:i.paidOnISO||i.dateISO||todayISO(),amount:+i.amount||0,
@@ -2035,8 +2067,16 @@ async function saveLink(pid,kind){
 
 async function saveClient(id){
   const name=fv("cf-name"); if(!name) return toast("Name required");
+  const on=document.getElementById("cf-isret")?.checked||false;
+  riSync();
+  const items=RI.filter(x=>(x.name||"").trim())
+                .map(x=>({name:x.name.trim(),qty:(x.qty||"").trim()}));
   const data={name,company:fv("cf-co"),contact:fv("cf-contact"),
-              retainer:fv("cf-ret"),assetsUrl:fv("cf-assets")};
+              retainer:fv("cf-ret"),assetsUrl:fv("cf-assets"),
+              isRetainer:on,
+              retainerValue:on?(+fv("cf-retval")||0):0,
+              retainerItems:on?items:[],
+              retainerDay:on?Math.min(28,Math.max(1,+fv("cf-retday")||1)):null};
   await guard(async()=>{
     if(id) await updateDoc(doc(db,"clients",id),data);
     else{ const r=await addDoc(collection(db,"clients"),data);
@@ -2156,21 +2196,67 @@ function showModal(html){
 }
 const clientOpts=sel=>clients.map(c=>`<option value="${esc(c.id)}" ${sel===c.id?"selected":""}>${esc(c.name)}</option>`).join("");
 
+/* ── retainer helpers ── */
+const isRetainer=c=>!!(c&&c.isRetainer);
+const retainerValue=c=>isRetainer(c)?(+c.retainerValue||0):0;
+const retainerClients=()=>clients.filter(isRetainer);
+const monthlyRetainerTotal=()=>retainerClients().reduce((s,c)=>s+retainerValue(c),0);
+const retainerOf=pid=>{ const p=byId(projects,pid); const c=p?byId(clients,p.clientId):null;
+  return isRetainer(c)?c:null; };
+
+let RI=[];
+function riSync(){
+  RI=RI.map((x,i)=>({
+    name:document.getElementById("ri-n"+i)?.value ?? x.name,
+    qty: document.getElementById("ri-q"+i)?.value ?? x.qty}));
+}
+function riRender(){
+  const box=document.getElementById("ri-box"); if(!box) return;
+  box.innerHTML=RI.map((it,i)=>`<div class="addonrow">
+      <input type="text" id="ri-n${i}" value="${esc(it.name||"")}" placeholder="4 Reels / month">
+      <input type="text" id="ri-q${i}" value="${esc(it.qty||"")}" placeholder="qty or note" style="width:120px;flex:none">
+      <button class="btn ghost mini" data-ri-del="${i}" title="remove">&#10005;</button>
+    </div>`).join("")
+    +`<button class="btn outline mini" data-ri-add="1">+ ADD LINE ITEM</button>`;
+}
+function riToggle(){
+  const on=document.getElementById("cf-isret")?.checked;
+  const box=document.getElementById("cf-retwrap");
+  if(box) box.style.display=on?"":"none";
+}
+
 function clientForm(id){
   const c=id?byId(clients,id)||{}:{};
+  RI=(c.retainerItems&&c.retainerItems.length?c.retainerItems:[{name:"",qty:""}])
+      .map(x=>({name:x.name||"",qty:x.qty||""}));
   showModal(`<h3>${id?"Edit Client":"Add Client"}</h3>
   <div class="f-grid">
     <div class="f"><label>Client name</label><input id="cf-name" value="${esc(c.name||"")}" placeholder="First Last"></div>
     <div class="f"><label>Company</label><input id="cf-co" value="${esc(c.company||"")}" placeholder="Company / brand"></div>
     <div class="f"><label>Contact</label><input id="cf-contact" value="${esc(c.contact||"")}" placeholder="phone or email"></div>
-    <div class="f"><label>Retainer / package</label><input id="cf-ret" value="${esc(c.retainer||"")}" placeholder="$2,500/mo — 4 videos"></div>
     <div class="f"><label>Brand assets link</label><input id="cf-assets" value="${esc(c.assetsUrl||"")}" placeholder="Dropbox / Drive URL"></div>
+    <div class="f"><label>Retainer</label>
+      <label class="socialtoggle" style="margin:0">
+        <input type="checkbox" id="cf-isret" data-retoggle="1" ${isRetainer(c)?"checked":""}>
+        <span><span class="st-l">This is a retainer client</span><br>
+          <span class="st-s">counts toward monthly retainer held on the Studio dashboard</span></span></label></div>
+    <div id="cf-retwrap" style="display:${isRetainer(c)?"":"none"}">
+      <div class="f"><label>Monthly retainer value ($)</label>
+        <input id="cf-retval" type="number" min="0" step="50" value="${c.retainerValue??""}" placeholder="2500">
+        <div class="hint">what they pay you every month</div></div>
+      <div class="f"><label>What the retainer covers — line items</label><div id="ri-box"></div></div>
+      <div class="f"><label>Billing day of month</label>
+        <input id="cf-retday" type="number" min="1" max="28" value="${c.retainerDay??1}">
+        <div class="hint">just a reminder — used on the retainer tracker</div></div>
+    </div>
+    <div class="f"><label>Notes / package summary</label><input id="cf-ret" value="${esc(c.retainer||"")}" placeholder="Anything else worth remembering"></div>
   </div>
   <div class="actions">
     ${id?`<button class="btn ghost danger" data-del-client="${esc(id)}">DELETE</button>`:""}
     <button class="btn ghost" data-close="1">CANCEL</button>
     <button class="btn gold" data-save-client="${esc(id||"")}">${id?"SAVE":"ADD CLIENT"}</button>
   </div>`);
+  riRender();
 }
 
 let PF=[], PF_SOCIAL=false;
@@ -2469,13 +2555,84 @@ function delivRows(p,editable){
       </div>
     </div>`;}).join("");
 }
+/* ═══════════ ADD-ONS / EXTRA CHARGES ═══════════
+   Anything that shows up mid-project — extra shoot day, rush fee, extra cut.
+   Kept separate from the 50/50 base so the base split stays clean. */
+function addonPanel(p){
+  const list=addonsOf(p);
+  const tot=addonTotal(p), pd=addonPaid(p), open=tot-pd;
+  const rows=list.map((a,i)=>`<div class="list-row">
+    <div><div class="inv-label">${esc(a.label||"Add-on")}</div>
+      <div class="inv-meta">${esc(a.note||"")}${a.note&&a.addedOn?" · ":""}${a.addedOn?`added ${esc(isoShort(a.addedOn))}`:""}${a.paid&&a.paidOn?` · paid ${esc(isoShort(a.paidOn))}`:""}</div></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="amount">${money(a.amount)}</span>
+      <button class="btn ${a.paid?"paid-on":"ghost"} mini" data-addon-paid="${esc(p.id)}:${i}">${a.paid?"&#10003; PAID":"MARK PAID"}</button>
+      <button class="btn ghost mini" data-addon-del="${esc(p.id)}:${i}" title="remove">&#10005;</button>
+    </div></div>`).join("");
+  return `<div class="socialbox">
+    <div class="eyebrow">Add-ons &amp; Extra Charges
+      <span class="spacer"></span>
+      <button class="btn outline mini" data-addon-form="${esc(p.id)}">+ ADD CHARGE</button></div>
+    ${rows||`<div style="font-size:13px;color:var(--dim);padding:4px 0">Nothing extra on this one yet. Log rush fees, extra shoot days, or added cuts here and they roll into the project total.</div>`}
+    ${list.length?`<div class="list-row" style="border-top:1px solid rgba(232,181,66,.27)">
+      <span style="font-family:var(--mono);font-size:11px;color:var(--gold-soft);letter-spacing:.1em">ADD-ONS TOTAL</span>
+      <span class="amount" style="color:var(--gold);font-weight:600">${money(tot)}${open?` · ${money(open)} open`:" · all collected"}</span></div>`:""}
+  </div>`;
+}
+function addonForm(pid){
+  showModal(`<h3>Add a charge</h3>
+  <div class="f-grid cols">
+    <div class="f span2"><label>What is it</label>
+      <input id="ad-label" placeholder="Extra shoot day, rush delivery, 2 more cuts..."></div>
+    <div class="f"><label>Amount ($)</label><input id="ad-amt" type="number" min="0" step="25" placeholder="500"></div>
+    <div class="f"><label>Date added</label><input id="ad-on" type="date" value="${todayISO()}"></div>
+    <div class="f span2"><label>Note (optional)</label>
+      <input id="ad-note" placeholder="Approved over text 7/14"></div>
+    <div class="f span2"><label class="socialtoggle" style="margin:0">
+      <input type="checkbox" id="ad-paid">
+      <span><span class="st-l">Already collected</span><br>
+        <span class="st-s">tick this and it lands in Payments In right away</span></span></label></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn ghost" data-backto="${esc(pid)}">CANCEL</button>
+    <button class="btn gold" data-addon-save="${esc(pid)}">ADD CHARGE</button>
+  </div>`);
+}
+async function saveAddon(pid){
+  const p=byId(projects,pid); if(!p) return;
+  const label=fv("ad-label"); const amount=+fv("ad-amt")||0;
+  if(!label) return toast("Give it a name");
+  const paid=document.getElementById("ad-paid")?.checked||false;
+  const addons=[...addonsOf(p),{label,amount,note:fv("ad-note")||null,
+    addedOn:fv("ad-on")||todayISO(),paid,paidOn:paid?(fv("ad-on")||todayISO()):null}];
+  await guard(()=>updateDoc(doc(db,"projects",pid),{addons}),`${label} — ${money(amount)}`);
+  logActivity(p.clientId,`${label} added to ${p.title}`);
+  projectDetail(pid);
+}
+async function toggleAddonPaid(pid,i){
+  const p=byId(projects,pid); if(!p) return;
+  const addons=[...addonsOf(p)]; const a=addons[i]; if(!a) return;
+  addons[i]={...a,paid:!a.paid,paidOn:!a.paid?todayISO():null};
+  await guard(()=>updateDoc(doc(db,"projects",pid),{addons}),
+    addons[i].paid?`${a.label} collected`:`${a.label} back to open`);
+}
+async function removeAddon(pid,i){
+  const p=byId(projects,pid); if(!p) return;
+  const addons=[...addonsOf(p)]; if(!addons[i]) return;
+  addons.splice(i,1);
+  await guard(()=>updateDoc(doc(db,"projects",pid),{addons}),"Charge removed");
+}
+
 function payBar(p){
   const price=+p.cost||0;
-  if(!price) return `<div class="paybar"><span class="lbl">no price set</span>
+  if(!price) return `<div class="paybar">
+    <span class="lbl">${addonTotal(p)
+      ?`no base price &middot; ${money(addonTotal(p))} in add-ons &middot; collected ${money(addonPaid(p))}`
+      :"no price set"}</span>
     <button class="btn ghost mini" data-form="project" data-id="${esc(p.id)}">ADD PRICE</button></div>`;
-  const h=halfOf(p);
+  const h=halfOf(p), ad=addonTotal(p);
   return `<div class="paybar">
-    <span class="lbl">${money(price)} &middot; collected ${money(collected(p))}${projOutstanding(p)?` &middot; open ${money(projOutstanding(p))}`:""}</span>
+    <span class="lbl">${money(price)}${ad?` + ${money(ad)} add-ons = ${money(projTotal(p))}`:""} &middot; collected ${money(collected(p))}${projOutstanding(p)?` &middot; open ${money(projOutstanding(p))}`:""}</span>
     <button class="btn ${p.depositPaid?"paid-on":"ghost"} mini" data-paydate="${esc(p.id)}:deposit">${p.depositPaid?`&#10003; DEPOSIT ${money(h)} &middot; ${esc(isoShort(p.depositPaidOn)||"")}`:`DEPOSIT ${money(h)}`}</button>
     <button class="btn ${p.finalPaid?"paid-on":"ghost"} mini" data-paydate="${esc(p.id)}:final">${p.finalPaid?`&#10003; FINAL ${money(price-h)} &middot; ${esc(isoShort(p.finalPaidOn)||"")}`:`FINAL ${money(price-h)}`}</button>
   </div>`;
@@ -2517,15 +2674,17 @@ function clientView(cid){
   if(!c) return `<div class="panel"><div class="empty-state"><div class="t">Nothing here yet</div>
     <div class="s">Your projects will show up here as soon as they're set up.</div></div></div>`;
   const mine=projectsOf(cid), inv=invoicesOf(cid);
-  const projBilled=mine.reduce((s,p)=>s+(+p.cost||0),0);
+  const projBilled=mine.reduce((s,p)=>s+projTotal(p),0);
   const projPaid=mine.reduce((s,p)=>s+collected(p),0);
   const billed=inv.reduce((s,i)=>s+(+i.amount||0),0)+projBilled;
   const paidT=inv.filter(i=>i.status==="Paid").reduce((s,i)=>s+(+i.amount||0),0)+projPaid;
   const due=billed-paidT, paidPct=billed?Math.round(paidT/billed*100):100;
-  const payRows=mine.filter(p=>+p.cost).map(p=>{
+  const payRows=mine.filter(p=>+p.cost||addonTotal(p)).map(p=>{
     const h=halfOf(p), rest=(+p.cost||0)-h;
     return [{lbl:`${p.title} — deposit`,amt:h,ok:p.depositPaid,on:p.depositPaidOn},
-            {lbl:`${p.title} — final payment`,amt:rest,ok:p.finalPaid,on:p.finalPaidOn}];
+            {lbl:`${p.title} — final payment`,amt:rest,ok:p.finalPaid,on:p.finalPaidOn},
+            ...addonsOf(p).map(a=>({lbl:`${p.title} — ${a.label||"add-on"}`,
+              amt:+a.amount||0,ok:!!a.paid,on:a.paidOn}))];
   }).flat();
 
   const waiting=[];
@@ -2811,25 +2970,73 @@ const shiftMonth=(m,n)=>{const d=new Date(m+"-01T00:00:00"); d.setMonth(d.getMon
   return d.toISOString().slice(0,7);};
 const postsOf=p=>(p.posts||[]).slice().sort((a,b)=>a.d<b.d?-1:1);
 
+/* ── recurring rules ──────────────────────────────────────────────
+   A rule like "Reels — every Tuesday" fills the whole calendar without
+   anything being written per day. Only the exceptions get stored:
+   postDone holds the ones you've ticked, postSkip the ones you deleted.
+   Key format is "YYYY-MM-DD|Type". */
+const DOW_FULL=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const DOW_SHORT=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const rulesOf=p=>(p&&p.postRules)||[];
+const ruleKey=(iso,type)=>`${iso}|${type}`;
+const monthDays=m=>{const f=new Date(m+"-01T00:00:00");
+  return new Date(f.getFullYear(),f.getMonth()+1,0).getDate();};
+
+/* every rule-generated post for one month, already merged with done/skip */
+function rulePosts(p,month){
+  const rules=rulesOf(p); if(!rules.length) return [];
+  const f=new Date(month+"-01T00:00:00");
+  const done=new Set(p.postDone||[]), skip=new Set(p.postSkip||[]);
+  const out=[];
+  for(let d=1;d<=monthDays(month);d++){
+    const iso=`${month}-${String(d).padStart(2,"0")}`;
+    const dow=new Date(f.getFullYear(),f.getMonth(),d).getDay();
+    rules.forEach(r=>{
+      if(dow!==+r.dow) return;
+      if(r.from&&iso<r.from) return;
+      if(r.until&&iso>r.until) return;
+      const k=ruleKey(iso,r.type);
+      if(skip.has(k)) return;
+      out.push({d:iso,type:r.type,posted:done.has(k),rule:true,key:k});
+    });
+  }
+  return out;
+}
+/* rule posts across a window — used by the alert digest */
+function rulePostsRange(p,fromISO,toISO){
+  const months=new Set([fromISO.slice(0,7),toISO.slice(0,7)]);
+  return [...months].flatMap(m=>rulePosts(p,m)).filter(x=>x.d>=fromISO&&x.d<=toISO);
+}
+
 function socialPanel(p){
   if(!p.social) return "";
-  const posts=postsOf(p), types=typesFor(p);
+  const posts=postsOf(p), types=typesFor(p), rules=rulesOf(p);
+  const virt=rulePosts(p,calMonth);
   const first=new Date(calMonth+"-01T00:00:00");
-  const pad=first.getDay(), days=new Date(first.getFullYear(),first.getMonth()+1,0).getDate();
+  const pad=first.getDay(), days=monthDays(calMonth);
   const cells=[];
   for(let i=0;i<pad;i++) cells.push(`<div class="cal-cell empty"></div>`);
   for(let d=1;d<=days;d++){
     const iso=`${calMonth}-${String(d).padStart(2,"0")}`;
     const mine=posts.filter(x=>x.d===iso);
+    const vs=virt.filter(x=>x.d===iso);
     const isToday=iso===todayISO();
     cells.push(`<div class="cal-cell${isToday?" today":""}" data-calday="${esc(p.id)}:${iso}">
       <span class="cal-n">${d}</span>
       ${mine.map((x,i)=>`<span class="cal-post${x.posted?" done":""}"
         data-calchip="${esc(p.id)}:${iso}:${i}" title="${x.posted?"Posted":"Scheduled"} — click to toggle">
         ${esc(x.type)}${x.posted?" ✓":""}</span>`).join("")}
+      ${vs.map(x=>`<span class="cal-post rule${x.posted?" done":""}"
+        data-calrule="${esc(p.id)}|${esc(x.key)}" title="Recurring ${esc(x.type)} — click to check off, shift-click to skip this week">
+        ${esc(x.type)}${x.posted?" ✓":""}</span>`).join("")}
     </div>`);
   }
-  const upcoming=posts.filter(x=>!x.posted&&x.d>=todayISO()).slice(0,3);
+  const all=[...posts,...virt];
+  const upcoming=all.filter(x=>!x.posted&&x.d>=todayISO()).sort((a,b)=>a.d<b.d?-1:1)[0];
+  const ruleBar=rules.length
+    ? rules.map((r,i)=>`<span class="rulechip">${esc(r.type)} · every ${esc(DOW_FULL[+r.dow]||"?")}${r.from?` from ${esc(isoShort(r.from))}`:""}
+        <button data-rule-del="${esc(p.id)}:${i}" title="remove this schedule">&#10005;</button></span>`).join("")
+    : `<span style="font-size:12.5px;color:var(--dim)">No standing schedule — set one and it fills every week for you.</span>`;
   return `<div class="socialbox">
     <div class="eyebrow">Social Calendar
       <span class="spacer"></span>
@@ -2837,18 +3044,75 @@ function socialPanel(p){
         ${types.map(t=>`<option ${calType===t?"selected":""}>${esc(t)}</option>`).join("")}</select>
       <button class="btn ghost mini" data-addtype="${esc(p.id)}">+ TYPE</button>
     </div>
+    <div class="rulebar">${ruleBar}
+      <span class="spacer"></span>
+      <button class="btn outline mini" data-rule-form="${esc(p.id)}">+ RECURRING</button></div>
     <div class="cal-head">
       <button class="btn ghost mini" data-calnav="-1">‹</button>
       <span class="cal-title">${esc(monthLabel(calMonth))}</span>
       <button class="btn ghost mini" data-calnav="1">›</button>
       <span class="spacer"></span>
-      <span class="cal-hint">click a day to drop a ${esc(calType.toLowerCase())} · click a post to mark posted</span>
+      <span class="cal-hint">click a day to drop a one-off ${esc(calType.toLowerCase())} · click a post to check it off${rules.length?" · dashed = recurring, shift-click to skip that week":""}</span>
     </div>
     <div class="cal-dow">${["S","M","T","W","T","F","S"].map(x=>`<div>${x}</div>`).join("")}</div>
     <div class="cal-grid">${cells.join("")}</div>
-    <div class="cal-foot">${posts.length} post${posts.length===1?"":"s"} scheduled ·
-      ${posts.filter(x=>x.posted).length} posted${upcoming.length?` · next: ${esc(upcoming[0].type)} on ${esc(isoShort(upcoming[0].d))}`:""}</div>
+    <div class="cal-foot">${all.length} post${all.length===1?"":"s"} this month ·
+      ${all.filter(x=>x.posted).length} posted${upcoming?` · next: ${esc(upcoming.type)} on ${esc(isoShort(upcoming.d))}`:""}</div>
   </div>`;
+}
+
+function ruleForm(pid){
+  const p=byId(projects,pid); if(!p) return;
+  const types=typesFor(p);
+  showModal(`<h3>Standing schedule</h3>
+  <div style="font-size:12.5px;color:var(--muted);margin:-8px 0 14px;line-height:1.6">
+    Set it once and every matching day fills in automatically — nothing to mark date by date.
+    Check them off as you post, uncheck if you need to.</div>
+  <div class="f-grid cols">
+    <div class="f"><label>Post type</label><select id="rl-type" class="sel">
+      ${types.map(t=>`<option ${calType===t?"selected":""}>${esc(t)}</option>`).join("")}</select></div>
+    <div class="f"><label>Every</label><select id="rl-dow" class="sel">
+      ${DOW_FULL.map((n,i)=>`<option value="${i}" ${i===2?"selected":""}>${n}</option>`).join("")}</select></div>
+    <div class="f span2"><label>Start from (optional)</label>
+      <input id="rl-from" type="date" value="">
+      <div class="hint">leave blank and it runs the whole calendar, past months included</div></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn ghost" data-backto="${esc(pid)}">CANCEL</button>
+    <button class="btn gold" data-rule-save="${esc(pid)}">ADD SCHEDULE</button>
+  </div>`);
+}
+async function saveRule(pid){
+  const p=byId(projects,pid); if(!p) return;
+  const type=fv("rl-type"), dow=+fv("rl-dow");
+  if(!type) return toast("Pick a post type");
+  if(rulesOf(p).some(r=>r.type===type&&+r.dow===dow)) return toast("Already got that one");
+  const postRules=[...rulesOf(p),{type,dow,from:fv("rl-from")||null,until:null}];
+  await guard(()=>updateDoc(doc(db,"projects",pid),{postRules}),
+    `${type} every ${DOW_FULL[dow]}`);
+  projectDetail(pid);
+}
+async function removeRule(pid,i){
+  const p=byId(projects,pid); if(!p) return;
+  const postRules=[...rulesOf(p)]; const r=postRules[i]; if(!r) return;
+  if(!confirm(`Stop filling in ${r.type} every ${DOW_FULL[+r.dow]}?\n\nThe ones you already checked off stay checked.`)) return;
+  postRules.splice(i,1);
+  await guard(()=>updateDoc(doc(db,"projects",pid),{postRules}),"Schedule removed");
+}
+async function toggleRulePost(pid,key){
+  const p=byId(projects,pid); if(!p) return;
+  const done=new Set(p.postDone||[]);
+  const nowOn=!done.has(key);
+  nowOn?done.add(key):done.delete(key);
+  await guard(()=>updateDoc(doc(db,"projects",pid),{postDone:[...done]}),
+    nowOn?"Marked posted":"Back to scheduled");
+}
+async function skipRulePost(pid,key){
+  const p=byId(projects,pid); if(!p) return;
+  const skip=new Set(p.postSkip||[]); skip.add(key);
+  const done=new Set(p.postDone||[]); done.delete(key);
+  await guard(()=>updateDoc(doc(db,"projects",pid),
+    {postSkip:[...skip],postDone:[...done]}),"Skipped that one");
 }
 
 async function addPost(pid,iso){
@@ -2897,25 +3161,39 @@ async function setSocial(pid,on){
 /* posts we owe today or tomorrow, for the alert strip and notifications */
 function postDigest(){
   const t=todayISO(), tm=addDays(t,1), out=[];
+  const back=addDays(t,-14);
   projects.filter(p=>p.social).forEach(p=>{
-    (p.posts||[]).forEach((x,i)=>{
+    const rule=rulePostsRange(p,back,tm);
+    [...(p.posts||[]),...rule].forEach(x=>{
       if(x.posted) return;
       if(x.d===t)  out.push({p,post:x,when:"TODAY",kind:"post-today"});
       else if(x.d===tm) out.push({p,post:x,when:"TOMORROW",kind:"post-tomorrow"});
-      else if(x.d<t) out.push({p,post:x,when:`${Math.abs(dayDiff(x.d))}D LATE`,kind:"post-late"});
+      else if(x.d<t&&x.d>=back) out.push({p,post:x,when:`${Math.abs(dayDiff(x.d))}D LATE`,kind:"post-late"});
     });
   });
   return out;
 }
 
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-calnav],[data-calday],[data-calchip],[data-addtype],[data-savetype],[data-social],[data-backto]");
+  const t=e.target.closest("[data-calnav],[data-calday],[data-calchip],[data-calrule],[data-addtype],[data-savetype],[data-social],[data-backto],[data-rule-form],[data-rule-save],[data-rule-del],[data-addon-form],[data-addon-save],[data-addon-paid],[data-addon-del]");
   if(!t) return;
   const d=t.dataset;
   if(d.calnav){ calMonth=shiftMonth(calMonth,+d.calnav); return renderDetail(); }
+  if(d.calrule){ e.stopPropagation();
+    const cut=d.calrule.indexOf("|");
+    const pid=d.calrule.slice(0,cut), key=d.calrule.slice(cut+1);
+    if(e.altKey||e.shiftKey) return skipRulePost(pid,key);
+    return toggleRulePost(pid,key); }
   if(d.calchip){ const [pid,iso,i]=d.calchip.split(":");
     if(e.altKey||e.shiftKey) return removePost(pid,iso,+i);
     return togglePost(pid,iso,+i); }
+  if(d.ruleForm) return ruleForm(d.ruleForm);
+  if(d.ruleSave) return saveRule(d.ruleSave);
+  if(d.ruleDel){ const [pid,i]=d.ruleDel.split(":"); return removeRule(pid,+i); }
+  if(d.addonForm) return addonForm(d.addonForm);
+  if(d.addonSave) return saveAddon(d.addonSave);
+  if(d.addonPaid){ const [pid,i]=d.addonPaid.split(":"); return toggleAddonPaid(pid,+i); }
+  if(d.addonDel){ const [pid,i]=d.addonDel.split(":"); return removeAddon(pid,+i); }
   if(d.calday){ const [pid,iso]=d.calday.split(":"); return addPost(pid,iso); }
   if(d.backto)   return projectDetail(d.backto);
   if(d.addtype)  return addTypeForm(d.addtype);
@@ -3089,6 +3367,20 @@ async function textDigest(){
 }
 
 /* ── full project detail ── */
+/* the retainer this project sits under, shown at the top of its page */
+function retainerBox(c){
+  if(!isRetainer(c)) return "";
+  const items=(c.retainerItems||[]).filter(x=>x.name);
+  return `<div class="retboxsm">
+    <div class="rt">
+      <span class="rl">${esc(c.name)} — retainer${c.retainerDay?` · bills the ${c.retainerDay}${c.retainerDay===1?"st":c.retainerDay===2?"nd":c.retainerDay===3?"rd":"th"}`:""}</span>
+      <span class="rv">${money(retainerValue(c))}<span style="font-size:11px;color:var(--dim)">/mo</span></span>
+    </div>
+    ${items.length?`<ul>${items.map(x=>`<li>${esc(x.name)}${x.qty?` <span style="color:var(--dim)">— ${esc(x.qty)}</span>`:""}</li>`).join("")}</ul>`:""}
+    <div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:8px;letter-spacing:.06em">
+      COVERED BY RETAINER — anything past this goes in add-ons below</div>
+  </div>`;
+}
 function projectDetail(id){
   openProject=id; renderDetail();
 }
@@ -3121,7 +3413,9 @@ function renderDetail(){
       <span><span class="st-l">We manage the socials on this one</span><br>
         <span class="st-s">adds a posting calendar and a POSTED status on every deliverable</span></span>
     </label>
+    ${retainerBox(byId(clients,p.clientId))}
     ${socialPanel(p)}
+    ${addonPanel(p)}
     ${projectCard(p,true)}
     <div class="modal-actions">
       <button class="btn ghost" data-form="project" data-id="${esc(p.id)}">FULL FORM</button>
@@ -3518,6 +3812,7 @@ function ownerView(){
     </div></div>
   <div class="stats">
     ${stat("OPEN PROJECTS",open.length)}
+    ${stat("MONTHLY RETAINERS",money(monthlyRetainerTotal()),monthlyRetainerTotal()?T.gold:T.dim)}
     ${stat("COLLECTED THIS MONTH",money(collectedMonth(thisMonth)),T.green)}
     ${stat("COLLECTED LAST MONTH",money(collectedMonth(lastMonth)),T.dim)}
     ${stat("BILLED THIS MONTH",money(sumMonth(thisMonth)),T.gold)}
@@ -3538,13 +3833,35 @@ function ownerView(){
     </section>
   </div>
 
+  <section class="panel"><div class="eyebrow">Retainers Held
+    <span class="spacer"></span>
+    <span style="font-family:var(--mono);font-size:11px;color:var(--gold)">${money(monthlyRetainerTotal())} / MO · ${money(monthlyRetainerTotal()*12)} / YR</span></div>
+    ${retainerClients().length?retainerClients()
+      .sort((a,b)=>retainerValue(b)-retainerValue(a)).map(c=>{
+        const items=(c.retainerItems||[]).filter(x=>x.name);
+        const share=monthlyRetainerTotal()?Math.round(retainerValue(c)/monthlyRetainerTotal()*100):0;
+        return `<div class="list-row">
+        <div><div class="inv-label">${esc(c.name)}${c.company?` <span style="color:var(--dim);font-weight:400">· ${esc(c.company)}</span>`:""}</div>
+          <div class="inv-meta">${items.length?items.map(x=>esc(x.name)+(x.qty?` (${esc(x.qty)})`:"")).join(" · "):"no line items set"}${c.retainerDay?` &middot; bills the ${c.retainerDay}`:""}</div></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="inv-meta" style="font-family:var(--mono)">${share}%</span>
+          <span class="amount" style="color:var(--gold)">${money(retainerValue(c))}<span style="font-size:10px;color:var(--dim)">/mo</span></span>
+          <button class="btn ghost mini" data-form="client" data-id="${esc(c.id)}">EDIT</button></div></div>`;}).join("")
+      +`<div class="list-row" style="border-top:1px solid rgba(232,181,66,.27)">
+        <span style="font-family:var(--mono);font-size:11px;color:var(--gold-soft);letter-spacing:.1em">TOTAL HELD PER MONTH — ${retainerClients().length} CLIENT${retainerClients().length===1?"":"S"}</span>
+        <span class="amount" style="color:var(--gold);font-weight:600;font-size:16px">${money(monthlyRetainerTotal())}</span></div>`
+      :`<div style="font-size:13px;color:var(--dim)">No retainer clients yet. Edit a client and tick "This is a retainer client" to start tracking recurring revenue here.</div>`}
+  </section>
+
   <section class="panel"><div class="eyebrow">Payments In — ${money(collectedMonth(thisMonth))} this month</div>
     ${recentPays.length?recentPays.map(x=>`<div class="list-row">
       <div><div class="inv-label">${esc(x.label)}</div>
-        <div class="inv-meta">${esc(clientName(x.clientId))} &middot; ${esc(isoShort(x.when)||x.when||"")} &middot; ${x.kind==="project"?"project payment":"invoice"}</div></div>
+        <div class="inv-meta">${esc(clientName(x.clientId))} &middot; ${esc(isoShort(x.when)||x.when||"")} &middot; ${x.kind==="project"?"project payment":x.kind==="addon"?"add-on charge":"invoice"}</div></div>
       <div style="display:flex;align-items:center;gap:8px">
         <button class="btn ghost mini" ${x.kind==="project"
-          ?`data-paydate="${esc(x.pid)}:${x.which}"`:`data-form="invoice" data-id="${esc(x.pid)}"`}>DATE</button>
+          ?`data-paydate="${esc(x.pid)}:${x.which}"`
+          :x.kind==="addon"?`data-open="${esc(x.pid)}"`
+          :`data-form="invoice" data-id="${esc(x.pid)}"`}>${x.kind==="addon"?"OPEN":"DATE"}</button>
         <span class="amount" style="color:var(--green)">${money(x.amount)}</span></div></div>`).join("")
       :`<div style="font-size:13px;color:var(--dim)">Nothing collected yet. Mark a deposit or final paid on a project card, or set an invoice to Paid.</div>`}
   </section>
@@ -3555,9 +3872,10 @@ function ownerView(){
       const cOpen=projectsOf(c.id).filter(p=>pct(p)<100).length;
       const iv=invoicesOf(c.id);
       const cDue=iv.filter(i=>i.status!=="Paid").reduce((s,i)=>s+(+i.amount||0),0);
+      const rItems=(c.retainerItems||[]).filter(x=>x.name);
       return `<div class="db-row">
-        <div><div class="db-name">${esc(c.name)}</div>
-          <div class="db-meta">${esc(c.company||"—")}${c.contact?` · ${esc(c.contact)}`:""}<br>${esc(c.retainer||"")}</div>
+        <div><div class="db-name">${esc(c.name)}${isRetainer(c)?`<span class="retbadge">Retainer ${money(retainerValue(c))}/mo</span>`:""}</div>
+          <div class="db-meta">${esc(c.company||"—")}${c.contact?` · ${esc(c.contact)}`:""}${isRetainer(c)&&rItems.length?`<br>${rItems.map(x=>esc(x.name)+(x.qty?` (${esc(x.qty)})`:"")).join(" · ")}`:""}${c.retainer?`<br>${esc(c.retainer)}`:""}</div>
           <div class="db-meta" style="color:${cDue?"var(--gold)":"var(--dim)"}">${cOpen} open · ${cDue?`balance ${money(cDue)}`:"paid up"}</div>
           ${iv.length?`<div style="margin-top:6px;display:flex;flex-direction:column;gap:2px">${iv.map(i=>
             `<button class="linkbtn" data-form="invoice" data-id="${esc(i.id)}" style="text-align:left;font-family:var(--mono);font-size:10.5px;color:${i.status==="Paid"?"var(--dim)":"var(--gold-soft)"}">
@@ -3670,7 +3988,7 @@ function paint(){
 
 /* ── events ── */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test]");
+  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test]");
   if(!t) return;
   const d=t.dataset;
   if(d.close!==undefined){ if(t===e.target||t.tagName==="BUTTON") closeModal(); return; }
@@ -3682,6 +4000,8 @@ document.addEventListener("click",e=>{
   if(d.view){ view=d.view; paint(); return; }
   if(d.preview){ previewClient=d.preview; view="client"; paint(); return; }
   if(d.approve){ const [id,i]=d.approve.split(":"); approvePiece(id,+i); return; }
+  if(d.riAdd){ riSync(); RI.push({name:"",qty:""}); riRender(); return; }
+  if(d.riDel!==undefined){ riSync(); RI.splice(+d.riDel,1); if(!RI.length) RI.push({name:"",qty:""}); riRender(); return; }
   if(d.pfAdd){ pfSync(); PF.push({name:"",status:"queued"}); pfRender(); return; }
   if(d.pfDel!==undefined){ pfSync(); PF.splice(+d.pfDel,1); if(!PF.length) PF.push({name:"",status:"queued"}); pfRender(); return; }
   if(d.paydate){ const [id,w]=d.paydate.split(":"); return payDateForm(id,w); }
@@ -3713,6 +4033,7 @@ document.addEventListener("click",e=>{
   if(d.delAccess)  return removeAccess(d.delAccess);
 });
 document.addEventListener("change",e=>{
+  if(e.target.dataset.retoggle!==undefined) riToggle();
   if(e.target.id==="cSel"){ previewClient=e.target.value; paint(); }
   if(e.target.id==="eSel"){ previewEditor=e.target.value; paint(); }
   const ds=e.target.dataset||{};
