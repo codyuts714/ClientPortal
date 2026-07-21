@@ -102,6 +102,8 @@ header{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-
 .tab.on{color:var(--cream);border-bottom-color:var(--gold)}
 
 main{max-width:1120px;margin:0 auto;padding:22px 18px 60px;display:grid;gap:16px;position:relative;z-index:1}
+main.wide{max-width:1520px}
+@media (min-width:1900px){main.wide{max-width:1800px}}
 
 /* ── wide monitors: use the room instead of a 1120px column ── */
 @media (min-width:1500px){
@@ -373,6 +375,10 @@ input.sel{font-family:var(--mono);font-size:10.5px;color-scheme:dark}
 .btn.paid-on{background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.4);color:var(--green);font-weight:700}
 .deliv{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
   padding:8px 10px;border:1px solid var(--line-soft);border-radius:9px;margin-bottom:6px}
+.deliv-name{background:transparent;border:1px solid transparent;border-radius:6px;padding:4px 6px;
+  font-family:var(--body);font-size:13px;font-weight:600;min-width:0;flex:1;outline:none;transition:.15s}
+.deliv-name:hover{border-color:var(--line)}
+.deliv-name:focus{border-color:var(--gold);background:var(--panel)}
 .span2{grid-column:1/-1}
 /* ── client database ── */
 .db-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
@@ -398,6 +404,32 @@ footer{text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.
 .gate-logo .nm{font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.16em;text-transform:uppercase;margin-top:12px;
   background:linear-gradient(135deg,var(--gold-pale),var(--cream) 65%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .gate-logo .tg{font-size:9.5px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase;margin-top:4px}
+
+/* ── mobile: project forms & deliverable rows ──
+   nothing below max-width:640px existed before, so the two-column form
+   grid and multi-field deliverable rows stayed desktop-sized and cramped
+   on phones. this stacks everything to one column and grows the tap
+   targets / font sizes so fields are readable and don't trigger iOS's
+   auto-zoom-on-focus (anything under 16px does). */
+@media (max-width:640px){
+  .modal{padding:16px 14px;border-radius:13px}
+  .modal.wide{max-width:100%}
+  .f-grid.cols{grid-template-columns:1fr}
+  .f input,.f textarea,.f select{font-size:16px;padding:10px 11px}
+  .datestrip{grid-template-columns:1fr 1fr;gap:8px;padding:10px}
+  .pf-row{flex-direction:column;align-items:stretch;gap:6px;padding:10px;
+    border:1px solid var(--line-soft);border-radius:10px;margin-bottom:9px;background:rgba(255,255,255,.015)}
+  .pf-row input,.pf-row select{width:100%;max-width:none;font-size:15px;padding:9px 11px}
+  .pf-row .btn.mini{align-self:flex-end}
+  .inline-edit{gap:9px 12px}
+  .inline-edit .sel,.deliv-acts .sel{padding:7px 9px;font-size:11.5px}
+  .deliv-acts input.costin{max-width:64px}
+  .deliv{flex-direction:column;align-items:stretch;padding:10px}
+  .deliv-name{font-size:14px;padding:6px 7px}
+  .deliv-acts{width:100%}
+  .modal .actions{justify-content:stretch}
+  .modal .actions .btn{flex:1}
+}
 .gate .f{margin-bottom:12px}
 .gate .btn{width:100%;justify-content:center;padding:12px}
 .gate .alt{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:10px}
@@ -1870,6 +1902,14 @@ async function loadFor(user){
 const logActivity=(clientId,what)=>addDoc(collection(db,"activity"),
   {clientId,what,when:isoShort(todayISO()),ts:Date.now()}).catch(()=>{});
 
+async function setPieceName(pid,i,v){
+  const p=byId(projects,pid); if(!p) return;
+  const name=v.trim(); if(!name) return;
+  const was=p.pieces?.[i]?.name||"";
+  if(was===name) return;
+  const pieces=p.pieces.map((x,ix)=>ix===i?{...x,name}:x);
+  await guard(()=>updateDoc(doc(db,"projects",pid),{pieces}), `Renamed to ${name}`);
+}
 async function setPieceCost(pid,i,v){
   const p=byId(projects,pid); if(!p) return;
   const cost=v===""?null:Math.max(0,+v||0);
@@ -2017,7 +2057,9 @@ async function saveProject(id){
   pfSync();
   let pieces=PF.filter(x=>x.name.trim()).map(x=>{
     let f=(x.frameUrl||"").trim(); if(f&&!/^https?:/.test(f)) f="https://"+f;
-    return {name:x.name.trim(),status:x.status||"queued",frameUrl:f||null};});
+    const cost=x.cost===""||x.cost==null?null:Math.max(0,+x.cost||0);
+    return {name:x.name.trim(),status:x.status||"queued",frameUrl:f||null,
+      editor:x.editor||null,cost};});
   if(!pieces.length) pieces=[{name:"Main Cut",status:"queued"}];
   let frame=fv("pf-frame"), raw=fv("pf-raw");
   if(frame&&!/^https?:/.test(frame)) frame="https://"+frame;
@@ -2404,9 +2446,11 @@ function delivRows(p,editable){
     const c=STATUS_COLOR[pc.status]||T.dim;
     const ok=(p.approvals||{})[i];
     return `<div class="deliv">
-      <div style="display:flex;align-items:center;gap:8px;min-width:0">
+      <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
         <span class="dot" style="width:7px;height:7px;border-radius:50%;flex:none;background:${pc.status==="queued"?"transparent":c};border:1.5px solid ${c}"></span>
-        <span style="font-size:13px;font-weight:600;color:${pc.status==="done"?"var(--muted)":"var(--cream)"}">${esc(pc.name)}</span>
+        ${editable
+          ? `<input class="deliv-name" data-pnamepiece="${esc(p.id)}:${i}" value="${esc(pc.name)}" style="color:${pc.status==="done"?"var(--muted)":"var(--cream)"}">`
+          : `<span style="font-size:13px;font-weight:600;color:${pc.status==="done"?"var(--muted)":"var(--cream)"}">${esc(pc.name)}</span>`}
         ${ok?`<span class="done-note" style="font-size:10px">&#10003; APPROVED</span>`:""}
       </div>
       <div class="deliv-acts">
@@ -2693,8 +2737,13 @@ function wireQB(tries){
   };
   w.toggleAuth = () => w.toast&&w.toast("You're already signed in through the portal");
 
+  /* only pull from the cloud on first mount — if we're restoring a state
+     snapshot from before the tab was left, that snapshot IS the unsaved
+     work, and re-fetching here would silently wipe it out again */
+  const hadLocalState=!!qbState;
   if(qbState){ try{ Object.assign(w.S,qbState); }catch(e){} }
-  w.loadCloud();
+  if(!hadLocalState) w.loadCloud();
+  else { w.fill&&w.fill(); w.render(); sizeQB(); }
   clearInterval(wireQB._t);
   wireQB._t=setInterval(()=>{ if(qbFrame&&qbFrame.isConnected) captureQB(); },1500);
   sizeQB(); setTimeout(sizeQB,400);
@@ -2705,10 +2754,21 @@ function captureQB(){
   if(!w||!w.S) return;
   try{ qbState=JSON.parse(JSON.stringify(w.S)); }catch(e){}
 }
+let qbLastH=0,qbSizeRAF=null;
 function sizeQB(){
-  const w=qbFrame&&qbFrame.isConnected&&qbFrame.contentWindow;
-  if(!w||!w.document||!w.document.body) return;
-  qbFrame.style.height=Math.max(900,w.document.body.scrollHeight+40)+"px";
+  if(qbSizeRAF) return;
+  qbSizeRAF=requestAnimationFrame(()=>{
+    qbSizeRAF=null;
+    const w=qbFrame&&qbFrame.isConnected&&qbFrame.contentWindow;
+    if(!w||!w.document||!w.document.body) return;
+    const h=Math.max(900,w.document.body.scrollHeight+40);
+    /* ignore small fluctuations (a few px of sub-pixel/scrollbar jitter) —
+       only resize on a real content change, or the page scrollbar visibly
+       jumps every time the iframe redraws */
+    if(Math.abs(h-qbLastH)<12) return;
+    qbLastH=h;
+    qbFrame.style.height=h+"px";
+  });
 }
 
 /* a finished quote becomes a lead sitting at Proposal Out */
@@ -2868,6 +2928,8 @@ document.addEventListener("change",e=>{
     return setPieceEditor(pid,+i,t.value); }
   if(t.dataset.pcostpiece){ const [pid,i]=t.dataset.pcostpiece.split(":");
     return setPieceCost(pid,+i,t.value); }
+  if(t.dataset.pnamepiece){ const [pid,i]=t.dataset.pnamepiece.split(":");
+    return setPieceName(pid,+i,t.value); }
   if(t.dataset.caltype!==undefined){ calType=t.value; return renderDetail(); }
   if(t.dataset.social!==undefined&&t.dataset.social) return setSocial(t.dataset.social,t.checked);
 });
@@ -3462,8 +3524,6 @@ function ownerView(){
     ${stat("OUTSTANDING (A/R)",money(outst),outst?T.gold:T.green)}
     ${stat("ACCOUNTS PAYABLE",money(apOwed),apOwed?T.red:T.green)}
     ${stat("SLA WATCH (DAY 5+)",risk,risk?T.red:T.green)}
-    ${stat("PROJECT $ UNCOLLECTED",money(projDue),projDue?T.gold:T.green)}
-    ${stat("INVOICES UNPAID",money(outstInv),outstInv?T.gold:T.green)}
   </div>
   ${alertStrip()}
   ${projectBoard()}
@@ -3493,11 +3553,15 @@ function ownerView(){
     <span class="spacer"></span><button class="btn outline mini" data-form="client">+ ADD CLIENT</button></div>
     ${clients.map(c=>{
       const cOpen=projectsOf(c.id).filter(p=>pct(p)<100).length;
-      const cDue=invoicesOf(c.id).filter(i=>i.status!=="Paid").reduce((s,i)=>s+(+i.amount||0),0);
+      const iv=invoicesOf(c.id);
+      const cDue=iv.filter(i=>i.status!=="Paid").reduce((s,i)=>s+(+i.amount||0),0);
       return `<div class="db-row">
         <div><div class="db-name">${esc(c.name)}</div>
           <div class="db-meta">${esc(c.company||"—")}${c.contact?` · ${esc(c.contact)}`:""}<br>${esc(c.retainer||"")}</div>
-          <div class="db-meta" style="color:${cDue?"var(--gold)":"var(--dim)"}">${cOpen} open · ${cDue?`balance ${money(cDue)}`:"paid up"}</div></div>
+          <div class="db-meta" style="color:${cDue?"var(--gold)":"var(--dim)"}">${cOpen} open · ${cDue?`balance ${money(cDue)}`:"paid up"}</div>
+          ${iv.length?`<div style="margin-top:6px;display:flex;flex-direction:column;gap:2px">${iv.map(i=>
+            `<button class="linkbtn" data-form="invoice" data-id="${esc(i.id)}" style="text-align:left;font-family:var(--mono);font-size:10.5px;color:${i.status==="Paid"?"var(--dim)":"var(--gold-soft)"}">
+              ${esc(i.label)} — ${money(i.amount)} · ${esc(i.status)}</button>`).join("")}</div>`:""}</div>
         <div class="db-actions">
           <button class="btn gold mini" data-form="project" data-client="${esc(c.id)}">+ PROJECT</button>
           <button class="btn outline mini" data-form="invoice" data-client="${esc(c.id)}">+ INVOICE</button>
@@ -3505,26 +3569,6 @@ function ownerView(){
           <button class="btn ghost mini" data-preview="${esc(c.id)}">PREVIEW →</button>
         </div></div>`;}).join("")}
   </section>
-
-  ${clients.map(c=>{
-    const ps=projectsOf(c.id), iv=invoicesOf(c.id);
-    return `<section class="panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
-        <div><div style="font-size:16px;font-weight:800">${esc(c.name)}</div>
-          <div style="font-family:var(--mono);font-size:11px;color:var(--dim)">${esc(c.company||"")}</div></div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn gold mini" data-form="project" data-client="${esc(c.id)}">+ PROJECT</button>
-          <button class="btn outline mini" data-preview="${esc(c.id)}">VIEW AS CLIENT →</button></div>
-      </div>
-      ${ps.length?`<div style="font-family:var(--mono);font-size:11px;color:var(--dim);padding-bottom:10px">${ps.filter(p=>pct(p)<100).length} open · ${ps.length} total — see the Projects board above</div>`
-        :`<div style="font-size:13px;color:var(--dim);padding-bottom:8px">No projects yet.</div>`}
-      ${iv.length?`<div style="margin-top:14px">${iv.map(i=>`<div class="list-row">
-        <div><div class="inv-label">${esc(i.label)}</div><div class="inv-meta">${esc(i.date||"")}</div></div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button class="btn ghost mini" data-form="invoice" data-id="${esc(i.id)}">EDIT</button>
-          <span class="amount">${money(i.amount)}</span>
-          <span class="tag ${i.status==="Paid"?"paid":"due-t"}">${esc(i.status)}</span></div></div>`).join("")}</div>`:""}
-    </section>`;}).join("")}
 
   ${revs.length?`<section class="panel"><div class="eyebrow" style="color:var(--red)">Client Revisions Requested — ${revs.length}</div>
     ${revs.map(p=>`<div class="list-row"><div><div class="inv-label">${esc(p.title)}</div>
@@ -3617,7 +3661,7 @@ function paint(){
           <button class="linkbtn" data-logout="1">Sign out</button></div>
       </div>
     </header>
-    <main>${body}</main>
+    <main class="${view==="quote"?"wide":""}">${body}</main>
     <footer>Under The Sun Studios · Long Beach, CA</footer>`;
   if(view==="quote"&&me.role==="owner") mountQB();
   if(openProject) renderDetail();
