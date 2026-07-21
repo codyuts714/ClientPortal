@@ -233,6 +233,45 @@ main{max-width:1120px;margin:0 auto;padding:22px 18px 60px;display:grid;gap:16px
 .bal-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-pale));border-radius:4px;transition:width .5s cubic-bezier(.4,1.4,.5,1)}
 
 /* ── modals & forms ── */
+/* ── compact project board ── */
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(252px,1fr));gap:10px}
+.pmini{position:relative;background:linear-gradient(180deg,var(--panel-up),var(--panel));
+  border:1px solid var(--line-soft);border-left:2px solid var(--dim);border-radius:0 11px 11px 0;
+  padding:11px 12px 12px;cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit;display:block}
+.pmini:hover{border-color:var(--line);background:var(--panel-up)}
+.pmini.st-ok{border-left-color:var(--green)}
+.pmini.st-soon{border-left-color:var(--gold)}
+.pmini.st-late{border-left-color:var(--red);box-shadow:inset 3px 0 18px -10px var(--red)}
+.pmini .m-id{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;color:var(--dim);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pmini .m-title{font-size:13.5px;font-weight:700;color:var(--cream);margin:2px 0 1px;line-height:1.3}
+.pmini .m-client{font-size:11.5px;color:var(--muted)}
+.m-bar{height:3px;border-radius:2px;background:var(--line);margin:9px 0 7px;overflow:hidden}
+.m-bar i{display:block;height:100%;background:var(--gold);border-radius:2px}
+.m-tags{display:flex;flex-wrap:wrap;gap:4px}
+.m-tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
+  padding:2px 6px;border-radius:4px;border:1px solid var(--line);color:var(--dim);white-space:nowrap}
+.m-pct{position:absolute;top:10px;right:11px;font-family:var(--display);font-size:12px;font-weight:700;color:var(--gold)}
+.filterbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px}
+.filterbar button{padding:5px 11px;border-radius:14px;border:1px solid var(--line);background:none;
+  color:var(--dim);font-family:var(--display);font-weight:700;font-size:10.5px;letter-spacing:.07em;
+  text-transform:uppercase;cursor:pointer}
+.filterbar button.on{border-color:rgba(242,201,76,.5);background:rgba(242,201,76,.13);color:var(--gold)}
+.alertstrip{border:1px solid rgba(240,85,107,.4);background:rgba(240,85,107,.07);border-radius:12px;
+  padding:13px 15px;margin-bottom:14px}
+.alertstrip .eyebrow{color:var(--red)}
+.alert-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0;
+  border-top:1px solid rgba(240,85,107,.16);cursor:pointer}
+.alert-row:first-of-type{border-top:none}
+.alert-row .a-t{font-size:13px;color:var(--cream)}
+.alert-row .a-m{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.05em}
+.modal.wide{max-width:820px}
+.datestrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;
+  padding:12px 14px;border:1px solid var(--line-soft);border-radius:10px;margin-bottom:13px;
+  background:rgba(255,255,255,.015)}
+.datestrip label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--dim);margin-bottom:4px}
+.datestrip .d-note{font-family:var(--mono);font-size:10px;margin-top:4px}
 /* ── inbound ── */
 .lead-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;align-items:start}
 .lead-col-h{display:flex;align-items:baseline;gap:8px;padding:0 2px 9px;margin-bottom:11px;
@@ -527,7 +566,9 @@ const LEAD_BUDGETS=["Unknown","$1-3k","$3-6k","$6k+","Retainer"];
 const TOUCH_TYPES=["Called","Texted","DM'd","Emailed","Met up","Sent proposal","Left voicemail"];
 const SLA_MIN=60, STALE_DAYS=4;
 const isLead=p=>p.pipeline==="lead";
-const SLA=7;
+const SLA=7;            /* delivery turnaround */
+const DRAFT_SLA=3;      /* editor's first draft */
+const NEAR=2;           /* days out that counts as 'closing in' */
 const PIECE_SCORE={queued:0,editing:.4,review:.75,revisions:.55,done:1};
 const PIECE_LABEL={queued:"QUEUED",editing:"IN EDIT",review:"IN REVIEW",revisions:"CLIENT REVISIONS",done:"DONE"};
 const PIECE_ORDER=["queued","editing","review","revisions","done"];
@@ -543,6 +584,7 @@ let clients=[], projects=[], invoices=[], payables=[], activity=[], users=[];
 let leads=[];
 let settings={}, smsPub={};   /* config/sms (owner only) + config/public (everyone) */
 let view="owner", previewClient=null, previewEditor=null;
+let openProject=null, projFilter="all", projClient="all";
 let unsubs=[];
 
 /* ── utils ── */
@@ -847,6 +889,7 @@ async function saveProject(id){
     footageUrl:raw||null, frameUrl:frame||null,
     editor, editCost:+fv("pf-cost")||0,
     cost:+fv("pf-price")||0,
+    startISO:fv("pf-start")||null,
     depositPaid:document.getElementById("pf-dep")?.checked||false,
     finalPaid:document.getElementById("pf-fin")?.checked||false,
     depositPaidOn:document.getElementById("pf-dep")?.checked?(fv("pf-dep-on")||todayISO()):null,
@@ -921,7 +964,7 @@ async function removeAccess(email){
 
 /* ═══════════ MODALS ═══════════ */
 const M=()=>document.getElementById("modal");
-function closeModal(){ M().innerHTML=""; }
+function closeModal(){ openProject=null; M().innerHTML=""; }
 function showModal(html){
   M().innerHTML=`<div class="modal-wrap" data-close="1"><div class="modal">
     <button class="x" data-close="1" aria-label="Close">✕</button>${html}</div></div>`;
@@ -976,6 +1019,7 @@ function projectForm(id,preClient){
     <div class="f span2"><label>Project title</label><input id="pf-title" value="${esc(p.title||"")}" placeholder="Nothing to Hyde | Vol. 5"></div>
     <div class="f"><label>Code</label><input id="pf-code" value="${esc(p.code||"")}" placeholder="NTH-05"></div>
     <div class="f"><label>Type</label><select id="pf-type">${TYPES.map(t=>`<option ${p.type===t?"selected":""}>${t}</option>`).join("")}</select></div>
+    <div class="f"><label>Start / shoot date</label><input type="date" id="pf-start" value="${esc(p.startISO||"")}"></div>
     <div class="f"><label>Stage</label><select id="pf-stage">${STAGES.map((st,i)=>`<option value="${i}" ${(p.stage??0)===i?"selected":""}>${st}</option>`).join("")}</select></div>
     <div class="f"><label>Due date</label><input id="pf-due" type="date" value="${due}"></div>
     <div class="f"><label>Editor</label><select id="pf-editor">${eds.map(e=>`<option ${p.editor===e?"selected":""}>${esc(e)}</option>`).join("")}</select></div>
@@ -1253,6 +1297,7 @@ function projectCard(p,owner){
       <div style="margin:10px 0 2px">${delivRows(p,owner)}</div>
       ${rev&&p.revisionNote?`<div style="font-size:12.5px;color:${T.red};margin-bottom:6px">&ldquo;${esc(p.revisionNote)}&rdquo;</div>`:""}
       <div class="card-note">${esc(p.note||"")}</div>${internal}
+      ${!owner&&me&&me.role==="owner"?`<div class="editbar"><button class="btn outline mini" data-open="${esc(p.id)}">OPEN &amp; EDIT (OWNER)</button></div>`:""}
       ${owner?`${payBar(p)}
       <div class="editbar">
         <button class="btn ghost mini" data-form="project" data-id="${esc(p.id)}">EDIT PROJECT</button>
@@ -1372,7 +1417,7 @@ function editorView(name){
               <div class="card-title" style="margin-bottom:2px">${esc(j.title)}</div>
               <div style="font-family:var(--mono);font-size:11px;color:var(--muted)">deliver by ${esc(j.due||"")} · you earn $${j.editCost||0}</div></div>
           </div>
-          <div class="card-right">${slaChip(j)}
+          <div class="card-right">${me&&me.role==="owner"?`<button class="btn outline mini" data-open="${esc(j.id)}">OPEN &amp; EDIT</button>`:""}${slaChip(j)}
             ${!inEdit?`<span style="font-family:var(--mono);font-size:10.5px;color:var(--dim)">NOT IN EDIT YET</span>`:""}</div>
         </div>
         ${board}
@@ -1403,6 +1448,224 @@ function editorView(name){
       <span class="tag ${p.status==="paid"?"paid":"due-t"}">${p.status==="paid"?"PAID":"OWED"}</span></div></div>`).join("")}
   </section>`;
 }
+
+
+
+/* ═══════════ TIMING, COMPACT BOARD, DETAIL ═══════════ */
+const dayDiff=iso=>{ if(!iso) return null;
+  const a=new Date(iso+"T00:00:00"), b=new Date(); b.setHours(0,0,0,0);
+  return Math.round((a-b)/864e5); };
+const addDays=(iso,n)=>{ if(!iso) return null;
+  const d=new Date(iso+"T00:00:00"); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+
+/* first draft counts as in once every deliverable has left the edit bay */
+function draftIn(p){
+  const l=p.pieces||[];
+  if(l.length) return l.every(x=>x.status!=="queued"&&x.status!=="editing");
+  return (+p.stage||0)>=3;
+}
+const draftDue=p=>p.draftDueISO||(p.editStart?addDays(p.editStart,DRAFT_SLA):null);
+
+/* {k, label} — k drives the colour: ok | soon | late */
+function deliveryState(p){
+  if(pct(p)===100||(+p.stage||0)===4) return {k:"ok",label:"DELIVERED"};
+  const d=dayDiff(p.dueISO);
+  if(d===null) return {k:"ok",label:"NO DUE DATE"};
+  if(d<0)  return {k:"late",label:`${-d}D OVERDUE`};
+  if(d===0)return {k:"late",label:"DUE TODAY"};
+  if(d===1)return {k:"soon",label:"DUE TOMORROW"};
+  return {k:d<=NEAR?"soon":"ok",label:`DUE IN ${d}D`};
+}
+function draftState(p){
+  if((+p.stage||0)<2||pct(p)===100) return null;
+  if(draftIn(p)) return {k:"ok",label:"DRAFT IN"};
+  const dd=draftDue(p);
+  if(!dd) return {k:"soon",label:"NO EDIT START"};
+  const d=dayDiff(dd);
+  if(d<0)  return {k:"late",label:`DRAFT ${-d}D LATE`};
+  if(d===0)return {k:"late",label:"DRAFT DUE TODAY"};
+  if(d===1)return {k:"soon",label:"DRAFT DUE TOMORROW"};
+  return {k:"ok",label:`DRAFT IN ${d}D`};
+}
+const worstK=(...ks)=>ks.includes("late")?"late":ks.includes("soon")?"soon":"ok";
+function projState(p){
+  const d=deliveryState(p), dr=draftState(p);
+  if(needsRev(p)) return "late";
+  return worstK(d.k, dr?dr.k:"ok");
+}
+const K_COLOR={ok:T.muted,soon:T.gold,late:T.red};
+
+function miniCard(p){
+  const k=projState(p), d=deliveryState(p), dr=draftState(p);
+  const l=p.pieces||[], done=l.filter(x=>x.status==="done").length;
+  const tag=(txt,kk)=>`<span class="m-tag" style="color:${K_COLOR[kk]||"var(--dim)"};border-color:${kk&&kk!=="ok"?K_COLOR[kk]+"55":"var(--line)"};background:${kk&&kk!=="ok"?K_COLOR[kk]+"12":"transparent"}">${txt}</span>`;
+  return `<button class="pmini st-${k}" data-open="${esc(p.id)}">
+    <span class="m-pct">${pct(p)}%</span>
+    <div class="m-id">${esc(p.code||p.type||"—")}${p.code&&p.type?" · "+esc(p.type):""}</div>
+    <div class="m-title">${esc(p.title||"Untitled")}</div>
+    <div class="m-client">${esc(clientName(p.clientId))}</div>
+    <div class="m-bar"><i style="width:${pct(p)}%"></i></div>
+    <div class="m-tags">
+      ${tag(STAGES[+p.stage||0].toUpperCase())}
+      ${tag(d.label,d.k)}
+      ${dr?tag(dr.label,dr.k):""}
+      ${l.length>1?tag(`${done}/${l.length} DONE`):""}
+      ${needsRev(p)?tag("REVISIONS","late"):""}
+      ${p.editor?tag(esc(p.editor)):""}
+    </div></button>`;
+}
+
+/* ── the board ── */
+function projectBoard(){
+  const live=projects.filter(p=>pct(p)<100);
+  const pool=projFilter==="done"?projects.filter(p=>pct(p)===100)
+            :projFilter==="late"?live.filter(p=>projState(p)==="late")
+            :projFilter==="attention"?live.filter(p=>projState(p)!=="ok")
+            :live;
+  const list=(projClient==="all"?pool:pool.filter(p=>p.clientId===projClient))
+    .sort((a,b)=>{ const r={late:0,soon:1,ok:2};
+      const d=r[projState(a)]-r[projState(b)]; if(d) return d;
+      return (dayDiff(a.dueISO)??999)-(dayDiff(b.dueISO)??999); });
+  const f=(k,lbl,n)=>`<button class="${projFilter===k?"on":""}" data-pfilter="${k}">${lbl}${n!==undefined?` ${n}`:""}</button>`;
+  return `<section class="panel"><div class="eyebrow">Projects
+    <span class="spacer"></span>
+    <button class="btn gold mini" data-form="project">+ NEW PROJECT</button></div>
+    <div class="filterbar">
+      ${f("all","All",live.length)}
+      ${f("attention","Needs attention",live.filter(p=>projState(p)!=="ok").length)}
+      ${f("late","Late",live.filter(p=>projState(p)==="late").length)}
+      ${f("done","Delivered",projects.filter(p=>pct(p)===100).length)}
+      <span class="spacer"></span>
+      <select class="sel" id="pClientFilter" style="max-width:180px">
+        <option value="all" ${projClient==="all"?"selected":""}>All clients</option>
+        ${clients.map(c=>`<option value="${esc(c.id)}" ${projClient===c.id?"selected":""}>${esc(c.name)}</option>`).join("")}
+      </select>
+    </div>
+    ${list.length?`<div class="proj-grid">${list.map(miniCard).join("")}</div>`
+      :`<div style="font-size:13px;color:var(--dim)">Nothing in this filter.</div>`}
+  </section>`;
+}
+
+/* ── alerts ── */
+function digest(){
+  const live=projects.filter(p=>pct(p)<100);
+  const out=[];
+  live.forEach(p=>{
+    const d=deliveryState(p), dr=draftState(p);
+    if(d.k==="late")  out.push({p,kind:"delivery",label:d.label});
+    else if(d.k==="soon") out.push({p,kind:"delivery-soon",label:d.label});
+    if(dr&&dr.k==="late") out.push({p,kind:"draft",label:dr.label});
+    if(needsRev(p)) out.push({p,kind:"revision",label:"CLIENT REVISIONS"});
+  });
+  return out.sort((a,b)=>(a.label.includes("OVERDUE")||a.label.includes("LATE")?0:1)
+                        -(b.label.includes("OVERDUE")||b.label.includes("LATE")?0:1));
+}
+function alertStrip(){
+  const d=digest().filter(x=>x.kind!=="delivery-soon"||true);
+  if(!d.length) return "";
+  const canText=!!(smsPub.endpoint&&settings.studio);
+  return `<div class="alertstrip"><div class="eyebrow">Needs you today
+    <span class="spacer"></span>
+    <button class="btn ghost mini" data-alerts="1">${notifyOn()?"ALERTS ON":"TURN ON ALERTS"}</button>
+    ${canText?`<button class="btn ghost mini" data-digest="1">TEXT ME THIS LIST</button>`:""}</div>
+    ${d.slice(0,8).map(x=>`<div class="alert-row" data-open="${esc(x.p.id)}">
+      <div><div class="a-t">${esc(x.p.title)}</div>
+        <div class="a-m">${esc(clientName(x.p.clientId))}${x.p.editor?" · "+esc(x.p.editor):""}</div></div>
+      <span class="sla" style="color:${x.kind==="delivery-soon"?T.gold:T.red};border:1px solid ${(x.kind==="delivery-soon"?T.gold:T.red)}55;background:${(x.kind==="delivery-soon"?T.gold:T.red)}12">${esc(x.label)}</span>
+    </div>`).join("")}
+    ${d.length>8?`<div class="a-m" style="padding-top:8px">+ ${d.length-8} more</div>`:""}
+    <div class="a-m" style="padding-top:9px;color:var(--dim)">Browser alerts fire while the portal is open. For texts when it's closed, hook up the Twilio function under Alerts &amp; Numbers.</div>
+  </div>`;
+}
+const notifyOn=()=>typeof Notification!=="undefined"&&Notification.permission==="granted";
+async function askAlerts(){
+  if(typeof Notification==="undefined") return toast("This browser can't do alerts");
+  if(Notification.permission==="granted") return toast("Alerts already on");
+  const r=await Notification.requestPermission();
+  toast(r==="granted"?"Alerts on":"Alerts blocked in browser settings");
+  paint();
+}
+const seenKey=(id,kind)=>`uts-alert:${id}:${kind}:${todayISO()}`;
+function fireAlerts(){
+  if(!me||me.role!=="owner"||!notifyOn()) return;
+  digest().filter(x=>x.kind!=="delivery-soon").forEach(x=>{
+    const k=seenKey(x.p.id,x.kind);
+    try{ if(localStorage.getItem(k)) return; localStorage.setItem(k,"1"); }catch(e){}
+    try{ new Notification(`${x.label} — ${x.p.title}`,
+      {body:`${clientName(x.p.clientId)}${x.p.editor?" · "+x.p.editor:""}`,tag:k}); }catch(e){}
+  });
+}
+async function textDigest(){
+  const d=digest().filter(x=>x.kind!=="delivery-soon");
+  if(!d.length) return toast("Nothing due — board is clear");
+  const body="UTS today:\n"+d.slice(0,6).map(x=>`• ${x.p.title} — ${x.label}`).join("\n");
+  await sendSMS("studio",body); toast("Sent to your phone");
+}
+
+/* ── full project detail ── */
+function projectDetail(id){
+  openProject=id; renderDetail();
+}
+function renderDetail(){
+  const p=byId(projects,openProject);
+  if(!p){ openProject=null; return closeModal(); }
+  const dd=draftDue(p), dr=draftState(p), d=deliveryState(p);
+  const note=(st,txt)=>`<div class="d-note" style="color:${K_COLOR[st]||"var(--dim)"}">${txt}</div>`;
+  M().innerHTML=`<div class="modal-wrap" data-close="1"><div class="modal wide">
+    <button class="x" data-close="1" aria-label="Close">✕</button>
+    <h3>${esc(p.title||"Project")}</h3>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--dim);margin:-10px 0 13px">
+      ${esc(clientName(p.clientId))}${p.code?" · "+esc(p.code):""}${p.type?" · "+esc(p.type):""}</div>
+    <div class="datestrip">
+      <div><label>Start / shoot date</label>
+        <input class="sel" type="date" data-pstart="${esc(p.id)}" value="${esc(p.startISO||"")}">
+        ${p.startISO?note("ok",`day ${Math.max(1,-(dayDiff(p.startISO))+1)} of the job`):note("ok","not set")}</div>
+      <div><label>Edit start</label>
+        <input class="sel" type="date" data-pedit="${esc(p.id)}" value="${esc(p.editStart||"")}">
+        ${p.editStart?note("ok",`${daysIn(p.editStart)} of ${SLA} days used`):note("soon","not in edit yet")}</div>
+      <div><label>First draft due (${DRAFT_SLA}d)</label>
+        <input class="sel" type="date" data-pdraft="${esc(p.id)}" value="${esc(dd||"")}">
+        ${dr?note(dr.k,dr.label):note("ok","—")}</div>
+      <div><label>Delivery due</label>
+        <input class="sel" type="date" data-pdue="${esc(p.id)}" value="${esc(p.dueISO||"")}">
+        ${note(d.k,d.label)}</div>
+    </div>
+    ${projectCard(p,true)}
+    <div class="modal-actions">
+      <button class="btn ghost" data-form="project" data-id="${esc(p.id)}">FULL FORM</button>
+      <button class="btn ghost" data-close="1">CLOSE</button>
+    </div>
+  </div></div>`;
+}
+async function setStart(pid,v){
+  await guard(()=>updateDoc(doc(db,"projects",pid),{startISO:v||null}),v?`Start ${isoShort(v)}`:"Start cleared");
+}
+async function setEditStart(pid,v){
+  await guard(()=>updateDoc(doc(db,"projects",pid),{editStart:v||null}),v?`Edit start ${isoShort(v)}`:"Edit start cleared");
+}
+async function setDraftDue(pid,v){
+  await guard(()=>updateDoc(doc(db,"projects",pid),{draftDueISO:v||null}),v?`Draft due ${isoShort(v)}`:"Back to auto");
+}
+
+/* ── events ── */
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-open],[data-pfilter],[data-alerts],[data-digest]");
+  if(!t) return;
+  const d=t.dataset;
+  if(d.open){ if(t.classList.contains("pmini")&&e.target.closest("select,input,a")) return;
+             return projectDetail(d.open); }
+  if(d.pfilter){ projFilter=d.pfilter; return paint(); }
+  if(d.alerts) return askAlerts();
+  if(d.digest) return textDigest();
+});
+document.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.id==="pClientFilter"){ projClient=t.value; return paint(); }
+  if(t.dataset.pstart!==undefined&&t.dataset.pstart) return setStart(t.dataset.pstart,t.value);
+  if(t.dataset.pedit!==undefined&&t.dataset.pedit)  return setEditStart(t.dataset.pedit,t.value);
+  if(t.dataset.pdraft!==undefined&&t.dataset.pdraft)return setDraftDue(t.dataset.pdraft,t.value);
+});
+setInterval(fireAlerts,9e5);
 
 
 /* ═══════════ INBOUND (LEAD INTAKE) ═══════════ */
@@ -1766,6 +2029,8 @@ function ownerView(){
     ${stat("PROJECT $ UNCOLLECTED",money(projDue),projDue?T.gold:T.green)}
     ${stat("INVOICES UNPAID",money(outstInv),outstInv?T.gold:T.green)}
   </div>
+  ${alertStrip()}
+  ${projectBoard()}
   <div class="two-col">
     <section class="panel"><div class="eyebrow">Delivery Radar</div>${radar}</section>
     <section class="panel"><div class="eyebrow">Editor Payments
@@ -1815,7 +2080,7 @@ function ownerView(){
           <button class="btn gold mini" data-form="project" data-client="${esc(c.id)}">+ PROJECT</button>
           <button class="btn outline mini" data-preview="${esc(c.id)}">VIEW AS CLIENT →</button></div>
       </div>
-      ${ps.length?`<div class="grid-gap cards">${ps.map(p=>projectCard(p,true)).join("")}</div>`
+      ${ps.length?`<div class="proj-grid">${ps.map(miniCard).join("")}</div>`
         :`<div style="font-size:13px;color:var(--dim);padding-bottom:8px">No projects yet.</div>`}
       ${iv.length?`<div style="margin-top:14px">${iv.map(i=>`<div class="list-row">
         <div><div class="inv-label">${esc(i.label)}</div><div class="inv-meta">${esc(i.date||"")}</div></div>
@@ -1915,6 +2180,8 @@ function paint(){
     </header>
     <main>${body}</main>
     <footer>Under The Sun Studios · Long Beach, CA</footer>`;
+  if(openProject) renderDetail();
+  fireAlerts();
 }
 
 /* ── events ── */
