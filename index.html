@@ -410,6 +410,15 @@ input.sel{font-family:var(--mono);font-size:10.5px;color-scheme:dark}
 .db-actions .btn{font-size:10px;padding:6px 10px}
 .eyebrow .spacer{flex:1}
 .eyebrow .btn{margin-left:auto}
+/* ── drives ── */
+.drive-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.drive-card{padding:17px 18px 15px}
+.drive-head{display:flex;gap:16px;align-items:center}
+.drive-info{flex:1;min-width:0}
+.drive-name{font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.02em;color:var(--cream)}
+.drive-meta{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:3px;line-height:1.6}
+.drive-acts{margin-top:8px}
+.drive-projects{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft)}
 footer{text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--dim);
   padding:14px 0 calc(28px + env(safe-area-inset-bottom));text-transform:uppercase;position:relative;z-index:1}
 /* ── login gate ── */
@@ -1748,6 +1757,7 @@ const LOGO=document.getElementById("brandLogoSrc").textContent.trim();
 let authUser=null, me=null, booting=true, gateMsg=null;
 let clients=[], projects=[], invoices=[], payables=[], activity=[], users=[];
 let leads=[];
+let drives=[];
 let settings={}, smsPub={};   /* config/sms (owner only) + config/public (everyone) */
 let view="owner", previewClient=null, previewEditor=null;
 let openProject=null, projFilter="all", projClient="all";
@@ -1817,6 +1827,26 @@ const editorNames=()=>{
   projects.forEach(p=>{ editorsOn(p).forEach(n=>{ if(n!=="Cody") s.add(n); }); });
   return [...s].sort();
 };
+
+/* ── hard drives ── */
+const fmtStorage=gb=>{ gb=+gb||0;
+  if(gb>=1000) return (gb/1000).toLocaleString(undefined,{maximumFractionDigits:1})+" TB";
+  return gb.toLocaleString()+" GB"; };
+const driveProjectsOf=id=>projects.filter(p=>p.driveId===id);
+const driveUsedGB=id=>driveProjectsOf(id).reduce((s,p)=>s+(+p.sizeGB||0),0);
+const driveName=id=>byId(drives,id)?.name||"—";
+function driveWheel(percent,color){
+  const r=40,c=2*Math.PI*r,dash=c*Math.max(0,Math.min(100,percent))/100;
+  return `<svg viewBox="0 0 100 100" width="96" height="96" style="flex:none">
+    <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--track)" stroke-width="11"/>
+    <circle cx="50" cy="50" r="${r}" fill="none" stroke="${color}" stroke-width="11" stroke-linecap="round"
+      stroke-dasharray="${dash.toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 50 50)"/>
+    <text x="50" y="47" text-anchor="middle" font-family="Rajdhani,sans-serif" font-weight="700"
+      font-size="21" fill="#f2f0ea">${percent}%</text>
+    <text x="50" y="63" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="7.5"
+      letter-spacing="1.5" fill="#5c606a">FULL</text>
+  </svg>`;
+}
 
 /* ═══════════ SMS ═══════════
    Browser posts to a Twilio Function (endpoint + token live in config/public
@@ -1903,6 +1933,7 @@ async function loadFor(user){
     unsubs.push(live(collection(db,"payables"), v=>payables=v));
     unsubs.push(live(collection(db,"activity"), v=>activity=v.sort((a,b)=>(b.ts||0)-(a.ts||0))));
     unsubs.push(live(collection(db,"users"),    v=>users=v.map(u=>({...u,email:u.id}))));
+    unsubs.push(live(collection(db,"drives"),   v=>drives=v));
   }
   else if(me.role==="client"){
     view="client";
@@ -2089,6 +2120,35 @@ async function removeClient(id){
   await guard(()=>deleteDoc(doc(db,"clients",id)),"Client deleted"); closeModal();
 }
 
+function driveForm(id){
+  const d=id?byId(drives,id)||{}:{};
+  showModal(`<h3>${id?"Edit Drive":"Add Drive"}</h3>
+  <div class="f-grid cols">
+    <div class="f span2"><label>Drive name</label><input id="df-name" value="${esc(d.name||"")}" placeholder="Raid 01 — Red"></div>
+    <div class="f"><label>Capacity (GB)</label><input id="df-cap" type="number" min="0" step="10" value="${d.capacityGB||""}" placeholder="4000"><div class="hint">1 TB = 1000 GB</div></div>
+    <div class="f"><label>Location</label><input id="df-loc" value="${esc(d.location||"")}" placeholder="Shelf, safe, on-site..."></div>
+    <div class="f span2"><label>Notes</label><input id="df-notes" value="${esc(d.notes||"")}" placeholder="Anything worth knowing about this drive"></div>
+  </div>
+  <div class="actions">
+    ${id?`<button class="btn ghost danger" data-del-drive="${esc(id)}">DELETE</button>`:""}
+    <button class="btn ghost" data-close="1">CANCEL</button>
+    <button class="btn gold" data-save-drive="${esc(id||"")}">${id?"SAVE":"ADD DRIVE"}</button>
+  </div>`);
+}
+async function saveDrive(id){
+  const name=fv("df-name"); if(!name) return toast("Name required");
+  const data={name,capacityGB:+fv("df-cap")||0,location:fv("df-loc"),notes:fv("df-notes")};
+  await guard(async()=>{
+    if(id) await updateDoc(doc(db,"drives",id),data);
+    else await addDoc(collection(db,"drives"),data);
+  },id?"Drive updated":"Drive added");
+  closeModal();
+}
+async function removeDrive(id){
+  if(driveProjectsOf(id).length) return toast("Unassign its projects first");
+  await guard(()=>deleteDoc(doc(db,"drives",id)),"Drive deleted"); closeModal();
+}
+
 async function saveProject(id){
   const clientId=fv("pf-client"), title=fv("pf-title");
   if(!clientId||!title) return toast("Client and title required");
@@ -2111,6 +2171,7 @@ async function saveProject(id){
     note:fv("pf-note")||"Just added to the board.",
     footageUrl:raw||null, frameUrl:frame||null,
     editor, editCost:+fv("pf-cost")||0,
+    driveId:fv("pf-drive")||null, sizeGB:+fv("pf-size")||0,
     cost:+fv("pf-price")||0,
     startISO:fv("pf-start")||null,
     editors:[...new Set([editor,...PF.map(x=>x.editor)].filter(Boolean))],
@@ -2303,6 +2364,8 @@ function projectForm(id,preClient){
     <div class="f"><label>Due date</label><input id="pf-due" type="date" value="${due}"></div>
     <div class="f"><label>Editor</label><select id="pf-editor">${eds.map(e=>`<option ${p.editor===e?"selected":""}>${esc(e)}</option>`).join("")}</select></div>
     <div class="f"><label>Edit cost ($)</label><input id="pf-cost" type="number" min="0" step="25" value="${p.editCost??0}"><div class="hint">0 = in-house</div></div>
+    <div class="f"><label>Hard drive</label><select id="pf-drive"><option value="">— unassigned —</option>${drives.map(dr=>`<option value="${esc(dr.id)}" ${p.driveId===dr.id?"selected":""}>${esc(dr.name)}</option>`).join("")}</select></div>
+    <div class="f"><label>Footage size (GB)</label><input id="pf-size" type="number" min="0" step="10" value="${p.sizeGB||""}" placeholder="450"><div class="hint">estimated, drives page tallies this</div></div>
     <div class="f span2"><label>Deliverables — name, status, own review link</label><div id="pf-box"></div></div>
     <div class="f"><label>Project price ($)</label><input id="pf-price" type="number" min="0" step="50" value="${price||""}" placeholder="2500"><div class="hint">split 50 / 50</div></div>
     <div class="f"><label>Deposit ($${half})</label>
@@ -3919,6 +3982,68 @@ function ownerView(){
   </section>`;
 }
 
+function drivesView(){
+  const totalCap=drives.reduce((s,d)=>s+(+d.capacityGB||0),0);
+  const totalUsed=drives.reduce((s,d)=>s+driveUsedGB(d.id),0);
+  const unassigned=projects.filter(p=>!p.driveId&&(+p.sizeGB||0)>0);
+  const stat=(l,v,c)=>`<div class="stat"><div class="l">${l}</div><div class="v" style="color:${c||"var(--cream)"}">${v}</div></div>`;
+
+  if(!drives.length){
+    return `<div class="hero"><div><h1>Drives<span>.</span></h1>
+      <div class="sub">No hard drives logged yet</div></div>
+      <button class="btn gold" data-form="drive">+ ADD DRIVE</button></div>
+      <section class="panel"><div class="empty-state">
+        <div class="t">No drives yet</div>
+        <div class="s">Add each hard drive you shoot to and back up on, with its total capacity.<br>Then mark which drive a project's footage lives on and its estimated size.</div>
+        <button class="btn gold" data-form="drive">+ ADD YOUR FIRST DRIVE</button>
+      </div></section>`;
+  }
+
+  const cards=drives.map(d=>{
+    const cap=+d.capacityGB||0, used=driveUsedGB(d.id);
+    const pctFull=cap?Math.min(100,Math.round(used/cap*100)):0;
+    const color=pctFull>=90?T.red:pctFull>=70?T.gold:T.green;
+    const projs=driveProjectsOf(d.id);
+    return `<section class="panel drive-card">
+      <div class="drive-head">
+        ${driveWheel(pctFull,color)}
+        <div class="drive-info">
+          <div class="drive-name">${esc(d.name)}</div>
+          <div class="drive-meta">${fmtStorage(used)} used of ${fmtStorage(cap)}${d.location?` &middot; ${esc(d.location)}`:""}</div>
+          <div class="drive-meta" style="color:${color}">${fmtStorage(Math.max(0,cap-used))} free</div>
+          ${d.notes?`<div class="drive-meta">${esc(d.notes)}</div>`:""}
+          <div class="drive-acts"><button class="btn ghost mini" data-form="drive" data-id="${esc(d.id)}">EDIT</button></div>
+        </div>
+      </div>
+      <div class="drive-projects">
+        <div class="inv-meta" style="letter-spacing:.1em;margin-bottom:2px">${projs.length} PROJECT${projs.length===1?"":"S"} ON THIS DRIVE</div>
+        ${projs.length?projs.map(p=>`<div class="list-row">
+          <div><div class="inv-label">${esc(p.title)}</div>
+            <div class="inv-meta">${esc(p.code||"")}${p.code?" &middot; ":""}${esc(clientName(p.clientId))} &middot; ${pct(p)}%</div></div>
+          <span class="inv-meta">${fmtStorage(+p.sizeGB||0)}</span></div>`).join("")
+          :`<div style="font-size:12.5px;color:var(--dim);padding:8px 2px 2px">Nothing assigned yet.</div>`}
+      </div>
+    </section>`;}).join("");
+
+  return `
+  <div class="hero"><div><h1>Drives<span>.</span></h1>
+    <div class="sub">${drives.length} drive${drives.length===1?"":"s"} &middot; ${fmtStorage(totalUsed)} used of ${fmtStorage(totalCap)}</div></div>
+    <button class="btn gold" data-form="drive">+ ADD DRIVE</button></div>
+  <div class="stats">
+    ${stat("DRIVES",drives.length)}
+    ${stat("TOTAL CAPACITY",fmtStorage(totalCap))}
+    ${stat("TOTAL USED",fmtStorage(totalUsed),T.gold)}
+    ${stat("FREE SPACE",fmtStorage(Math.max(0,totalCap-totalUsed)),T.green)}
+  </div>
+  <div class="drive-grid">${cards}</div>
+  ${unassigned.length?`<section class="panel"><div class="eyebrow" style="color:var(--red)">Not Yet Assigned To A Drive — ${unassigned.length}</div>
+    ${unassigned.map(p=>`<div class="list-row">
+      <div><div class="inv-label">${esc(p.title)}</div>
+        <div class="inv-meta">${esc(p.code||"")}${p.code?" &middot; ":""}${esc(clientName(p.clientId))} &middot; ${fmtStorage(+p.sizeGB||0)}</div></div>
+      <button class="btn ghost mini" data-form="project" data-id="${esc(p.id)}">OPEN</button></div>`).join("")}
+  </section>`:""}`;
+}
+
 /* ═══════════ SHELL ═══════════ */
 function gate(){
   return `<div class="gate"><div class="gate-card">
@@ -3954,6 +4079,7 @@ function paint(){
     <button class="tab ${view==="owner"?"on":""}" data-view="owner">Studio</button>
     <button class="tab ${view==="quote"?"on":""}" data-view="quote">Quote Builder</button>
     <button class="tab ${view==="inbound"?"on":""}" data-view="inbound">Inbound${leads.filter(l=>!l.firstReplyAt).length?` <span style="color:var(--gold)">&bull;</span>`:""}</button>
+    <button class="tab ${view==="drives"?"on":""}" data-view="drives">Drives</button>
     <button class="tab ${view==="editor"?"on":""}" data-view="editor">Editor</button>
     <button class="tab ${view==="client"?"on":""}" data-view="client">Client</button>`:"";
   const pickers=isOwner&&view==="client"&&clients.length
@@ -3967,6 +4093,7 @@ function paint(){
   else if(view==="client")    body=clientView(previewClient||clients[0]?.id);
   else if(view==="quote")     body=quoteView();
   else if(view==="inbound")   body=inboundView();
+  else if(view==="drives")    body=drivesView();
   else if(view==="editor")    body=editorView(previewEditor||editorNames()[0]);
   else                        body=ownerView();
 
@@ -3988,7 +4115,7 @@ function paint(){
 
 /* ── events ── */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test]");
+  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-save-drive],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-del-drive],[data-pf-add],[data-pf-del],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test]");
   if(!t) return;
   const d=t.dataset;
   if(d.close!==undefined){ if(t===e.target||t.tagName==="BUTTON") closeModal(); return; }
@@ -4021,16 +4148,19 @@ document.addEventListener("click",e=>{
   if(d.form==="invoice") return invoiceForm(d.id||null,d.client||null);
   if(d.form==="payable") return payableForm(d.id||null);
   if(d.form==="access")  return accessForm(d.email||null);
+  if(d.form==="drive")   return driveForm(d.id||null);
   if(d.saveClient!==undefined)  return saveClient(d.saveClient||null);
   if(d.saveProject!==undefined) return saveProject(d.saveProject||null);
   if(d.saveInvoice!==undefined) return saveInvoice(d.saveInvoice||null);
   if(d.savePayable!==undefined) return savePayable(d.savePayable||null);
   if(d.saveAccess!==undefined)  return saveAccess(d.saveAccess||null);
+  if(d.saveDrive!==undefined)   return saveDrive(d.saveDrive||null);
   if(d.delClient)  return removeClient(d.delClient);
   if(d.delProject) return removeProject(d.delProject);
   if(d.delInvoice) return removeInvoice(d.delInvoice);
   if(d.delPayable) return removePayable(d.delPayable);
   if(d.delAccess)  return removeAccess(d.delAccess);
+  if(d.delDrive)   return removeDrive(d.delDrive);
 });
 document.addEventListener("change",e=>{
   if(e.target.dataset.retoggle!==undefined) riToggle();
@@ -4060,7 +4190,7 @@ onAuthStateChanged(auth,u=>{
   authUser=u;
   if(u){ booting=true; paint(); loadFor(u); }
   else { me=null; booting=false; stopAll();
-         clients=[];projects=[];invoices=[];payables=[];activity=[];users=[]; paint(); }
+         clients=[];projects=[];invoices=[];payables=[];activity=[];users=[];drives=[]; paint(); }
 });
 
 if("serviceWorker" in navigator){
