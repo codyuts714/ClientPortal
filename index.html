@@ -60,7 +60,7 @@
   --display:'Rajdhani',sans-serif; --body:'Inter',sans-serif; --mono:'JetBrains Mono',monospace;
 }
 *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;scrollbar-gutter:stable}
 body{
   background:
     radial-gradient(ellipse 900px 500px at 15% -10%, rgba(242,201,76,.09), transparent 60%),
@@ -102,8 +102,8 @@ header{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-
 .tab.on{color:var(--cream);border-bottom-color:var(--gold)}
 
 main{max-width:1120px;margin:0 auto;padding:22px 18px 60px;display:grid;gap:16px;position:relative;z-index:1}
-main.wide{max-width:1520px}
-@media (min-width:1900px){main.wide{max-width:1800px}}
+main.wide{max-width:1680px}
+@media (min-width:1900px){main.wide{max-width:1960px}}
 
 /* ── wide monitors: use the room instead of a 1120px column ── */
 @media (min-width:1500px){
@@ -2768,6 +2768,12 @@ function clientView(cid){
         </div></div>`;}).join("")+`</div>`;
 
   const acts=activityOf(cid);
+  
+  /* Ready to post section - for social clients */
+  const socialProjs=mine.filter(p=>p.social);
+  const readyToPost=[];
+  socialProjs.forEach(p=>(p.pieces||[]).forEach((pc,i)=>{ if(pc.status==="done"&&!(p.postStatus||{})[i]) readyToPost.push({p,pc,i}); }));
+  
   return `
   <div class="hero">
     <div><h1>${esc((c.name||"").split(" ")[0])}<span>.</span></h1>
@@ -2775,6 +2781,13 @@ function clientView(cid){
     <div><div class="big-num-label">BALANCE DUE</div>
       <div class="big-num" style="color:${due?T.gold:T.green}">${money(due)}</div></div>
   </div>
+  ${readyToPost.length?`<section class="panel"><div class="eyebrow">Ready to Post — ${readyToPost.length} assets</div>
+    <div class="grid-gap cards">${readyToPost.map(({p,pc,i})=>`<div class="card" style="align-items:center;justify-content:space-between">
+      <div><div style="font-size:14px;font-weight:700">${esc(pc.name)}</div>
+        <div class="inv-meta" style="margin-top:2px">${esc(p.title)}</div></div>
+      <button class="btn gold" style="border-radius:6px;padding:6px 12px;font-size:10px" onclick="document.getElementById('post-status-${esc(p.id)}-${i}').innerText='Posted'; alert('Marked as posted')">MARK POSTED</button></div>
+      <input type="hidden" id="post-status-${esc(p.id)}-${i}" value="">`).join("")}</div>
+  </section>`:""}
   <section class="panel"><div class="eyebrow">Ready for Your Review${waiting.length?` — ${waiting.length} waiting`:""}</div>${reviewRows}</section>
   <section class="panel"><div class="eyebrow">In Production — ${mine.length} active</div>
     ${mine.length?`<div class="grid-gap cards">${mine.map(p=>projectCard(p,false)).join("")}</div>`
@@ -3982,11 +3995,48 @@ function ownerView(){
   </section>`;
 }
 
+function clientDatabaseView(){
+  return `
+  <div class="hero"><div><h1>Clients<span>.</span></h1>
+    <div class="sub">${clients.length} client${clients.length===1?"":"s"}</div></div>
+    <button class="btn gold" data-form="client">+ ADD CLIENT</button></div>
+  <section class="panel"><div class="eyebrow">Database
+    <span class="spacer"></span><button class="btn outline mini" data-form="client">+ ADD CLIENT</button></div>
+    ${clients.length?clients.map(c=>{
+      const cOpen=projectsOf(c.id).filter(p=>pct(p)<100).length;
+      const iv=invoicesOf(c.id);
+      const cDue=iv.filter(i=>i.status!=="Paid").reduce((s,i)=>s+(+i.amount||0),0);
+      const rItems=(c.retainerItems||[]).filter(x=>x.name);
+      return `<div class="db-row">
+        <div><div class="db-name">${esc(c.name)}${isRetainer(c)?`<span class="retbadge">Retainer ${money(retainerValue(c))}/mo</span>`:""}</div>
+          <div class="db-meta">${esc(c.company||"—")}${c.contact?` · ${esc(c.contact)}`:""}${isRetainer(c)&&rItems.length?`<br>${rItems.map(x=>esc(x.name)+(x.qty?` (${esc(x.qty)})`:"")).join(" · ")}`:""}${c.retainer?`<br>${esc(c.retainer)}`:""}</div>
+          <div class="db-meta" style="color:${cDue?"var(--gold)":"var(--dim)"}">${cOpen} open · ${cDue?`balance ${money(cDue)}`:"paid up"}</div>
+          ${c.assetsUrl?`<div style="margin-top:6px"><button class="btn outline mini" onclick="window.open('${esc(c.assetsUrl)}','_blank')">📁 ASSET FOLDER ↗</button></div>`:""}</div>
+        <div class="db-actions">
+          <button class="btn gold mini" data-form="project" data-client="${esc(c.id)}">+ PROJECT</button>
+          <button class="btn outline mini" data-form="invoice" data-client="${esc(c.id)}">+ INVOICE</button>
+          <button class="btn ghost mini" data-form="client" data-id="${esc(c.id)}">EDIT</button>
+          <button class="btn ghost mini" data-preview="${esc(c.id)}">PREVIEW →</button>
+        </div></div>`;}).join("")
+      :`<div style="font-size:13px;color:var(--dim);padding:20px;text-align:center">No clients yet. Add one to get started.</div>`}
+  </section>`;
+}
+
 function drivesView(){
   const totalCap=drives.reduce((s,d)=>s+(+d.capacityGB||0),0);
   const totalUsed=drives.reduce((s,d)=>s+driveUsedGB(d.id),0);
   const unassigned=projects.filter(p=>!p.driveId&&(+p.sizeGB||0)>0);
   const stat=(l,v,c)=>`<div class="stat"><div class="l">${l}</div><div class="v" style="color:${c||"var(--cream)"}">${v}</div></div>`;
+  const search=fv("drive-search").toLowerCase();
+  
+  const filtered=drives.filter(d=>{
+    if(!search) return true;
+    if(d.name.toLowerCase().includes(search)) return true;
+    return driveProjectsOf(d.id).some(p=>
+      p.title.toLowerCase().includes(search)||
+      (p.code&&p.code.toLowerCase().includes(search))||
+      clientName(p.clientId).toLowerCase().includes(search));
+  });
 
   if(!drives.length){
     return `<div class="hero"><div><h1>Drives<span>.</span></h1>
@@ -3999,7 +4049,7 @@ function drivesView(){
       </div></section>`;
   }
 
-  const cards=drives.map(d=>{
+  const cards=filtered.map(d=>{
     const cap=+d.capacityGB||0, used=driveUsedGB(d.id);
     const pctFull=cap?Math.min(100,Math.round(used/cap*100)):0;
     const color=pctFull>=90?T.red:pctFull>=70?T.gold:T.green;
@@ -4028,15 +4078,21 @@ function drivesView(){
   return `
   <div class="hero"><div><h1>Drives<span>.</span></h1>
     <div class="sub">${drives.length} drive${drives.length===1?"":"s"} &middot; ${fmtStorage(totalUsed)} used of ${fmtStorage(totalCap)}</div></div>
-    <button class="btn gold" data-form="drive">+ ADD DRIVE</button></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input type="text" id="drive-search" placeholder="Search by drive name, project, or client..." 
+        style="flex:1;min-width:240px;background:var(--panel);border:1px solid var(--line);color:var(--cream);border-radius:9px;padding:9px 11px;font-family:var(--body);font-size:13.5px;outline:none" 
+        onkeyup="paint()">
+      <button class="btn gold" data-form="drive">+ ADD DRIVE</button>
+    </div></div>
   <div class="stats">
     ${stat("DRIVES",drives.length)}
     ${stat("TOTAL CAPACITY",fmtStorage(totalCap))}
     ${stat("TOTAL USED",fmtStorage(totalUsed),T.gold)}
     ${stat("FREE SPACE",fmtStorage(Math.max(0,totalCap-totalUsed)),T.green)}
   </div>
-  <div class="drive-grid">${cards}</div>
-  ${unassigned.length?`<section class="panel"><div class="eyebrow" style="color:var(--red)">Not Yet Assigned To A Drive — ${unassigned.length}</div>
+  ${filtered.length?`<div class="drive-grid">${cards}</div>`:
+    `<section class="panel"><div style="text-align:center;padding:20px;color:var(--dim)">No drives match "<b>${esc(search)}</b>"</div></section>`}
+  ${unassigned.length&&!search?`<section class="panel"><div class="eyebrow" style="color:var(--red)">Not Yet Assigned To A Drive — ${unassigned.length}</div>
     ${unassigned.map(p=>`<div class="list-row">
       <div><div class="inv-label">${esc(p.title)}</div>
         <div class="inv-meta">${esc(p.code||"")}${p.code?" &middot; ":""}${esc(clientName(p.clientId))} &middot; ${fmtStorage(+p.sizeGB||0)}</div></div>
@@ -4070,6 +4126,7 @@ function gate(){
 function paint(){
   if(qbFrame&&qbFrame.isConnected) captureQB();
   const root=document.getElementById("root");
+  const scrollPos=window.scrollY;  // save scroll before re-render
   if(booting){ root.innerHTML=`<div class="boot"><div class="spin"></div><div>Loading</div></div>`; return; }
   if(!me){ root.innerHTML=gate(); return; }
 
@@ -4079,6 +4136,7 @@ function paint(){
     <button class="tab ${view==="owner"?"on":""}" data-view="owner">Studio</button>
     <button class="tab ${view==="quote"?"on":""}" data-view="quote">Quote Builder</button>
     <button class="tab ${view==="inbound"?"on":""}" data-view="inbound">Inbound${leads.filter(l=>!l.firstReplyAt).length?` <span style="color:var(--gold)">&bull;</span>`:""}</button>
+    <button class="tab ${view==="clients"?"on":""}" data-view="clients">Clients</button>
     <button class="tab ${view==="drives"?"on":""}" data-view="drives">Drives</button>
     <button class="tab ${view==="editor"?"on":""}" data-view="editor">Editor</button>
     <button class="tab ${view==="client"?"on":""}" data-view="client">Client</button>`:"";
@@ -4093,6 +4151,7 @@ function paint(){
   else if(view==="client")    body=clientView(previewClient||clients[0]?.id);
   else if(view==="quote")     body=quoteView();
   else if(view==="inbound")   body=inboundView();
+  else if(view==="clients")   body=clientDatabaseView();
   else if(view==="drives")    body=drivesView();
   else if(view==="editor")    body=editorView(previewEditor||editorNames()[0]);
   else                        body=ownerView();
@@ -4111,6 +4170,7 @@ function paint(){
   if(view==="quote"&&me.role==="owner") mountQB();
   if(openProject) renderDetail();
   fireAlerts();
+  requestAnimationFrame(()=>{ if(scrollPos>0) window.scrollTo(0, scrollPos); });
 }
 
 /* ── events ── */
