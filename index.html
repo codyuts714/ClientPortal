@@ -60,7 +60,7 @@
   --display:'Rajdhani',sans-serif; --body:'Inter',sans-serif; --mono:'JetBrains Mono',monospace;
 }
 *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
-html{-webkit-text-size-adjust:100%;scrollbar-gutter:stable}
+html{-webkit-text-size-adjust:100%}
 body{
   background:
     radial-gradient(ellipse 900px 500px at 15% -10%, rgba(242,201,76,.09), transparent 60%),
@@ -102,8 +102,8 @@ header{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-
 .tab.on{color:var(--cream);border-bottom-color:var(--gold)}
 
 main{max-width:1120px;margin:0 auto;padding:22px 18px 60px;display:grid;gap:16px;position:relative;z-index:1}
-main.wide{max-width:1680px}
-@media (min-width:1900px){main.wide{max-width:1960px}}
+main.wide{max-width:1520px}
+@media (min-width:1900px){main.wide{max-width:1800px}}
 
 /* ── wide monitors: use the room instead of a 1120px column ── */
 @media (min-width:1500px){
@@ -410,15 +410,6 @@ input.sel{font-family:var(--mono);font-size:10.5px;color-scheme:dark}
 .db-actions .btn{font-size:10px;padding:6px 10px}
 .eyebrow .spacer{flex:1}
 .eyebrow .btn{margin-left:auto}
-/* ── drives ── */
-.drive-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
-.drive-card{padding:17px 18px 15px}
-.drive-head{display:flex;gap:16px;align-items:center}
-.drive-info{flex:1;min-width:0}
-.drive-name{font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.02em;color:var(--cream)}
-.drive-meta{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:3px;line-height:1.6}
-.drive-acts{margin-top:8px}
-.drive-projects{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft)}
 footer{text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--dim);
   padding:14px 0 calc(28px + env(safe-area-inset-bottom));text-transform:uppercase;position:relative;z-index:1}
 /* ── login gate ── */
@@ -491,6 +482,66 @@ footer{text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.
   background:var(--panel-up);border:1px solid var(--line);border-radius:20px;padding:8px 16px;
   font-family:var(--mono);font-size:10.5px;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;
   box-shadow:0 10px 30px -10px rgba(0,0,0,.7)}
+
+/* ── main-page preview cards (Payments / Clients / SMS / Access) ── */
+.previewgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.pvcard{text-align:left;background:linear-gradient(180deg,var(--panel-up),var(--panel));
+  border:1px solid var(--line-soft);border-radius:14px;padding:15px 16px 16px;position:relative;overflow:hidden;
+  cursor:pointer;transition:.16s;color:inherit;font:inherit;display:block;width:100%}
+.pvcard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(242,201,76,.35),transparent);opacity:.5}
+.pvcard:hover{border-color:rgba(242,201,76,.4);transform:translateY(-1px)}
+.pvcard .pv-l{font-family:var(--mono);font-size:9.5px;color:var(--dim);letter-spacing:.13em;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between}
+.pvcard .pv-l .arw{color:var(--gold);font-size:13px}
+.pvcard .pv-v{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:.02em;margin-top:6px}
+.pvcard .pv-s{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5}
+.pvcard .pv-mini{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:8px;line-height:1.7;
+  border-top:1px solid var(--line-soft);padding-top:8px}
+
+/* ── back-to bar for sub-pages ── */
+.backbar{display:flex;align-items:center;gap:10px;margin-bottom:2px}
+.backbtn{background:none;border:1px solid var(--line);border-radius:9px;color:var(--muted);
+  font-family:var(--display);font-weight:700;font-size:11px;letter-spacing:.07em;text-transform:uppercase;
+  padding:7px 12px;cursor:pointer}
+.backbtn:hover{color:var(--gold);border-color:rgba(242,201,76,.4)}
+
+/* ── hard-drive tracker ── */
+.drive-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start}
+.drive-card{background:linear-gradient(180deg,var(--panel-up),var(--panel));border:1px solid var(--line-soft);
+  border-radius:15px;padding:16px 17px;position:relative;overflow:hidden}
+.drive-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(242,201,76,.35),transparent);opacity:.5}
+.drive-head{display:flex;gap:15px;align-items:center}
+.drive-meta{flex:1;min-width:0}
+.drive-name{font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.04em;color:var(--cream)}
+.drive-cap{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.05em;margin-top:3px}
+.drive-free{font-family:var(--mono);font-size:11px;margin-top:4px}
+.dwheel text.pctnum{font-family:var(--display);font-weight:700}
+.drive-projrow{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:8px 0;border-top:1px solid var(--line-soft);font-size:13px}
+.drive-projrow:first-of-type{border-top:none}
+.drive-projrow .dp-t{color:var(--cream)}
+.drive-projrow .dp-c{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.05em}
+.drive-projrow .dp-sz{font-family:var(--mono);font-size:12px;color:var(--gold-soft);white-space:nowrap}
+.drive-projlist{margin-top:13px;padding-top:11px;border-top:1px dashed var(--line)}
+
+/* ── ready-to-post ── */
+.rtp-tabs{display:flex;gap:6px;margin-bottom:12px}
+.rtp-tabs button{padding:6px 13px;border-radius:14px;border:1px solid var(--line);background:none;
+  color:var(--dim);font-family:var(--display);font-weight:700;font-size:11px;letter-spacing:.07em;
+  text-transform:uppercase;cursor:pointer}
+.rtp-tabs button.on{border-color:rgba(242,201,76,.5);background:rgba(242,201,76,.13);color:var(--gold)}
+.rtp-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:11px 13px;border:1px solid var(--line-soft);border-radius:11px;margin-bottom:8px;
+  background:linear-gradient(180deg,var(--panel-up),var(--panel))}
+.rtp-row.posted{border-left:2px solid #6fc8e8}
+.rtp-row .rtp-name{font-size:14px;font-weight:700;color:var(--cream)}
+.rtp-row .rtp-meta{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:2px;letter-spacing:.04em}
+.btn.posted-on{background:rgba(111,200,232,.14);border:1px solid rgba(111,200,232,.4);color:#6fc8e8;font-weight:700}
+
+/* ── owner client-detail page ── */
+.cd-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.cd-actions{display:flex;gap:8px;flex-wrap:wrap}
 </style>
 <script type="text/plain" id="qbSrc"><!DOCTYPE html>
 <html lang="en">
@@ -546,8 +597,15 @@ header{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);
 .btn.sm{padding:5px 10px;font-size:12px}
 .btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.tab:focus-visible,.mode:focus-visible,.svc:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 
-.wrap{padding:22px;display:grid;grid-template-columns:minmax(300px,.95fr) minmax(440px,1.45fr);gap:20px;align-items:start}
-@media(max-width:1020px){.wrap{grid-template-columns:1fr}}
+.wrap{padding:22px;display:grid;grid-template-columns:minmax(360px,1.15fr) minmax(400px,1fr);gap:22px;align-items:start}
+@media(max-width:860px){.wrap{grid-template-columns:1fr}}
+/* wide screens: split the service menu into two columns so the page is
+   wide instead of long-and-skinny. keep each service/category intact. */
+@media(min-width:1180px){
+  #catalog,#catalogM{column-count:2;column-gap:18px}
+  #catalog .catgroup,#catalogM .catgroup,#catalog .svc,#catalogM .svc,#catalog .svcedit,#catalogM .svcedit{break-inside:avoid}
+}
+@media(min-width:1650px){ #catalog,#catalogM{column-count:3} }
 .panel{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line-soft);
   border-radius:var(--r);box-shadow:0 18px 40px rgba(0,0,0,.35);overflow:hidden}
 .panel + .panel{margin-top:20px}
@@ -1624,28 +1682,32 @@ function sandbox(){
           retainer:"$2,500/mo — 4 YouTube videos + posting",assetsUrl:"https://example.com/hyde-assets"},
       c2:{name:"Cindy Gallo",company:"Avner Gat — Public Adjusters",contact:"(555) 555-0134",
           retainer:"Six-video package + ongoing social",assetsUrl:"https://example.com/cindy-assets"} },
+    drives:{
+      d1:{name:"UTS RAID 01",capacityGB:8000},
+      d2:{name:"Field SSD — Samsung T7",capacityGB:2000},
+      d3:{name:"Archive HDD 2024",capacityGB:4000} },
     projects:{
       p1:{clientId:"c1",title:"Nothing to Hyde | Vol. 3",code:"NTH-03",type:"YouTube",stage:3,
           dueISO:iso(5),due:short(iso(5)),editStart:iso(-6),editor:"Pedro",editCost:100,
           frameUrl:"https://example.com/frame-nth03",footageUrl:"https://example.com/raw-nth03",
-          note:"Rough cut is up — waiting on your review.",approvals:{},
+          note:"Rough cut is up — waiting on your review.",approvals:{},driveId:"d1",sizeGB:420,
           pieces:[{name:"Main Cut",status:"review"}]},
       p2:{clientId:"c1",title:"July Reels Package",code:"RLS-07",type:"Reels",stage:2,
           dueISO:iso(9),due:short(iso(9)),editStart:iso(-4),editor:"Pedro",editCost:320,
           frameUrl:"https://example.com/frame-rls07",footageUrl:"https://example.com/raw-rls07",
-          note:"Reel A in your review queue. B and C cutting now.",approvals:{},
+          note:"Reel A in your review queue. B and C cutting now.",approvals:{},driveId:"d1",sizeGB:280,
           editors:["Pedro","Faizan"],
           pieces:[{name:"Reel A — Pipeline Teaser",status:"review",editor:"Pedro",cost:80},{name:"Reel B — Market Myth",status:"editing",editor:"Pedro",cost:80},
                   {name:"Reel C — Deal Walkthrough",status:"editing",editor:"Faizan",cost:80},{name:"Reel D — Personal Brand",status:"queued",editor:"Faizan",cost:80}]},
       p3:{clientId:"c2",title:"Tip Tuesday — Cyber Liability",code:"TT-CYB",type:"Social",stage:2,
           dueISO:iso(2),due:short(iso(2)),editStart:iso(-8),editor:"Faizan",editCost:100,
-          note:"Cutting from the shoot transcript.",approvals:{},
+          note:"Cutting from the shoot transcript.",approvals:{},driveId:"d2",sizeGB:610,
           social:true,posts:[{d:iso(0),type:"Carousel",posted:false},{d:iso(1),type:"Reel",posted:false},
                   {d:iso(-2),type:"Story",posted:true,postedOn:iso(-2)},{d:iso(4),type:"Reel",posted:false}],
           pieces:[{name:"Main Cut",status:"editing"}]},
       p4:{clientId:"c2",title:"Tip Tuesday — ALE Coverage",code:"TT-ALE",type:"Social",stage:0,
           dueISO:iso(16),due:short(iso(16)),editStart:null,editor:"Faizan",editCost:100,
-          note:"Cut sheet built from transcript.",approvals:{},
+          note:"Cut sheet built from transcript.",approvals:{},driveId:"d2",sizeGB:150,
           pieces:[{name:"Main Cut",status:"queued"}]},
       L1:{pipeline:"lead",leadStage:"lead",clientId:null,editor:null,name:"Vista Dental Group",
           ask:"3 reels plus a brand day",channel:"Form",budget:"$3-6k",contact:"(555) 555-0188",
@@ -1757,10 +1819,12 @@ const LOGO=document.getElementById("brandLogoSrc").textContent.trim();
 let authUser=null, me=null, booting=true, gateMsg=null;
 let clients=[], projects=[], invoices=[], payables=[], activity=[], users=[];
 let leads=[];
-let drives=[];
+let drives=[];               /* hard-drive tracker */
 let settings={}, smsPub={};   /* config/sms (owner only) + config/public (everyone) */
 let view="owner", previewClient=null, previewEditor=null;
 let openProject=null, projFilter="all", projClient="all";
+let openClient=null;         /* owner drilled into a client's detail page */
+let readyTab="ready";        /* ready-to-post section: ready | archive */
 let unsubs=[];
 
 /* ── utils ── */
@@ -1773,6 +1837,50 @@ const todayISO=()=>new Date().toISOString().slice(0,10);
 const daysIn=iso=>iso?Math.floor((new Date()-new Date(iso+"T00:00:00"))/864e5)+1:null;
 const fv=id=>document.getElementById(id)?.value.trim()||"";
 const byId=(arr,id)=>arr.find(x=>x.id===id);
+
+/* ── hard-drive tracker helpers ── */
+const driveById=id=>byId(drives,id);
+const driveName=id=>driveById(id)?.name||"—";
+const projectsOnDrive=id=>projects.filter(p=>p.driveId===id);
+const driveUsedGB=d=>projectsOnDrive(d.id).reduce((s,p)=>s+(+p.sizeGB||0),0);
+const driveFillPct=d=>{ const cap=+d.capacityGB||0; if(!cap) return 0;
+  return Math.min(100,Math.round(driveUsedGB(d)/cap*100)); };
+/* GB in, human string out — flips to TB past 1000GB */
+function sizeFmt(gb){ gb=+gb||0;
+  if(gb>=1000){ const t=gb/1000; return (t>=10?Math.round(t):Math.round(t*10)/10)+" TB"; }
+  return Math.round(gb)+" GB"; }
+/* SVG donut ("data wheel") with a % in the middle — colour warms as it fills */
+function donut(pctv,size){
+  size=size||96; const sw=Math.round(size*0.11), r=(size-sw)/2, c=size/2, C=2*Math.PI*r;
+  pctv=Math.max(0,Math.min(100,Math.round(pctv)));
+  const col=pctv>=90?T.red:pctv>=75?T.gold:T.green;
+  const off=C*(1-pctv/100);
+  return `<svg class="dwheel" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-label="${pctv}% full">
+    <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${T.line}" stroke-width="${sw}"/>
+    <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"
+      stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"
+      transform="rotate(-90 ${c} ${c})" style="transition:stroke-dashoffset .5s ease"/>
+    <text class="pctnum" x="${c}" y="${c}" text-anchor="middle" dominant-baseline="central"
+      fill="${col}" style="font-size:${Math.round(size*0.26)}px">${pctv}<tspan style="font-size:${Math.round(size*0.15)}px">%</tspan></text>
+  </svg>`;
+}
+
+/* ── ready-to-post ── deliverables from social-managed projects that are cut
+   and delivered but not yet published. status "done" = delivered/DONE. */
+const socialProjectsOf=cid=>projectsOf(cid).filter(p=>p.social);
+function readyToPost(cid){
+  const out=[];
+  socialProjectsOf(cid).forEach(p=>(p.pieces||[]).forEach((pc,i)=>{
+    if(pc.status==="done") out.push({p,pc,i}); }));
+  return out;
+}
+function postedArchive(cid){
+  const out=[];
+  socialProjectsOf(cid).forEach(p=>(p.pieces||[]).forEach((pc,i)=>{
+    if(pc.status==="posted") out.push({p,pc,i}); }));
+  return out;
+}
+const hasSocialManaged=cid=>socialProjectsOf(cid).length>0;
 
 function pct(p){
   const st=+p.stage||0;
@@ -1827,26 +1935,6 @@ const editorNames=()=>{
   projects.forEach(p=>{ editorsOn(p).forEach(n=>{ if(n!=="Cody") s.add(n); }); });
   return [...s].sort();
 };
-
-/* ── hard drives ── */
-const fmtStorage=gb=>{ gb=+gb||0;
-  if(gb>=1000) return (gb/1000).toLocaleString(undefined,{maximumFractionDigits:1})+" TB";
-  return gb.toLocaleString()+" GB"; };
-const driveProjectsOf=id=>projects.filter(p=>p.driveId===id);
-const driveUsedGB=id=>driveProjectsOf(id).reduce((s,p)=>s+(+p.sizeGB||0),0);
-const driveName=id=>byId(drives,id)?.name||"—";
-function driveWheel(percent,color){
-  const r=40,c=2*Math.PI*r,dash=c*Math.max(0,Math.min(100,percent))/100;
-  return `<svg viewBox="0 0 100 100" width="96" height="96" style="flex:none">
-    <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--track)" stroke-width="11"/>
-    <circle cx="50" cy="50" r="${r}" fill="none" stroke="${color}" stroke-width="11" stroke-linecap="round"
-      stroke-dasharray="${dash.toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 50 50)"/>
-    <text x="50" y="47" text-anchor="middle" font-family="Rajdhani,sans-serif" font-weight="700"
-      font-size="21" fill="#f2f0ea">${percent}%</text>
-    <text x="50" y="63" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="7.5"
-      letter-spacing="1.5" fill="#5c606a">FULL</text>
-  </svg>`;
-}
 
 /* ═══════════ SMS ═══════════
    Browser posts to a Twilio Function (endpoint + token live in config/public
@@ -1931,9 +2019,9 @@ async function loadFor(user){
     unsubs.push(live(collection(db,"projects"), v=>{ leads=v.filter(isLead); projects=v.filter(p=>!isLead(p)); }));
     unsubs.push(live(collection(db,"invoices"), v=>invoices=v));
     unsubs.push(live(collection(db,"payables"), v=>payables=v));
+    unsubs.push(live(collection(db,"drives"),   v=>drives=v));
     unsubs.push(live(collection(db,"activity"), v=>activity=v.sort((a,b)=>(b.ts||0)-(a.ts||0))));
     unsubs.push(live(collection(db,"users"),    v=>users=v.map(u=>({...u,email:u.id}))));
-    unsubs.push(live(collection(db,"drives"),   v=>drives=v));
   }
   else if(me.role==="client"){
     view="client";
@@ -2120,35 +2208,6 @@ async function removeClient(id){
   await guard(()=>deleteDoc(doc(db,"clients",id)),"Client deleted"); closeModal();
 }
 
-function driveForm(id){
-  const d=id?byId(drives,id)||{}:{};
-  showModal(`<h3>${id?"Edit Drive":"Add Drive"}</h3>
-  <div class="f-grid cols">
-    <div class="f span2"><label>Drive name</label><input id="df-name" value="${esc(d.name||"")}" placeholder="Raid 01 — Red"></div>
-    <div class="f"><label>Capacity (GB)</label><input id="df-cap" type="number" min="0" step="10" value="${d.capacityGB||""}" placeholder="4000"><div class="hint">1 TB = 1000 GB</div></div>
-    <div class="f"><label>Location</label><input id="df-loc" value="${esc(d.location||"")}" placeholder="Shelf, safe, on-site..."></div>
-    <div class="f span2"><label>Notes</label><input id="df-notes" value="${esc(d.notes||"")}" placeholder="Anything worth knowing about this drive"></div>
-  </div>
-  <div class="actions">
-    ${id?`<button class="btn ghost danger" data-del-drive="${esc(id)}">DELETE</button>`:""}
-    <button class="btn ghost" data-close="1">CANCEL</button>
-    <button class="btn gold" data-save-drive="${esc(id||"")}">${id?"SAVE":"ADD DRIVE"}</button>
-  </div>`);
-}
-async function saveDrive(id){
-  const name=fv("df-name"); if(!name) return toast("Name required");
-  const data={name,capacityGB:+fv("df-cap")||0,location:fv("df-loc"),notes:fv("df-notes")};
-  await guard(async()=>{
-    if(id) await updateDoc(doc(db,"drives",id),data);
-    else await addDoc(collection(db,"drives"),data);
-  },id?"Drive updated":"Drive added");
-  closeModal();
-}
-async function removeDrive(id){
-  if(driveProjectsOf(id).length) return toast("Unassign its projects first");
-  await guard(()=>deleteDoc(doc(db,"drives",id)),"Drive deleted"); closeModal();
-}
-
 async function saveProject(id){
   const clientId=fv("pf-client"), title=fv("pf-title");
   if(!clientId||!title) return toast("Client and title required");
@@ -2171,8 +2230,9 @@ async function saveProject(id){
     note:fv("pf-note")||"Just added to the board.",
     footageUrl:raw||null, frameUrl:frame||null,
     editor, editCost:+fv("pf-cost")||0,
-    driveId:fv("pf-drive")||null, sizeGB:+fv("pf-size")||0,
     cost:+fv("pf-price")||0,
+    driveId:fv("pf-drive")||null,
+    sizeGB:fv("pf-size")===""?null:Math.max(0,+fv("pf-size")||0),
     startISO:fv("pf-start")||null,
     editors:[...new Set([editor,...PF.map(x=>x.editor)].filter(Boolean))],
     social:document.getElementById("pf-social")?.checked||false,
@@ -2295,7 +2355,7 @@ function clientForm(id){
     <div class="f"><label>Client name</label><input id="cf-name" value="${esc(c.name||"")}" placeholder="First Last"></div>
     <div class="f"><label>Company</label><input id="cf-co" value="${esc(c.company||"")}" placeholder="Company / brand"></div>
     <div class="f"><label>Contact</label><input id="cf-contact" value="${esc(c.contact||"")}" placeholder="phone or email"></div>
-    <div class="f"><label>Brand assets link</label><input id="cf-assets" value="${esc(c.assetsUrl||"")}" placeholder="Dropbox / Drive URL"></div>
+    <div class="f"><label>Asset folder link (Dropbox / Drive)</label><input id="cf-assets" value="${esc(c.assetsUrl||"")}" placeholder="https://dropbox.com/…"><div class="hint">the button on their client page opens this folder</div></div>
     <div class="f"><label>Retainer</label>
       <label class="socialtoggle" style="margin:0">
         <input type="checkbox" id="cf-isret" data-retoggle="1" ${isRetainer(c)?"checked":""}>
@@ -2364,8 +2424,8 @@ function projectForm(id,preClient){
     <div class="f"><label>Due date</label><input id="pf-due" type="date" value="${due}"></div>
     <div class="f"><label>Editor</label><select id="pf-editor">${eds.map(e=>`<option ${p.editor===e?"selected":""}>${esc(e)}</option>`).join("")}</select></div>
     <div class="f"><label>Edit cost ($)</label><input id="pf-cost" type="number" min="0" step="25" value="${p.editCost??0}"><div class="hint">0 = in-house</div></div>
-    <div class="f"><label>Hard drive</label><select id="pf-drive"><option value="">— unassigned —</option>${drives.map(dr=>`<option value="${esc(dr.id)}" ${p.driveId===dr.id?"selected":""}>${esc(dr.name)}</option>`).join("")}</select></div>
-    <div class="f"><label>Footage size (GB)</label><input id="pf-size" type="number" min="0" step="10" value="${p.sizeGB||""}" placeholder="450"><div class="hint">estimated, drives page tallies this</div></div>
+    <div class="f"><label>Footage drive</label><select id="pf-drive"><option value="">— none / not backed up —</option>${drives.map(dr=>`<option value="${esc(dr.id)}" ${p.driveId===dr.id?"selected":""}>${esc(dr.name)}</option>`).join("")}</select><div class="hint">which hard drive holds the footage</div></div>
+    <div class="f"><label>Est. project size (GB)</label><input id="pf-size" type="number" min="0" step="10" value="${p.sizeGB??""}" placeholder="e.g. 400"><div class="hint">footage + project files — feeds the drive tracker</div></div>
     <div class="f span2"><label>Deliverables — name, status, own review link</label><div id="pf-box"></div></div>
     <div class="f"><label>Project price ($)</label><input id="pf-price" type="number" min="0" step="50" value="${price||""}" placeholder="2500"><div class="hint">split 50 / 50</div></div>
     <div class="f"><label>Deposit ($${half})</label>
@@ -2768,12 +2828,6 @@ function clientView(cid){
         </div></div>`;}).join("")+`</div>`;
 
   const acts=activityOf(cid);
-  
-  /* Ready to post section - for social clients */
-  const socialProjs=mine.filter(p=>p.social);
-  const readyToPost=[];
-  socialProjs.forEach(p=>(p.pieces||[]).forEach((pc,i)=>{ if(pc.status==="done"&&!(p.postStatus||{})[i]) readyToPost.push({p,pc,i}); }));
-  
   return `
   <div class="hero">
     <div><h1>${esc((c.name||"").split(" ")[0])}<span>.</span></h1>
@@ -2781,13 +2835,6 @@ function clientView(cid){
     <div><div class="big-num-label">BALANCE DUE</div>
       <div class="big-num" style="color:${due?T.gold:T.green}">${money(due)}</div></div>
   </div>
-  ${readyToPost.length?`<section class="panel"><div class="eyebrow">Ready to Post — ${readyToPost.length} assets</div>
-    <div class="grid-gap cards">${readyToPost.map(({p,pc,i})=>`<div class="card" style="align-items:center;justify-content:space-between">
-      <div><div style="font-size:14px;font-weight:700">${esc(pc.name)}</div>
-        <div class="inv-meta" style="margin-top:2px">${esc(p.title)}</div></div>
-      <button class="btn gold" style="border-radius:6px;padding:6px 12px;font-size:10px" onclick="document.getElementById('post-status-${esc(p.id)}-${i}').innerText='Posted'; alert('Marked as posted')">MARK POSTED</button></div>
-      <input type="hidden" id="post-status-${esc(p.id)}-${i}" value="">`).join("")}</div>
-  </section>`:""}
   <section class="panel"><div class="eyebrow">Ready for Your Review${waiting.length?` — ${waiting.length} waiting`:""}</div>${reviewRows}</section>
   <section class="panel"><div class="eyebrow">In Production — ${mine.length} active</div>
     ${mine.length?`<div class="grid-gap cards">${mine.map(p=>projectCard(p,false)).join("")}</div>`
@@ -2996,13 +3043,16 @@ function sizeQB(){
     qbSizeRAF=null;
     const w=qbFrame&&qbFrame.isConnected&&qbFrame.contentWindow;
     if(!w||!w.document||!w.document.body) return;
-    const h=Math.max(900,w.document.body.scrollHeight+40);
-    /* ignore small fluctuations (a few px of sub-pixel/scrollbar jitter) —
-       only resize on a real content change, or the page scrollbar visibly
-       jumps every time the iframe redraws */
-    if(Math.abs(h-qbLastH)<12) return;
-    qbLastH=h;
-    qbFrame.style.height=h+"px";
+    const doc=w.document.documentElement, bod=w.document.body;
+    const h=Math.max(760,(Math.max(bod.scrollHeight,doc?doc.scrollHeight:0))+30);
+    /* Asymmetric tolerance kills the "scrollbar keeps shrinking" jitter:
+       grow readily (+30px), but only shrink on a real collapse (-140px).
+       Mid-render the frame momentarily reports a shorter body, and letting
+       that through was making the outer page scrollbar bounce every redraw. */
+    if(h>qbLastH+30 || h<qbLastH-140){
+      qbLastH=h;
+      qbFrame.style.height=h+"px";
+    }
   });
 }
 
@@ -3929,8 +3979,63 @@ function ownerView(){
       :`<div style="font-size:13px;color:var(--dim)">No retainer clients yet. Edit a client and tick "This is a retainer client" to start tracking recurring revenue here.</div>`}
   </section>
 
-  <section class="panel"><div class="eyebrow">Payments In — ${money(collectedMonth(thisMonth))} this month</div>
-    ${recentPays.length?recentPays.map(x=>`<div class="list-row">
+  ${revs.length?`<section class="panel"><div class="eyebrow" style="color:var(--red)">Client Revisions Requested — ${revs.length}</div>
+    ${revs.map(p=>`<div class="list-row"><div><div class="inv-label">${esc(p.title)}</div>
+      <div class="inv-meta">${esc(clientName(p.clientId))}${p.revisionNote?` &middot; &ldquo;${esc(p.revisionNote)}&rdquo;`:""}</div></div>
+      <button class="btn ghost mini" data-form="project" data-id="${esc(p.id)}">OPEN</button></div>`).join("")}
+  </section>`:""}
+
+  <section class="panel"><div class="eyebrow">Manage
+    <span class="spacer"></span>
+    <span style="font-family:var(--mono);font-size:10.5px;color:var(--dim)">tap a card to open its full page</span></div>
+    <div class="previewgrid">
+      <button class="pvcard" data-view="payments">
+        <div class="pv-l">Payments In<span class="arw">&#8599;</span></div>
+        <div class="pv-v" style="color:var(--green)">${money(collectedMonth(thisMonth))}</div>
+        <div class="pv-s">this month across ${pays.length} payment${pays.length===1?"":"s"}</div>
+        <div class="pv-mini">Open to log, re-date, or edit every payment in.</div>
+      </button>
+      <button class="pvcard" data-view="database">
+        <div class="pv-l">Client Database<span class="arw">&#8599;</span></div>
+        <div class="pv-v">${clients.length}</div>
+        <div class="pv-s">${open.length} open project${open.length===1?"":"s"} &middot; ${retainerClients().length} on retainer</div>
+        <div class="pv-mini">${clients.slice(0,3).map(c=>esc(c.name)).join(" &middot; ")||"No clients yet"}${clients.length>3?" &hellip;":""}</div>
+      </button>
+      <button class="pvcard" data-view="drives">
+        <div class="pv-l">Drive Tracker<span class="arw">&#8599;</span></div>
+        <div class="pv-v">${drives.length}</div>
+        <div class="pv-s">${drives.length?`${sizeFmt(drives.reduce((s,d)=>s+driveUsedGB(d),0))} used of ${sizeFmt(drives.reduce((s,d)=>s+(+d.capacityGB||0),0))}`:"add your hard drives"}</div>
+        <div class="pv-mini">See how full each drive is and where footage lives.</div>
+      </button>
+      <button class="pvcard" data-view="sms">
+        <div class="pv-l">Alerts &amp; SMS<span class="arw">&#8599;</span></div>
+        <div class="pv-v" style="color:${smsPub.endpoint?"var(--green)":"var(--gold)"}">${smsPub.endpoint?"LIVE":"OFF"}</div>
+        <div class="pv-s">studio ${esc(settings.studio||"not set")}</div>
+        <div class="pv-mini">${Object.keys(settings.editors||{}).length} editor &middot; ${Object.keys(settings.clients||{}).length} client numbers on file</div>
+      </button>
+      <button class="pvcard" data-view="access">
+        <div class="pv-l">Access &amp; Logins<span class="arw">&#8599;</span></div>
+        <div class="pv-v">${users.length}</div>
+        <div class="pv-s">${users.length===1?"just you":"who can sign in"}</div>
+        <div class="pv-mini">Add clients and editors, set their role.</div>
+      </button>
+    </div>
+  </section>`;
+}
+
+/* ═══════════ SUB-PAGES (opened from the Studio preview cards / tabs) ═══════════ */
+function backBar(label){
+  return `<div class="backbar"><button class="backbtn" data-view="owner">&#8592; Studio</button>
+    <div style="font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:.07em;text-transform:uppercase">${esc(label)}</div></div>`;
+}
+const subStat=(l,v,c)=>`<div class="stat"><div class="l">${l}</div><div class="v" style="color:${c||"var(--cream)"}">${v}</div></div>`;
+
+/* ── Payments In — full, editable list ── */
+function paymentsView(){
+  const thisMonth=new Date().toISOString().slice(0,7);
+  const lastMonth=(()=>{const d=new Date();d.setMonth(d.getMonth()-1);return d.toISOString().slice(0,7);})();
+  const pays=payments();
+  const rows=pays.length?pays.map(x=>`<div class="list-row">
       <div><div class="inv-label">${esc(x.label)}</div>
         <div class="inv-meta">${esc(clientName(x.clientId))} &middot; ${esc(isoShort(x.when)||x.when||"")} &middot; ${x.kind==="project"?"project payment":x.kind==="addon"?"add-on charge":"invoice"}</div></div>
       <div style="display:flex;align-items:center;gap:8px">
@@ -3939,39 +4044,244 @@ function ownerView(){
           :x.kind==="addon"?`data-open="${esc(x.pid)}"`
           :`data-form="invoice" data-id="${esc(x.pid)}"`}>${x.kind==="addon"?"OPEN":"DATE"}</button>
         <span class="amount" style="color:var(--green)">${money(x.amount)}</span></div></div>`).join("")
-      :`<div style="font-size:13px;color:var(--dim)">Nothing collected yet. Mark a deposit or final paid on a project card, or set an invoice to Paid.</div>`}
-  </section>
+    :`<div style="font-size:13px;color:var(--dim)">Nothing collected yet. Mark a deposit or final paid on a project card, or set an invoice to Paid.</div>`;
+  return `${backBar("Payments In")}
+  <div class="hero"><div><h1>Payments<span>.</span></h1><div class="sub">Every payment in, newest first</div></div>
+    <div><div class="big-num-label">COLLECTED THIS MONTH</div>
+      <div class="big-num" style="color:var(--green)">${money(collectedMonth(thisMonth))}</div></div></div>
+  <div class="stats">
+    ${subStat("THIS MONTH",money(collectedMonth(thisMonth)),T.green)}
+    ${subStat("LAST MONTH",money(collectedMonth(lastMonth)),T.dim)}
+    ${subStat("PAYMENTS LOGGED",pays.length)}
+  </div>
+  <section class="panel"><div class="eyebrow">All Payments In</div>${rows}</section>`;
+}
 
-  <section class="panel"><div class="eyebrow">Client Database
-    <span class="spacer"></span><button class="btn outline mini" data-form="client">+ ADD CLIENT</button></div>
-    ${clients.map(c=>{
+/* ── Client Database — list, drills into a client ── */
+function databaseView(){
+  if(openClient) return clientDetailView(openClient);
+  return `${backBar("Client Database")}
+  <div class="hero"><div><h1>Clients<span>.</span></h1>
+    <div class="sub">${clients.length} client${clients.length===1?"":"s"} &middot; ${retainerClients().length} on retainer &middot; tap one to open</div></div>
+    <div><button class="btn gold" data-form="client">+ ADD CLIENT</button></div></div>
+  <section class="panel">
+    ${clients.length?clients.map(c=>{
       const cOpen=projectsOf(c.id).filter(p=>pct(p)<100).length;
       const iv=invoicesOf(c.id);
       const cDue=iv.filter(i=>i.status!=="Paid").reduce((s,i)=>s+(+i.amount||0),0);
       const rItems=(c.retainerItems||[]).filter(x=>x.name);
       return `<div class="db-row">
-        <div><div class="db-name">${esc(c.name)}${isRetainer(c)?`<span class="retbadge">Retainer ${money(retainerValue(c))}/mo</span>`:""}</div>
-          <div class="db-meta">${esc(c.company||"—")}${c.contact?` · ${esc(c.contact)}`:""}${isRetainer(c)&&rItems.length?`<br>${rItems.map(x=>esc(x.name)+(x.qty?` (${esc(x.qty)})`:"")).join(" · ")}`:""}${c.retainer?`<br>${esc(c.retainer)}`:""}</div>
-          <div class="db-meta" style="color:${cDue?"var(--gold)":"var(--dim)"}">${cOpen} open · ${cDue?`balance ${money(cDue)}`:"paid up"}</div>
-          ${iv.length?`<div style="margin-top:6px;display:flex;flex-direction:column;gap:2px">${iv.map(i=>
-            `<button class="linkbtn" data-form="invoice" data-id="${esc(i.id)}" style="text-align:left;font-family:var(--mono);font-size:10.5px;color:${i.status==="Paid"?"var(--dim)":"var(--gold-soft)"}">
-              ${esc(i.label)} — ${money(i.amount)} · ${esc(i.status)}</button>`).join("")}</div>`:""}</div>
+        <div style="cursor:pointer;flex:1;min-width:0" data-openclient="${esc(c.id)}">
+          <div class="db-name">${esc(c.name)}${isRetainer(c)?`<span class="retbadge">Retainer ${money(retainerValue(c))}/mo</span>`:""}${hasSocialManaged(c.id)?`<span class="retbadge" style="border-color:rgba(111,200,232,.5);color:#6fc8e8;background:rgba(111,200,232,.1)">Social</span>`:""}</div>
+          <div class="db-meta">${esc(c.company||"&mdash;")}${c.contact?` &middot; ${esc(c.contact)}`:""}${isRetainer(c)&&rItems.length?`<br>${rItems.map(x=>esc(x.name)+(x.qty?` (${esc(x.qty)})`:"")).join(" &middot; ")}`:""}</div>
+          <div class="db-meta" style="color:${cDue?"var(--gold)":"var(--dim)"}">${cOpen} open &middot; ${cDue?`balance ${money(cDue)}`:"paid up"}</div>
+        </div>
         <div class="db-actions">
-          <button class="btn gold mini" data-form="project" data-client="${esc(c.id)}">+ PROJECT</button>
-          <button class="btn outline mini" data-form="invoice" data-client="${esc(c.id)}">+ INVOICE</button>
+          <button class="btn gold mini" data-openclient="${esc(c.id)}">OPEN &rarr;</button>
+          <button class="btn outline mini" data-form="project" data-client="${esc(c.id)}">+ PROJECT</button>
           <button class="btn ghost mini" data-form="client" data-id="${esc(c.id)}">EDIT</button>
-          <button class="btn ghost mini" data-preview="${esc(c.id)}">PREVIEW →</button>
-        </div></div>`;}).join("")}
+          <button class="btn ghost mini" data-preview="${esc(c.id)}">CLIENT VIEW</button>
+        </div></div>`;}).join("")
+      :`<div class="empty-state"><div class="t">No clients yet</div>
+        <div class="s">Add your first client to start tracking projects, payments, and assets.</div>
+        <button class="btn gold" data-form="client">+ ADD CLIENT</button></div>`}
+  </section>`;
+}
+
+/* ── Owner-facing client detail: assets, ready-to-post, projects, invoices ── */
+function clientDetailView(cid){
+  const c=byId(clients,cid);
+  if(!c){ openClient=null; return databaseView(); }
+  const mine=projectsOf(cid), inv=invoicesOf(cid);
+  const openN=mine.filter(p=>pct(p)<100).length;
+  const projBilled=mine.reduce((s,p)=>s+projTotal(p),0);
+  const projPaid=mine.reduce((s,p)=>s+collected(p),0);
+  const billed=inv.reduce((s,i)=>s+(+i.amount||0),0)+projBilled;
+  const paidT=inv.filter(i=>i.status==="Paid").reduce((s,i)=>s+(+i.amount||0),0)+projPaid;
+  const due=billed-paidT;
+  const rItems=(c.retainerItems||[]).filter(x=>x.name);
+  return `<div class="backbar"><button class="backbtn" data-view="database">&#8592; All clients</button>
+    <div style="font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:.07em;text-transform:uppercase">Client</div></div>
+  <div class="hero cd-head">
+    <div><h1>${esc((c.name||"").split(" ")[0]||"Client")}<span>.</span></h1>
+      <div class="sub">${esc(c.company||"")}${c.contact?` &middot; ${esc(c.contact)}`:""}</div></div>
+    <div class="cd-actions">
+      ${c.assetsUrl?`<a class="btn gold" href="${esc(c.assetsUrl)}" target="_blank" rel="noopener">ASSET FOLDER &#8599;</a>`
+        :`<button class="btn outline" data-form="client" data-id="${esc(c.id)}">+ LINK ASSET FOLDER</button>`}
+      <button class="btn outline" data-form="project" data-client="${esc(c.id)}">+ PROJECT</button>
+      <button class="btn ghost" data-form="client" data-id="${esc(c.id)}">EDIT CLIENT</button>
+      <button class="btn ghost" data-preview="${esc(c.id)}">CLIENT VIEW &rarr;</button>
+    </div>
+  </div>
+  <div class="stats">
+    ${subStat("OPEN PROJECTS",openN)}
+    ${subStat("BALANCE DUE",money(due),due?T.gold:T.green)}
+    ${subStat("BILLED",money(billed))}
+    ${subStat("PAID",money(paidT),T.green)}
+    ${isRetainer(c)?subStat("RETAINER",money(retainerValue(c))+"/mo",T.gold):""}
+  </div>
+  ${isRetainer(c)&&rItems.length?`<div class="retboxsm">
+    <div class="rt"><span class="rl">Retainer covers</span><span class="rv">${money(retainerValue(c))}/mo</span></div>
+    <ul>${rItems.map(x=>`<li>${esc(x.name)}${x.qty?` &mdash; ${esc(x.qty)}`:""}</li>`).join("")}</ul></div>`:""}
+  ${hasSocialManaged(cid)?readyToPostSection(cid):""}
+  <section class="panel"><div class="eyebrow">Projects &mdash; ${mine.length}
+    <span class="spacer"></span><button class="btn outline mini" data-form="project" data-client="${esc(c.id)}">+ PROJECT</button></div>
+    ${mine.length?`<div class="grid-gap cards">${mine.map(p=>projectCard(p,true)).join("")}</div>`
+      :`<div style="font-size:13px;color:var(--dim)">No projects yet for this client.</div>`}
   </section>
+  <section class="panel"><div class="eyebrow">Invoices
+    <span class="spacer"></span><button class="btn outline mini" data-form="invoice" data-client="${esc(c.id)}">+ INVOICE</button></div>
+    ${inv.length?inv.map(i=>`<div class="list-row">
+      <div><div class="inv-label">${esc(i.label)}</div><div class="inv-meta">${esc(i.date||"")}</div></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="amount">${money(i.amount)}</span>
+        <span class="tag ${i.status==="Paid"?"paid":"due-t"}">${esc(i.status)}</span>
+        <button class="btn ghost mini" data-form="invoice" data-id="${esc(i.id)}">EDIT</button></div></div>`).join("")
+      :`<div style="font-size:13px;color:var(--dim)">No invoices yet.</div>`}
+  </section>`;
+}
 
-  ${revs.length?`<section class="panel"><div class="eyebrow" style="color:var(--red)">Client Revisions Requested — ${revs.length}</div>
-    ${revs.map(p=>`<div class="list-row"><div><div class="inv-label">${esc(p.title)}</div>
-      <div class="inv-meta">${esc(clientName(p.clientId))}${p.revisionNote?` &middot; &ldquo;${esc(p.revisionNote)}&rdquo;`:""}</div></div>
-      <button class="btn ghost mini" data-form="project" data-id="${esc(p.id)}">OPEN</button></div>`).join("")}
-  </section>`:""}
+/* ── Ready to Post: delivered deliverables from social-managed projects ── */
+function readyToPostSection(cid){
+  const ready=readyToPost(cid), arch=postedArchive(cid);
+  const tab=readyTab==="archive"?"archive":"ready";
+  const list=tab==="archive"?arch:ready;
+  const rows=list.length?list.map(({p,pc,i})=>`
+      <div class="rtp-row${tab==="archive"?" posted":""}">
+        <div style="min-width:0">
+          <div class="rtp-name">${esc(pc.name)}</div>
+          <div class="rtp-meta">${esc(p.title)}${pc.postedOn?` &middot; posted ${esc(isoShort(pc.postedOn))}`:""}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          ${reviewLink(p,pc)?`<a class="btn outline mini link" href="${esc(reviewLink(p,pc))}" target="_blank" rel="noopener">VIEW &#8599;</a>`:""}
+          ${tab==="archive"
+            ? `<button class="btn ghost mini" data-unpost="${esc(p.id)}:${i}">MARK UNPOSTED</button>`
+            : `<button class="btn gold mini" data-postnow="${esc(p.id)}:${i}">MARK POSTED</button>`}
+        </div>
+      </div>`).join("")
+    :`<div style="font-size:13px;color:var(--dim)">${tab==="archive"
+        ?"Nothing posted yet. Deliverables land in the archive once you mark them posted."
+        :"Nothing waiting to post. A deliverable shows up here once it's marked DONE on a social-managed project."}</div>`;
+  return `<section class="panel"><div class="eyebrow">Ready to Post
+      <span class="spacer"></span>
+      <span style="font-family:var(--mono);font-size:10.5px;color:var(--dim)">${ready.length} ready &middot; ${arch.length} posted</span></div>
+    <div class="rtp-tabs">
+      <button class="${tab==="ready"?"on":""}" data-readytab="ready">Ready (${ready.length})</button>
+      <button class="${tab==="archive"?"on":""}" data-readytab="archive">Posted Archive (${arch.length})</button>
+    </div>
+    ${rows}
+  </section>`;
+}
+async function markPosted(pid,i){
+  const p=byId(projects,pid); if(!p) return;
+  const nm=p.pieces?.[i]?.name||"";
+  const pieces=(p.pieces||[]).map((x,ix)=>ix===i?{...x,status:"posted",postedOn:todayISO()}:x);
+  await guard(()=>updateDoc(doc(db,"projects",pid),{pieces}),"Marked posted");
+  logActivity(p.clientId,`${nm} posted`);
+}
+async function markUnposted(pid,i){
+  const p=byId(projects,pid); if(!p) return;
+  const pieces=(p.pieces||[]).map((x,ix)=>ix===i?{...x,status:"done",postedOn:null}:x);
+  await guard(()=>updateDoc(doc(db,"projects",pid),{pieces}),"Back to ready");
+}
 
-  <section class="panel"><div class="eyebrow">Alerts &amp; SMS
-    <span class="spacer"></span><button class="btn outline mini" data-form="sms">EDIT NUMBERS</button></div>
+/* ── Hard-drive tracker page ── */
+function drivesView(){
+  const totCap=drives.reduce((s,d)=>s+(+d.capacityGB||0),0);
+  const totUsed=drives.reduce((s,d)=>s+driveUsedGB(d),0);
+  const noDrive=projects.filter(p=>!p.driveId);
+  if(!drives.length){
+    return `${backBar("Drive Tracker")}
+    <div class="hero"><div><h1>Drives<span>.</span></h1><div class="sub">Track where every project's footage lives</div></div></div>
+    <section class="panel"><div class="empty-state">
+      <div class="t">No drives yet</div>
+      <div class="s">Add your hard drives with their capacity, then pick a drive on each project.<br>You'll see how full each one is and exactly what's on it.</div>
+      <button class="btn gold" data-form="drive">+ ADD YOUR FIRST DRIVE</button>
+    </div></section>`;
+  }
+  const cards=drives.map(d=>{
+    const used=driveUsedGB(d), cap=+d.capacityGB||0, fp=driveFillPct(d), free=Math.max(0,cap-used);
+    const projs=projectsOnDrive(d.id).slice().sort((a,b)=>(+b.sizeGB||0)-(+a.sizeGB||0));
+    return `<div class="drive-card">
+      <div class="drive-head">${donut(fp,102)}
+        <div class="drive-meta">
+          <div class="drive-name">${esc(d.name)}</div>
+          <div class="drive-cap">${sizeFmt(used)} used &middot; ${sizeFmt(cap)} total</div>
+          <div class="drive-free" style="color:${fp>=90?T.red:fp>=75?T.gold:T.green}">${sizeFmt(free)} free</div>
+          <div style="margin-top:9px;display:flex;gap:6px"><button class="btn ghost mini" data-form="drive" data-id="${esc(d.id)}">EDIT DRIVE</button></div>
+        </div>
+      </div>
+      <div class="drive-projlist">
+        <div style="font-family:var(--mono);font-size:9.5px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:7px">${projs.length} project${projs.length===1?"":"s"} on this drive</div>
+        ${projs.length?projs.map(p=>`<div class="drive-projrow">
+          <div style="min-width:0"><div class="dp-t">${esc(p.title)}</div>
+            <div class="dp-c">${esc(clientName(p.clientId))}${p.code?` &middot; ${esc(p.code)}`:""}${pct(p)===100?" &middot; delivered":""}</div></div>
+          <div class="dp-sz">${p.sizeGB?sizeFmt(p.sizeGB):"&mdash;"}</div></div>`).join("")
+          :`<div style="font-size:12.5px;color:var(--dim)">No projects assigned yet. Open a project and pick this drive.</div>`}
+      </div>
+    </div>`;}).join("");
+  return `${backBar("Drive Tracker")}
+    <div class="hero"><div><h1>Drives<span>.</span></h1><div class="sub">Where every project's footage lives</div></div>
+      <div><button class="btn gold" data-form="drive">+ ADD DRIVE</button></div></div>
+    <div class="stats">
+      ${subStat("DRIVES",drives.length)}
+      ${subStat("TOTAL CAPACITY",sizeFmt(totCap))}
+      ${subStat("USED",sizeFmt(totUsed),T.gold)}
+      ${subStat("FREE",sizeFmt(Math.max(0,totCap-totUsed)),T.green)}
+      ${subStat("NO DRIVE SET",noDrive.length,noDrive.length?T.red:T.green)}
+    </div>
+    <div class="drive-grid">${cards}</div>
+    ${noDrive.length?`<section class="panel"><div class="eyebrow" style="color:var(--gold)">Not on any drive &mdash; ${noDrive.length}</div>
+      ${noDrive.map(p=>`<div class="list-row">
+        <div><div class="inv-label">${esc(p.title)}</div><div class="inv-meta">${esc(clientName(p.clientId))}${p.sizeGB?` &middot; ${sizeFmt(p.sizeGB)}`:""}</div></div>
+        <button class="btn ghost mini" data-form="project" data-id="${esc(p.id)}">ASSIGN DRIVE</button></div>`).join("")}
+    </section>`:""}`;
+}
+function driveForm(id){
+  const d=id?byId(drives,id)||{}:{};
+  const capGB=+d.capacityGB||0, asTB=capGB>=1000;
+  const capVal=asTB?(capGB/1000):(capGB||"");
+  showModal(`<h3>${id?"Edit Drive":"Add Drive"}</h3>
+  <div class="f-grid">
+    <div class="f"><label>Drive name</label><input id="dr-name" value="${esc(d.name||"")}" placeholder="UTS RAID 01 / Field SSD"></div>
+    <div class="f-grid cols">
+      <div class="f"><label>Capacity</label><input id="dr-cap" type="number" min="0" step="0.5" value="${capVal}" placeholder="2"></div>
+      <div class="f"><label>Unit</label><select id="dr-unit">
+        <option value="TB" ${asTB||!capGB?"selected":""}>TB</option>
+        <option value="GB" ${!asTB&&capGB?"selected":""}>GB</option></select></div>
+    </div>
+    ${id?`<div class="hint" style="font-family:var(--mono);font-size:10px;color:var(--dim)">${projectsOnDrive(id).length} project(s) currently on this drive.</div>`:""}
+  </div>
+  <div class="actions">
+    ${id?`<button class="btn ghost danger" data-del-drive="${esc(id)}">DELETE</button>`:""}
+    <button class="btn ghost" data-close="1">CANCEL</button>
+    <button class="btn gold" data-save-drive="${esc(id||"")}">${id?"SAVE":"ADD DRIVE"}</button>
+  </div>`);
+}
+async function saveDrive(id){
+  const name=fv("dr-name"); if(!name) return toast("Drive name required");
+  const unit=document.getElementById("dr-unit")?.value||"TB";
+  const val=+fv("dr-cap")||0;
+  const capacityGB=unit==="TB"?Math.round(val*1000):Math.round(val);
+  const data={name,capacityGB};
+  await guard(async()=>{
+    if(id) await updateDoc(doc(db,"drives",id),data);
+    else await addDoc(collection(db,"drives"),data);
+  },id?"Drive updated":"Drive added");
+  closeModal();
+}
+async function removeDrive(id){
+  if(projectsOnDrive(id).length) return toast("Reassign its projects first");
+  await guard(()=>deleteDoc(doc(db,"drives",id)),"Drive deleted"); closeModal();
+}
+
+/* ── Alerts & SMS page ── */
+function smsView(){
+  return `${backBar("Alerts & SMS")}
+  <div class="hero"><div><h1>Alerts &amp; SMS<span>.</span></h1>
+    <div class="sub">Text notifications routed through your studio number</div></div>
+    <div><button class="btn gold" data-form="sms">EDIT NUMBERS</button></div></div>
+  <section class="panel"><div class="eyebrow">Status</div>
     <div class="list-row"><span style="font-size:13px;color:var(--muted)">Text alerts</span>
       <span class="tag ${smsPub.endpoint?"paid":"due-t"}">${smsPub.endpoint?"LIVE":"NOT CONNECTED"}</span></div>
     <div class="list-row"><span style="font-size:13px;color:var(--muted)">Studio phone</span>
@@ -3980,124 +4290,29 @@ function ownerView(){
       <span class="inv-meta">${Object.keys(settings.editors||{}).length}</span></div>
     <div class="list-row"><span style="font-size:13px;color:var(--muted)">Clients with a number</span>
       <span class="inv-meta">${Object.keys(settings.clients||{}).length}</span></div>
-    <div class="inv-meta" style="padding-top:10px">Editor posts a cut &rarr; texts you. You post a cut &rarr; texts that client.
-      Client approves or asks for revisions &rarr; texts you. New assignment &rarr; texts the editor.</div>
   </section>
+  <section class="panel"><div class="eyebrow">How Texts Flow</div>
+    <div class="inv-meta" style="line-height:1.9">Editor posts a cut &rarr; texts you.<br>
+      You post a cut &rarr; texts that client.<br>
+      Client approves or asks for revisions &rarr; texts you.<br>
+      New assignment &rarr; texts the editor.</div>
+  </section>`;
+}
 
-  <section class="panel"><div class="eyebrow">Access — Who Can Log In
-    <span class="spacer"></span><button class="btn outline mini" data-form="access">+ GIVE ACCESS</button></div>
+/* ── Access & Logins page ── */
+function accessView(){
+  return `${backBar("Access & Logins")}
+  <div class="hero"><div><h1>Access<span>.</span></h1>
+    <div class="sub">Who can sign in, and what they see</div></div>
+    <div><button class="btn gold" data-form="access">+ GIVE ACCESS</button></div></div>
+  <section class="panel"><div class="eyebrow">Logins</div>
     ${users.length?users.map(u=>`<div class="access-row">
       <div><div class="inv-label">${esc(u.email)}</div>
-        <div class="inv-meta">${esc(u.role)}${u.clientId?` · ${esc(clientName(u.clientId))}`:""}${u.editorName?` · ${esc(u.editorName)}`:""}</div></div>
+        <div class="inv-meta">${esc(u.role)}${u.clientId?` &middot; ${esc(clientName(u.clientId))}`:""}${u.editorName?` &middot; ${esc(u.editorName)}`:""}</div></div>
       <button class="btn ghost mini" data-form="access" data-email="${esc(u.email)}">EDIT</button>
     </div>`).join(""):`<div style="font-size:13px;color:var(--dim)">Only you so far.</div>`}
-    <div class="inv-meta" style="padding-top:10px">Create the login in Firebase → Authentication first, then add the same email here.</div>
+    <div class="inv-meta" style="padding-top:10px">Create the login in Firebase &rarr; Authentication first, then add the same email here.</div>
   </section>`;
-}
-
-function clientDatabaseView(){
-  return `
-  <div class="hero"><div><h1>Clients<span>.</span></h1>
-    <div class="sub">${clients.length} client${clients.length===1?"":"s"}</div></div>
-    <button class="btn gold" data-form="client">+ ADD CLIENT</button></div>
-  <section class="panel"><div class="eyebrow">Database
-    <span class="spacer"></span><button class="btn outline mini" data-form="client">+ ADD CLIENT</button></div>
-    ${clients.length?clients.map(c=>{
-      const cOpen=projectsOf(c.id).filter(p=>pct(p)<100).length;
-      const iv=invoicesOf(c.id);
-      const cDue=iv.filter(i=>i.status!=="Paid").reduce((s,i)=>s+(+i.amount||0),0);
-      const rItems=(c.retainerItems||[]).filter(x=>x.name);
-      return `<div class="db-row">
-        <div><div class="db-name">${esc(c.name)}${isRetainer(c)?`<span class="retbadge">Retainer ${money(retainerValue(c))}/mo</span>`:""}</div>
-          <div class="db-meta">${esc(c.company||"—")}${c.contact?` · ${esc(c.contact)}`:""}${isRetainer(c)&&rItems.length?`<br>${rItems.map(x=>esc(x.name)+(x.qty?` (${esc(x.qty)})`:"")).join(" · ")}`:""}${c.retainer?`<br>${esc(c.retainer)}`:""}</div>
-          <div class="db-meta" style="color:${cDue?"var(--gold)":"var(--dim)"}">${cOpen} open · ${cDue?`balance ${money(cDue)}`:"paid up"}</div>
-          ${c.assetsUrl?`<div style="margin-top:6px"><button class="btn outline mini" onclick="window.open('${esc(c.assetsUrl)}','_blank')">📁 ASSET FOLDER ↗</button></div>`:""}</div>
-        <div class="db-actions">
-          <button class="btn gold mini" data-form="project" data-client="${esc(c.id)}">+ PROJECT</button>
-          <button class="btn outline mini" data-form="invoice" data-client="${esc(c.id)}">+ INVOICE</button>
-          <button class="btn ghost mini" data-form="client" data-id="${esc(c.id)}">EDIT</button>
-          <button class="btn ghost mini" data-preview="${esc(c.id)}">PREVIEW →</button>
-        </div></div>`;}).join("")
-      :`<div style="font-size:13px;color:var(--dim);padding:20px;text-align:center">No clients yet. Add one to get started.</div>`}
-  </section>`;
-}
-
-function drivesView(){
-  const totalCap=drives.reduce((s,d)=>s+(+d.capacityGB||0),0);
-  const totalUsed=drives.reduce((s,d)=>s+driveUsedGB(d.id),0);
-  const unassigned=projects.filter(p=>!p.driveId&&(+p.sizeGB||0)>0);
-  const stat=(l,v,c)=>`<div class="stat"><div class="l">${l}</div><div class="v" style="color:${c||"var(--cream)"}">${v}</div></div>`;
-  const search=fv("drive-search").toLowerCase();
-  
-  const filtered=drives.filter(d=>{
-    if(!search) return true;
-    if(d.name.toLowerCase().includes(search)) return true;
-    return driveProjectsOf(d.id).some(p=>
-      p.title.toLowerCase().includes(search)||
-      (p.code&&p.code.toLowerCase().includes(search))||
-      clientName(p.clientId).toLowerCase().includes(search));
-  });
-
-  if(!drives.length){
-    return `<div class="hero"><div><h1>Drives<span>.</span></h1>
-      <div class="sub">No hard drives logged yet</div></div>
-      <button class="btn gold" data-form="drive">+ ADD DRIVE</button></div>
-      <section class="panel"><div class="empty-state">
-        <div class="t">No drives yet</div>
-        <div class="s">Add each hard drive you shoot to and back up on, with its total capacity.<br>Then mark which drive a project's footage lives on and its estimated size.</div>
-        <button class="btn gold" data-form="drive">+ ADD YOUR FIRST DRIVE</button>
-      </div></section>`;
-  }
-
-  const cards=filtered.map(d=>{
-    const cap=+d.capacityGB||0, used=driveUsedGB(d.id);
-    const pctFull=cap?Math.min(100,Math.round(used/cap*100)):0;
-    const color=pctFull>=90?T.red:pctFull>=70?T.gold:T.green;
-    const projs=driveProjectsOf(d.id);
-    return `<section class="panel drive-card">
-      <div class="drive-head">
-        ${driveWheel(pctFull,color)}
-        <div class="drive-info">
-          <div class="drive-name">${esc(d.name)}</div>
-          <div class="drive-meta">${fmtStorage(used)} used of ${fmtStorage(cap)}${d.location?` &middot; ${esc(d.location)}`:""}</div>
-          <div class="drive-meta" style="color:${color}">${fmtStorage(Math.max(0,cap-used))} free</div>
-          ${d.notes?`<div class="drive-meta">${esc(d.notes)}</div>`:""}
-          <div class="drive-acts"><button class="btn ghost mini" data-form="drive" data-id="${esc(d.id)}">EDIT</button></div>
-        </div>
-      </div>
-      <div class="drive-projects">
-        <div class="inv-meta" style="letter-spacing:.1em;margin-bottom:2px">${projs.length} PROJECT${projs.length===1?"":"S"} ON THIS DRIVE</div>
-        ${projs.length?projs.map(p=>`<div class="list-row">
-          <div><div class="inv-label">${esc(p.title)}</div>
-            <div class="inv-meta">${esc(p.code||"")}${p.code?" &middot; ":""}${esc(clientName(p.clientId))} &middot; ${pct(p)}%</div></div>
-          <span class="inv-meta">${fmtStorage(+p.sizeGB||0)}</span></div>`).join("")
-          :`<div style="font-size:12.5px;color:var(--dim);padding:8px 2px 2px">Nothing assigned yet.</div>`}
-      </div>
-    </section>`;}).join("");
-
-  return `
-  <div class="hero"><div><h1>Drives<span>.</span></h1>
-    <div class="sub">${drives.length} drive${drives.length===1?"":"s"} &middot; ${fmtStorage(totalUsed)} used of ${fmtStorage(totalCap)}</div></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <input type="text" id="drive-search" placeholder="Search by drive name, project, or client..." 
-        style="flex:1;min-width:240px;background:var(--panel);border:1px solid var(--line);color:var(--cream);border-radius:9px;padding:9px 11px;font-family:var(--body);font-size:13.5px;outline:none" 
-        onkeyup="paint()">
-      <button class="btn gold" data-form="drive">+ ADD DRIVE</button>
-    </div></div>
-  <div class="stats">
-    ${stat("DRIVES",drives.length)}
-    ${stat("TOTAL CAPACITY",fmtStorage(totalCap))}
-    ${stat("TOTAL USED",fmtStorage(totalUsed),T.gold)}
-    ${stat("FREE SPACE",fmtStorage(Math.max(0,totalCap-totalUsed)),T.green)}
-  </div>
-  ${filtered.length?`<div class="drive-grid">${cards}</div>`:
-    `<section class="panel"><div style="text-align:center;padding:20px;color:var(--dim)">No drives match "<b>${esc(search)}</b>"</div></section>`}
-  ${unassigned.length&&!search?`<section class="panel"><div class="eyebrow" style="color:var(--red)">Not Yet Assigned To A Drive — ${unassigned.length}</div>
-    ${unassigned.map(p=>`<div class="list-row">
-      <div><div class="inv-label">${esc(p.title)}</div>
-        <div class="inv-meta">${esc(p.code||"")}${p.code?" &middot; ":""}${esc(clientName(p.clientId))} &middot; ${fmtStorage(+p.sizeGB||0)}</div></div>
-      <button class="btn ghost mini" data-form="project" data-id="${esc(p.id)}">OPEN</button></div>`).join("")}
-  </section>`:""}`;
 }
 
 /* ═══════════ SHELL ═══════════ */
@@ -4125,8 +4340,8 @@ function gate(){
 
 function paint(){
   if(qbFrame&&qbFrame.isConnected) captureQB();
+  const _scrollY=window.scrollY;
   const root=document.getElementById("root");
-  const scrollPos=window.scrollY;  // save scroll before re-render
   if(booting){ root.innerHTML=`<div class="boot"><div class="spin"></div><div>Loading</div></div>`; return; }
   if(!me){ root.innerHTML=gate(); return; }
 
@@ -4136,8 +4351,6 @@ function paint(){
     <button class="tab ${view==="owner"?"on":""}" data-view="owner">Studio</button>
     <button class="tab ${view==="quote"?"on":""}" data-view="quote">Quote Builder</button>
     <button class="tab ${view==="inbound"?"on":""}" data-view="inbound">Inbound${leads.filter(l=>!l.firstReplyAt).length?` <span style="color:var(--gold)">&bull;</span>`:""}</button>
-    <button class="tab ${view==="clients"?"on":""}" data-view="clients">Clients</button>
-    <button class="tab ${view==="drives"?"on":""}" data-view="drives">Drives</button>
     <button class="tab ${view==="editor"?"on":""}" data-view="editor">Editor</button>
     <button class="tab ${view==="client"?"on":""}" data-view="client">Client</button>`:"";
   const pickers=isOwner&&view==="client"&&clients.length
@@ -4146,15 +4359,18 @@ function paint(){
     ? `<select id="eSel">${editorNames().map(e=>`<option ${previewEditor===e?"selected":""}>${esc(e)}</option>`).join("")}</select>` : "";
 
   let body;
-  if(me.role==="client")      body=clientView(me.clientId);
-  else if(me.role==="editor") body=editorView(me.editorName);
-  else if(view==="client")    body=clientView(previewClient||clients[0]?.id);
-  else if(view==="quote")     body=quoteView();
-  else if(view==="inbound")   body=inboundView();
-  else if(view==="clients")   body=clientDatabaseView();
-  else if(view==="drives")    body=drivesView();
-  else if(view==="editor")    body=editorView(previewEditor||editorNames()[0]);
-  else                        body=ownerView();
+  if(me.role==="client")         body=clientView(me.clientId);
+  else if(me.role==="editor")    body=editorView(me.editorName);
+  else if(view==="client")       body=clientView(previewClient||clients[0]?.id);
+  else if(view==="quote")        body=quoteView();
+  else if(view==="inbound")      body=inboundView();
+  else if(view==="editor")       body=editorView(previewEditor||editorNames()[0]);
+  else if(view==="payments")     body=paymentsView();
+  else if(view==="database")     body=databaseView();
+  else if(view==="drives")       body=drivesView();
+  else if(view==="sms")          body=smsView();
+  else if(view==="access")       body=accessView();
+  else                           body=ownerView();
 
   root.innerHTML=`
     <header>
@@ -4165,17 +4381,20 @@ function paint(){
           <button class="linkbtn" data-logout="1">Sign out</button></div>
       </div>
     </header>
-    <main class="${view==="quote"?"wide":""}">${body}</main>
+    <main class="${view==="quote"||view==="drives"?"wide":""}">${body}</main>
     <footer>Under The Sun Studios · Long Beach, CA</footer>`;
+  const _routeKey=[me.role,view,previewClient,previewEditor,openClient].join("|");
+  if(_routeKey===paint._lastRoute){ window.scrollTo(0,_scrollY); }
+  else { window.scrollTo(0,0); }
+  paint._lastRoute=_routeKey;
   if(view==="quote"&&me.role==="owner") mountQB();
   if(openProject) renderDetail();
   fireAlerts();
-  requestAnimationFrame(()=>{ if(scrollPos>0) window.scrollTo(0, scrollPos); });
 }
 
 /* ── events ── */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-save-drive],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-del-drive],[data-pf-add],[data-pf-del],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test]");
+  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test],[data-openclient],[data-postnow],[data-unpost],[data-readytab],[data-save-drive],[data-del-drive],[data-backto]");
   if(!t) return;
   const d=t.dataset;
   if(d.close!==undefined){ if(t===e.target||t.tagName==="BUTTON") closeModal(); return; }
@@ -4184,7 +4403,15 @@ document.addEventListener("click",e=>{
   if(d.login){ doLogin(); return; }
   if(d.reset){ doReset(); return; }
   if(d.logout){ doLogout(); return; }
-  if(d.view){ view=d.view; paint(); return; }
+  if(d.view){ view=d.view; openClient=null; paint(); return; }
+  if(d.openclient!==undefined){ openClient=d.openclient||null; view="database"; paint(); return; }
+  if(d.readytab){ readyTab=d.readytab; paint(); return; }
+  if(d.postnow){ const [id,i]=d.postnow.split(":"); markPosted(id,+i); return; }
+  if(d.unpost){ const [id,i]=d.unpost.split(":"); markUnposted(id,+i); return; }
+  if(d.backto){ openProject=byId(projects,d.backto)?d.backto:null; renderDetail(); return; }
+  if(d.form==="drive")  return driveForm(d.id||null);
+  if(d.saveDrive!==undefined)  return saveDrive(d.saveDrive||null);
+  if(d.delDrive)  return removeDrive(d.delDrive);
   if(d.preview){ previewClient=d.preview; view="client"; paint(); return; }
   if(d.approve){ const [id,i]=d.approve.split(":"); approvePiece(id,+i); return; }
   if(d.riAdd){ riSync(); RI.push({name:"",qty:""}); riRender(); return; }
@@ -4208,19 +4435,16 @@ document.addEventListener("click",e=>{
   if(d.form==="invoice") return invoiceForm(d.id||null,d.client||null);
   if(d.form==="payable") return payableForm(d.id||null);
   if(d.form==="access")  return accessForm(d.email||null);
-  if(d.form==="drive")   return driveForm(d.id||null);
   if(d.saveClient!==undefined)  return saveClient(d.saveClient||null);
   if(d.saveProject!==undefined) return saveProject(d.saveProject||null);
   if(d.saveInvoice!==undefined) return saveInvoice(d.saveInvoice||null);
   if(d.savePayable!==undefined) return savePayable(d.savePayable||null);
   if(d.saveAccess!==undefined)  return saveAccess(d.saveAccess||null);
-  if(d.saveDrive!==undefined)   return saveDrive(d.saveDrive||null);
   if(d.delClient)  return removeClient(d.delClient);
   if(d.delProject) return removeProject(d.delProject);
   if(d.delInvoice) return removeInvoice(d.delInvoice);
   if(d.delPayable) return removePayable(d.delPayable);
   if(d.delAccess)  return removeAccess(d.delAccess);
-  if(d.delDrive)   return removeDrive(d.delDrive);
 });
 document.addEventListener("change",e=>{
   if(e.target.dataset.retoggle!==undefined) riToggle();
