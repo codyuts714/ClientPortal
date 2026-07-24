@@ -539,6 +539,15 @@ footer{text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.
 .rtp-row .rtp-meta{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:2px;letter-spacing:.04em}
 .btn.posted-on{background:rgba(111,200,232,.14);border:1px solid rgba(111,200,232,.4);color:#6fc8e8;font-weight:700}
 
+/* ── drive search ── */
+.drive-search-wrap{position:relative;margin-bottom:16px}
+.drive-search-wrap input{width:100%;background:var(--panel-up);color:var(--cream);border:1px solid var(--line);
+  border-radius:11px;padding:11px 14px 11px 38px;font-family:var(--body);font-size:14px;outline:none;transition:.15s}
+.drive-search-wrap input:focus{border-color:var(--gold)}
+.drive-search-wrap .ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);
+  color:var(--dim);font-size:15px;pointer-events:none}
+.drive-search-wrap input::placeholder{color:var(--dim)}
+.drive-match{background:rgba(242,201,76,.15);border-radius:3px;color:var(--gold);font-weight:700}
 /* ── owner client-detail page ── */
 .cd-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
 .cd-actions{display:flex;gap:8px;flex-wrap:wrap}
@@ -1704,11 +1713,13 @@ function sandbox(){
           note:"Cutting from the shoot transcript.",approvals:{},driveId:"d2",sizeGB:610,
           social:true,posts:[{d:iso(0),type:"Carousel",posted:false},{d:iso(1),type:"Reel",posted:false},
                   {d:iso(-2),type:"Story",posted:true,postedOn:iso(-2)},{d:iso(4),type:"Reel",posted:false}],
-          pieces:[{name:"Main Cut",status:"editing"}]},
+          pieces:[{name:"Main Cut",status:"done",postedOn:null},
+                  {name:"Teaser Clip",status:"done",postedOn:iso(-3)}]},
       p4:{clientId:"c2",title:"Tip Tuesday — ALE Coverage",code:"TT-ALE",type:"Social",stage:0,
           dueISO:iso(16),due:short(iso(16)),editStart:null,editor:"Faizan",editCost:100,
           note:"Cut sheet built from transcript.",approvals:{},driveId:"d2",sizeGB:150,
-          pieces:[{name:"Main Cut",status:"queued"}]},
+          social:true,
+          pieces:[{name:"Main Cut",status:"done",postedOn:null}]},
       L1:{pipeline:"lead",leadStage:"lead",clientId:null,editor:null,name:"Vista Dental Group",
           ask:"3 reels plus a brand day",channel:"Form",budget:"$3-6k",contact:"(555) 555-0188",
           createdAt:isoT(-0.02),firstReplyAt:null,touches:[]},
@@ -1825,6 +1836,7 @@ let view="owner", previewClient=null, previewEditor=null;
 let openProject=null, projFilter="all", projClient="all";
 let openClient=null;         /* owner drilled into a client's detail page */
 let readyTab="ready";        /* ready-to-post section: ready | archive */
+let driveSearch="";          /* drive tracker project search query */
 let unsubs=[];
 
 /* ── utils ── */
@@ -1865,19 +1877,20 @@ function donut(pctv,size){
   </svg>`;
 }
 
-/* ── ready-to-post ── deliverables from social-managed projects that are cut
-   and delivered but not yet published. status "done" = delivered/DONE. */
+/* ── ready-to-post ── deliverables from social-managed projects that are
+   done (delivered). "posted" is tracked via postedOn date, not by changing
+   the piece status — the deliverable stays DONE in the project card always. */
 const socialProjectsOf=cid=>projectsOf(cid).filter(p=>p.social);
 function readyToPost(cid){
   const out=[];
   socialProjectsOf(cid).forEach(p=>(p.pieces||[]).forEach((pc,i)=>{
-    if(pc.status==="done") out.push({p,pc,i}); }));
+    if(pc.status==="done"&&!pc.postedOn) out.push({p,pc,i}); }));
   return out;
 }
 function postedArchive(cid){
   const out=[];
   socialProjectsOf(cid).forEach(p=>(p.pieces||[]).forEach((pc,i)=>{
-    if(pc.status==="posted") out.push({p,pc,i}); }));
+    if(pc.status==="done"&&pc.postedOn) out.push({p,pc,i}); }));
   return out;
 }
 const hasSocialManaged=cid=>socialProjectsOf(cid).length>0;
@@ -4175,13 +4188,16 @@ function readyToPostSection(cid){
 async function markPosted(pid,i){
   const p=byId(projects,pid); if(!p) return;
   const nm=p.pieces?.[i]?.name||"";
-  const pieces=(p.pieces||[]).map((x,ix)=>ix===i?{...x,status:"posted",postedOn:todayISO()}:x);
+  /* Keep status as "done" — posted is tracked separately via postedOn.
+     This way the deliverable always shows DONE in the project card;
+     postedOn just tells us it went live. */
+  const pieces=(p.pieces||[]).map((x,ix)=>ix===i?{...x,postedOn:todayISO()}:x);
   await guard(()=>updateDoc(doc(db,"projects",pid),{pieces}),"Marked posted");
   logActivity(p.clientId,`${nm} posted`);
 }
 async function markUnposted(pid,i){
   const p=byId(projects,pid); if(!p) return;
-  const pieces=(p.pieces||[]).map((x,ix)=>ix===i?{...x,status:"done",postedOn:null}:x);
+  const pieces=(p.pieces||[]).map((x,ix)=>ix===i?{...x,postedOn:null}:x);
   await guard(()=>updateDoc(doc(db,"projects",pid),{pieces}),"Back to ready");
 }
 
@@ -4190,6 +4206,16 @@ function drivesView(){
   const totCap=drives.reduce((s,d)=>s+(+d.capacityGB||0),0);
   const totUsed=drives.reduce((s,d)=>s+driveUsedGB(d),0);
   const noDrive=projects.filter(p=>!p.driveId);
+  const q=(driveSearch||"").toLowerCase().trim();
+
+  /* highlight matched text */
+  function hl(str){
+    if(!q||!str) return esc(str||"");
+    const idx=str.toLowerCase().indexOf(q);
+    if(idx<0) return esc(str);
+    return esc(str.slice(0,idx))+`<mark class="drive-match">${esc(str.slice(idx,idx+q.length))}</mark>`+esc(str.slice(idx+q.length));
+  }
+
   if(!drives.length){
     return `${backBar("Drive Tracker")}
     <div class="hero"><div><h1>Drives<span>.</span></h1><div class="sub">Track where every project's footage lives</div></div></div>
@@ -4199,9 +4225,18 @@ function drivesView(){
       <button class="btn gold" data-form="drive">+ ADD YOUR FIRST DRIVE</button>
     </div></section>`;
   }
+
   const cards=drives.map(d=>{
     const used=driveUsedGB(d), cap=+d.capacityGB||0, fp=driveFillPct(d), free=Math.max(0,cap-used);
-    const projs=projectsOnDrive(d.id).slice().sort((a,b)=>(+b.sizeGB||0)-(+a.sizeGB||0));
+    let projs=projectsOnDrive(d.id).slice().sort((a,b)=>(+b.sizeGB||0)-(+a.sizeGB||0));
+    /* when searching, filter projects and highlight matches */
+    const searching=!!q;
+    const filtered=searching?projs.filter(p=>{
+      const fields=[p.title,p.code,clientName(p.clientId)].join(" ").toLowerCase();
+      return fields.includes(q);
+    }):projs;
+    /* hide entire drive card if searching and nothing matches */
+    if(searching&&!filtered.length) return "";
     return `<div class="drive-card">
       <div class="drive-head">${donut(fp,102)}
         <div class="drive-meta">
@@ -4212,14 +4247,19 @@ function drivesView(){
         </div>
       </div>
       <div class="drive-projlist">
-        <div style="font-family:var(--mono);font-size:9.5px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:7px">${projs.length} project${projs.length===1?"":"s"} on this drive</div>
-        ${projs.length?projs.map(p=>`<div class="drive-projrow">
-          <div style="min-width:0"><div class="dp-t">${esc(p.title)}</div>
-            <div class="dp-c">${esc(clientName(p.clientId))}${p.code?` &middot; ${esc(p.code)}`:""}${pct(p)===100?" &middot; delivered":""}</div></div>
+        <div style="font-family:var(--mono);font-size:9.5px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:7px">
+          ${searching?`${filtered.length} of ${projs.length} matching`:`${projs.length} project${projs.length===1?"":"s"} on this drive`}</div>
+        ${filtered.length?filtered.map(p=>`<div class="drive-projrow">
+          <div style="min-width:0"><div class="dp-t">${hl(p.title)}</div>
+            <div class="dp-c">${hl(clientName(p.clientId))}${p.code?` &middot; ${hl(p.code)}`:""}${pct(p)===100?" &middot; delivered":""}</div></div>
           <div class="dp-sz">${p.sizeGB?sizeFmt(p.sizeGB):"&mdash;"}</div></div>`).join("")
+          :searching?""
           :`<div style="font-size:12.5px;color:var(--dim)">No projects assigned yet. Open a project and pick this drive.</div>`}
       </div>
     </div>`;}).join("");
+
+  const anyResults=cards.replace(/\s/g,"").length>0;
+
   return `${backBar("Drive Tracker")}
     <div class="hero"><div><h1>Drives<span>.</span></h1><div class="sub">Where every project's footage lives</div></div>
       <div><button class="btn gold" data-form="drive">+ ADD DRIVE</button></div></div>
@@ -4230,8 +4270,15 @@ function drivesView(){
       ${subStat("FREE",sizeFmt(Math.max(0,totCap-totUsed)),T.green)}
       ${subStat("NO DRIVE SET",noDrive.length,noDrive.length?T.red:T.green)}
     </div>
-    <div class="drive-grid">${cards}</div>
-    ${noDrive.length?`<section class="panel"><div class="eyebrow" style="color:var(--gold)">Not on any drive &mdash; ${noDrive.length}</div>
+    <div class="drive-search-wrap">
+      <span class="ico">&#128269;</span>
+      <input id="driveSearchInput" type="search" placeholder="Search project or client name across all drives…"
+        value="${esc(driveSearch)}" data-drive-search="1" autocomplete="off">
+    </div>
+    ${anyResults?`<div class="drive-grid">${cards}</div>`
+      :`<section class="panel"><div class="empty-state"><div class="t">No matches</div>
+         <div class="s">No projects match "${esc(q)}" on any drive.</div></div></section>`}
+    ${!q&&noDrive.length?`<section class="panel"><div class="eyebrow" style="color:var(--gold)">Not on any drive &mdash; ${noDrive.length}</div>
       ${noDrive.map(p=>`<div class="list-row">
         <div><div class="inv-label">${esc(p.title)}</div><div class="inv-meta">${esc(clientName(p.clientId))}${p.sizeGB?` &middot; ${sizeFmt(p.sizeGB)}`:""}</div></div>
         <button class="btn ghost mini" data-form="project" data-id="${esc(p.id)}">ASSIGN DRIVE</button></div>`).join("")}
@@ -4349,8 +4396,9 @@ function paint(){
   const label=isOwner?"Owner":me.role==="editor"?"Editor":"Client";
   const tabs=isOwner?`
     <button class="tab ${view==="owner"?"on":""}" data-view="owner">Studio</button>
-    <button class="tab ${view==="quote"?"on":""}" data-view="quote">Quote Builder</button>
     <button class="tab ${view==="inbound"?"on":""}" data-view="inbound">Inbound${leads.filter(l=>!l.firstReplyAt).length?` <span style="color:var(--gold)">&bull;</span>`:""}</button>
+    <button class="tab ${view==="drives"?"on":""}" data-view="drives">Drives</button>
+    <button class="tab ${view==="quote"?"on":""}" data-view="quote">Quote Builder</button>
     <button class="tab ${view==="editor"?"on":""}" data-view="editor">Editor</button>
     <button class="tab ${view==="client"?"on":""}" data-view="client">Client</button>`:"";
   const pickers=isOwner&&view==="client"&&clients.length
@@ -4403,7 +4451,7 @@ document.addEventListener("click",e=>{
   if(d.login){ doLogin(); return; }
   if(d.reset){ doReset(); return; }
   if(d.logout){ doLogout(); return; }
-  if(d.view){ view=d.view; openClient=null; paint(); return; }
+  if(d.view){ view=d.view; openClient=null; driveSearch=""; paint(); return; }
   if(d.openclient!==undefined){ openClient=d.openclient||null; view="database"; paint(); return; }
   if(d.readytab){ readyTab=d.readytab; paint(); return; }
   if(d.postnow){ const [id,i]=d.postnow.split(":"); markPosted(id,+i); return; }
@@ -4463,6 +4511,19 @@ document.addEventListener("change",e=>{
     if(labs[0]) labs[0].parentNode.lastChild.textContent="Deposit paid ($"+h+")";
     if(labs[1]) labs[1].parentNode.lastChild.textContent="Final paid ($"+(v-h)+")";
   }
+});
+/* ── drive tracker: live search (oninput, not onchange) ── */
+document.addEventListener("input",e=>{
+  if(!e.target.dataset.driveSearch) return;
+  driveSearch=e.target.value;
+  const root=document.getElementById("root");
+  const main=root&&root.querySelector("main");
+  if(!main) return;
+  const sy=window.scrollY;
+  main.innerHTML=drivesView();
+  const inp=main.querySelector("#driveSearchInput");
+  if(inp){ const l=inp.value.length; inp.focus(); inp.setSelectionRange(l,l); }
+  window.scrollTo(0,sy);
 });
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape") closeModal();
