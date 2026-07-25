@@ -2086,8 +2086,10 @@ const editorNames=()=>{
 async function sendSMS(kind,body,to){
   const url=smsPub.endpoint; if(!url) return;
   try{
-    await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({kind,to:to||null,body,token:smsPub.token||""})});
+    /* form-encoded = a "simple" request → no CORS preflight, and Twilio Functions
+       parse it straight into `event`. fire-and-forget; we don't block on the reply. */
+    const p=new URLSearchParams({kind:kind||"",to:to||"",body:body||"",token:smsPub.token||""});
+    await fetch(url,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:p.toString()});
   }catch(e){ console.warn("SMS failed",e); }
 }
 const editorPhone=n=>(settings.editors||{})[n]||null;
@@ -2705,8 +2707,9 @@ async function smsTest(){
   let ep=fv("sf-ep"); if(ep&&!/^https?:/.test(ep)) ep="https://"+ep;
   if(!ep) return toast("Add the Function URL first");
   try{
-    const r=await fetch(ep,{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({kind:"studio",body:"Client OS test — alerts are wired up.",token:fv("sf-tok")})});
+    const p=new URLSearchParams({kind:"studio",to:fv("sf-studio")||"",
+      body:"Client OS test — alerts are wired up.",token:fv("sf-tok")});
+    const r=await fetch(ep,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:p.toString()});
     toast(r.ok?"Test sent — check your phone":"Endpoint returned "+r.status);
   }catch(e){ toast("Couldn't reach that URL"); }
 }
