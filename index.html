@@ -551,6 +551,51 @@ footer{text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.
 /* ── owner client-detail page ── */
 .cd-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
 .cd-actions{display:flex;gap:8px;flex-wrap:wrap}
+/* ── 14-day calendar ── */
+.cal{display:grid;gap:8px}
+.cal-row{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-cell{border:1px solid var(--line-soft);border-radius:10px;padding:7px 7px 8px;min-height:78px;
+  background:rgba(255,255,255,.015);display:flex;flex-direction:column;gap:4px}
+.cal-cell.today{border-color:var(--gold);background:rgba(242,201,76,.06)}
+.cal-dow{display:flex;justify-content:space-between;align-items:baseline;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:var(--dim);text-transform:uppercase}
+.cal-day{font-family:var(--display);font-size:15px;font-weight:700;color:var(--cream)}
+.cal-cell.today .cal-day{color:var(--gold)}
+.cal-empty{flex:1}
+.cal-chip{font-family:var(--body);font-size:10px;line-height:1.25;padding:2px 5px;border-radius:5px;
+  border:1px solid;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:normal}
+.cal-chip b{font-family:var(--mono);font-size:8.5px;letter-spacing:.05em}
+@media(max-width:720px){
+  .cal-cell{min-height:60px;padding:5px 4px;gap:3px}
+  .cal-day{font-size:13px}
+  .cal-chip{font-size:8.5px;padding:1px 3px}
+  .cal-dow{font-size:8px}
+}
+/* ── project timer ── */
+.m-clock{font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;color:var(--dim);margin-top:2px}
+.timerbox{font-family:var(--display);font-weight:700;font-size:20px;color:var(--gold);line-height:1.1;margin-top:2px}
+/* ── gold scrollbars — easier to spot on screen ── */
+*{scrollbar-color:var(--gold) var(--track);scrollbar-width:thin}
+::-webkit-scrollbar{width:12px;height:12px}
+::-webkit-scrollbar-track{background:var(--track)}
+::-webkit-scrollbar-thumb{background:var(--gold);border-radius:8px;border:3px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{background:var(--gold-soft)}
+::-webkit-scrollbar-corner{background:transparent}
+/* ── outstanding A/R hover popover ── */
+.stat-wrap{position:relative}
+.statlink{cursor:pointer;transition:border-color .15s}
+.statlink:hover{border-color:var(--gold)}
+.statlink:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.stat-pop{position:absolute;top:100%;right:0;margin-top:7px;z-index:70;width:max-content;max-width:min(340px,88vw);
+  background:var(--panel-up);border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 22px 46px rgba(0,0,0,.6);padding:11px 13px;text-align:left;
+  opacity:0;visibility:hidden;transform:translateY(-4px);transition:.14s;pointer-events:none}
+.stat-wrap:hover .stat-pop{opacity:1;visibility:visible;transform:none;pointer-events:auto}
+.stat-pop::before{content:'';position:absolute;top:-9px;left:0;right:0;height:9px}
+.stat-pop .pop-h{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:6px}
+.stat-pop .pop-row{display:flex;justify-content:space-between;gap:16px;padding:5px 0;border-top:1px solid var(--line-soft);font-size:12.5px;white-space:nowrap}
+.stat-pop .pop-foot{font-family:var(--mono);font-size:10px;color:var(--gold);margin-top:8px;letter-spacing:.04em}
+@media(max-width:720px){ .stat-pop{display:none} }
 </style>
 <script type="text/plain" id="qbSrc"><!DOCTYPE html>
 <html lang="en">
@@ -569,6 +614,13 @@ footer{text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.
   --text:#e9edf3; --muted:#8d97a6;
   --green:#3ddc97; --red:#ff5f5f; --amber:#ffb03a; --r:14px;
 }
+/* gold scrollbars — match the studio */
+*{scrollbar-color:var(--gold) rgba(255,255,255,.06);scrollbar-width:thin}
+::-webkit-scrollbar{width:12px;height:12px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--gold);border-radius:8px;border:3px solid var(--bg)}
+::-webkit-scrollbar-thumb:hover{filter:brightness(1.08)}
+::-webkit-scrollbar-corner{background:transparent}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{
@@ -1849,6 +1901,83 @@ const todayISO=()=>new Date().toISOString().slice(0,10);
 const daysIn=iso=>iso?Math.floor((new Date()-new Date(iso+"T00:00:00"))/864e5)+1:null;
 const fv=id=>document.getElementById(id)?.value.trim()||"";
 const byId=(arr,id)=>arr.find(x=>x.id===id);
+/* local YYYY-MM-DD (not UTC) — matches the dates you type into the app */
+const localISO=d=>{ const z=new Date(d); z.setMinutes(z.getMinutes()-z.getTimezoneOffset());
+  return z.toISOString().slice(0,10); };
+
+/* ── project timer: start-to-delivery clock in days + hours ── */
+const elapsedDH=ms=>{ ms=Math.max(0,ms); const h=Math.floor(ms/3.6e6), dd=Math.floor(h/24), hh=h%24;
+  return dd>0?`${dd}d ${hh}h`:`${hh}h`; };
+/* clock starts when the project is created; falls back to shoot/edit date for older projects */
+const projStartTS=p=>p.createdTS
+  || (p.startISO?new Date(p.startISO+"T00:00:00").getTime()
+  : (p.editStart?new Date(p.editStart+"T00:00:00").getTime():null));
+/* running time while open; frozen total once delivered */
+function projElapsedMS(p){
+  const s=projStartTS(p); if(s==null) return null;
+  if(pct(p)===100) return p.deliveredTS?Math.max(0,p.deliveredTS-s):null;
+  return Math.max(0,Date.now()-s);
+}
+/* keep the live "Xd Yh" readouts current without a full repaint */
+function tickTimers(){
+  document.querySelectorAll("[data-elapsed-live]").forEach(el=>{
+    const s=+el.getAttribute("data-elapsed-since"); if(!s) return;
+    el.textContent=elapsedDH(Date.now()-s);
+  });
+}
+setInterval(tickTimers,60000);
+
+/* ── Google Calendar (optional overlay on the 14-day calendar) ──
+   To turn this on: create an OAuth 2.0 Web client ID in Google Cloud
+   (APIs & Services → Credentials), enable the Google Calendar API, add
+   your site to "Authorized JavaScript origins", then paste the ID below.
+   Leave it "" and the calendar still works with your own shoots/edits. */
+const GCAL_CLIENT_ID = "";
+let gcalToken=null, gcalEvents=[], gcalTokenClient=null;
+const gcalConfigured=()=>!!GCAL_CLIENT_ID;
+const gcalOn=iso=>gcalEvents.filter(e=>e.iso===iso);
+function loadGIS(){
+  return new Promise((res,rej)=>{
+    if(window.google&&google.accounts&&google.accounts.oauth2) return res();
+    const s=document.createElement("script");
+    s.src="https://accounts.google.com/gsi/client"; s.async=true; s.defer=true;
+    s.onload=()=>res(); s.onerror=()=>rej(new Error("gis"));
+    document.head.appendChild(s);
+  });
+}
+async function connectGCal(){
+  if(!gcalConfigured()) return toast("Add your Google client ID in the file to enable");
+  try{ await loadGIS(); }catch(e){ return toast("Couldn't reach Google"); }
+  gcalTokenClient=gcalTokenClient||google.accounts.oauth2.initTokenClient({
+    client_id:GCAL_CLIENT_ID,
+    scope:"https://www.googleapis.com/auth/calendar.events.readonly",
+    callback:r=>{ if(r&&r.access_token){ gcalToken=r.access_token; fetchGCal(); } }
+  });
+  gcalTokenClient.requestAccessToken({prompt:gcalToken?"":"consent"});
+}
+async function fetchGCal(){
+  if(!gcalToken) return;
+  const now=new Date(); now.setHours(0,0,0,0);
+  const end=new Date(now); end.setDate(end.getDate()+14);
+  const url="https://www.googleapis.com/calendar/v3/calendars/primary/events"
+    +"?singleEvents=true&orderBy=startTime&maxResults=100"
+    +"&timeMin="+encodeURIComponent(now.toISOString())
+    +"&timeMax="+encodeURIComponent(end.toISOString());
+  try{
+    const r=await fetch(url,{headers:{Authorization:"Bearer "+gcalToken}});
+    if(!r.ok) throw 0;
+    const j=await r.json();
+    gcalEvents=(j.items||[]).map(ev=>({
+      iso:(ev.start&&(ev.start.date||ev.start.dateTime)||"").slice(0,10),
+      title:ev.summary||"(busy)"
+    })).filter(e=>e.iso);
+    toast("Google Calendar synced"); paint();
+  }catch(e){ gcalToken=null; toast("Calendar sync failed — reconnect"); }
+}
+document.addEventListener("click",e=>{
+  const g=e.target.closest("[data-gcal]"); if(!g) return;
+  if(g.dataset.gcal==="refresh"&&gcalToken) fetchGCal(); else connectGCal();
+});
 
 /* ── hard-drive tracker helpers ── */
 const driveById=id=>byId(drives,id);
@@ -2205,6 +2334,7 @@ async function saveClient(id){
                 .map(x=>({name:x.name.trim(),qty:(x.qty||"").trim()}));
   const data={name,company:fv("cf-co"),contact:fv("cf-contact"),
               retainer:fv("cf-ret"),assetsUrl:fv("cf-assets"),
+              nextShootBy:fv("cf-nextshoot")||null,
               isRetainer:on,
               retainerValue:on?(+fv("cf-retval")||0):0,
               retainerItems:on?items:[],
@@ -2254,7 +2384,9 @@ async function saveProject(id){
     depositPaidOn:document.getElementById("pf-dep")?.checked?(fv("pf-dep-on")||todayISO()):null,
     finalPaidOn:document.getElementById("pf-fin")?.checked?(fv("pf-fin-on")||todayISO()):null,
     code:fv("pf-code").toUpperCase()||null,
-    approvals:prev?.approvals||{}};
+    approvals:prev?.approvals||{},
+    createdTS:prev?.createdTS||Date.now(),
+    deliveredTS: stage>=4 ? (prev?.deliveredTS||Date.now()) : null};
   await guard(async()=>{
     if(id) await updateDoc(doc(db,"projects",id),data);
     else{ await addDoc(collection(db,"projects"),data);
@@ -2382,6 +2514,9 @@ function clientForm(id){
       <div class="f"><label>Billing day of month</label>
         <input id="cf-retday" type="number" min="1" max="28" value="${c.retainerDay??1}">
         <div class="hint">just a reminder — used on the retainer tracker</div></div>
+      <div class="f"><label>Update shoot needed by</label>
+        <input id="cf-nextshoot" type="date" value="${esc(c.nextShootBy||"")}">
+        <div class="hint">the date you need to shoot by to keep them current — shows on the Studio calendar &amp; "Update Shoots Needed"</div></div>
     </div>
     <div class="f"><label>Notes / package summary</label><input id="cf-ret" value="${esc(c.retainer||"")}" placeholder="Anything else worth remembering"></div>
   </div>
@@ -2630,6 +2765,9 @@ async function setStage(pid,v){
   const p=byId(projects,pid); if(!p) return;
   const patch={stage:+v};
   if(+v>=2 && !p.editStart) patch.editStart=todayISO();
+  if(!p.createdTS) patch.createdTS=projStartTS(p)||Date.now();   /* start the clock for older projects */
+  if(+v>=4) patch.deliveredTS=p.deliveredTS||Date.now();         /* freeze total on delivery */
+  else if(p.deliveredTS) patch.deliveredTS=null;                 /* reopened — clock runs again */
   await guard(()=>updateDoc(doc(db,"projects",pid),patch),STAGES[+v]);
   if(+v===4) logActivity(p.clientId,`${p.title} delivered`);
 }
@@ -2810,6 +2948,9 @@ function clientView(cid){
   if(!c) return `<div class="panel"><div class="empty-state"><div class="t">Nothing here yet</div>
     <div class="s">Your projects will show up here as soon as they're set up.</div></div></div>`;
   const mine=projectsOf(cid), inv=invoicesOf(cid);
+  const _thisM=new Date().toISOString().slice(0,7);
+  const paidThisMonth=paymentsOf(cid).filter(x=>(x.when||"").startsWith(_thisM)).reduce((s,x)=>s+x.amount,0);
+  const paidAllTime=paymentsOf(cid).reduce((s,x)=>s+x.amount,0);
   const projBilled=mine.reduce((s,p)=>s+projTotal(p),0);
   const projPaid=mine.reduce((s,p)=>s+collected(p),0);
   const billed=inv.reduce((s,i)=>s+(+i.amount||0),0)+projBilled;
@@ -2844,7 +2985,10 @@ function clientView(cid){
   return `
   <div class="hero">
     <div><h1>${esc((c.name||"").split(" ")[0])}<span>.</span></h1>
-      <div class="sub">${esc(c.retainer||c.company||"")}</div></div>
+      <div class="sub">${esc(c.retainer||c.company||"")}</div>
+      ${c.nextShootBy?(()=>{const dd2=dayDiff(c.nextShootBy);const col=dd2!=null&&dd2<0?T.red:T.gold;
+        const tail=dd2==null?"":dd2<0?` · ${-dd2}d overdue`:dd2===0?" · today":dd2===1?" · tomorrow":` · in ${dd2}d`;
+        return `<div class="sub" style="margin-top:5px;color:${col};font-weight:600">Next shoot by ${esc(isoShort(c.nextShootBy))}${tail}</div>`;})():""}</div>
     <div><div class="big-num-label">BALANCE DUE</div>
       <div class="big-num" style="color:${due?T.gold:T.green}">${money(due)}</div></div>
   </div>
@@ -2854,6 +2998,10 @@ function clientView(cid){
       :`<div style="font-size:13px;color:var(--dim)">No active projects right now.</div>`}</section>
   <div class="two-col">
     <section class="panel"><div class="eyebrow">Payments &amp; Balance</div>
+      <div class="bal-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:10px">
+        <div class="bal-cell"><div class="l">PAID THIS MONTH</div><div class="v" style="color:var(--gold)">${money(paidThisMonth)}</div></div>
+        <div class="bal-cell"><div class="l">ALL-TIME SPENT</div><div class="v" style="color:var(--green)">${money(paidAllTime)}</div></div>
+      </div>
       <div class="bal-grid">
         <div class="bal-cell"><div class="l">TOTAL BILLED</div><div class="v">${money(billed)}</div></div>
         <div class="bal-cell"><div class="l">PAID</div><div class="v" style="color:var(--green)">${money(paidT)}</div></div>
@@ -3399,12 +3547,14 @@ const K_COLOR={ok:T.muted,soon:T.gold,late:T.red};
 function miniCard(p){
   const k=projState(p), d=deliveryState(p), dr=draftState(p);
   const l=p.pieces||[], done=l.filter(x=>x.status==="done").length;
+  const tMS=projElapsedMS(p), tLive=pct(p)!==100, tStart=projStartTS(p);
   const tag=(txt,kk)=>`<span class="m-tag" style="color:${K_COLOR[kk]||"var(--dim)"};border-color:${kk&&kk!=="ok"?K_COLOR[kk]+"55":"var(--line)"};background:${kk&&kk!=="ok"?K_COLOR[kk]+"12":"transparent"}">${txt}</span>`;
   return `<button class="pmini st-${k}" data-open="${esc(p.id)}">
     <span class="m-pct">${pct(p)}<span>%</span></span>
     <div class="m-id">${esc(p.code||p.type||"—")}${p.code&&p.type?" · "+esc(p.type):""}</div>
     <div class="m-title">${esc(p.title||"Untitled")}</div>
     <div class="m-client">${esc(clientName(p.clientId))}</div>
+    ${tMS!=null?`<div class="m-clock" ${tLive&&tStart?`data-elapsed-live="1" data-elapsed-since="${tStart}"`:""}>&#9201; ${elapsedDH(tMS)}${tLive?"":" · total"}</div>`:""}
     <div class="m-bar"><i style="width:${pct(p)}%"></i></div>
     <div class="m-tags">
       ${tag(STAGES[+p.stage||0].toUpperCase())}
@@ -3528,6 +3678,10 @@ function renderDetail(){
   if(!p){ openProject=null; return closeModal(); }
   const dd=draftDue(p), dr=draftState(p), d=deliveryState(p);
   const note=(st,txt)=>`<div class="d-note" style="color:${K_COLOR[st]||"var(--dim)"}">${txt}</div>`;
+  const tStart=projStartTS(p), tMS=projElapsedMS(p), tDelivered=pct(p)===100;
+  const tNote=tMS==null
+    ? (tDelivered?note("ok","delivered — no start on record"):note("soon","set a shoot/edit date to start"))
+    : (tDelivered?note("ok","start \u2192 delivered total"):note("soon","running \u2014 start to now"));
   M().innerHTML=`<div class="modal-wrap" data-close="1"><div class="modal wide">
     <button class="x" data-close="1" aria-label="Close">✕</button>
     <h3>${esc(p.title||"Project")}</h3>
@@ -3546,6 +3700,9 @@ function renderDetail(){
       <div><label>Delivery due</label>
         <input class="sel" type="date" data-pdue="${esc(p.id)}" value="${esc(p.dueISO||"")}">
         ${note(d.k,d.label)}</div>
+      <div><label>Time on the job</label>
+        <div class="timerbox" ${!tDelivered&&tStart?`data-elapsed-live="1" data-elapsed-since="${tStart}"`:""}>${tMS==null?"—":elapsedDH(tMS)}</div>
+        ${tNote}</div>
     </div>
     <label class="socialtoggle">
       <input type="checkbox" data-social="${esc(p.id)}" ${p.social?"checked":""}>
@@ -3882,6 +4039,179 @@ const chipVal=g=>{const el=document.querySelector(`[data-chipgroup="${g}"] .on`)
 
 
 /* ═══════════ OWNER VIEW ═══════════ */
+/* ── 14-day calendar: your shoots, edits due, update-shoots, + Google ── */
+const CAL_COL={shoot:T.gold,due:T.red,update:"#22d3b0",gcal:T.muted};
+const CAL_LAB={shoot:"SHOOT",due:"DUE",update:"UPDATE",gcal:""};
+function calItems(iso){
+  const out=[];
+  projects.forEach(p=>{ if(p.startISO===iso) out.push({k:"shoot",t:p.title,id:p.id}); });
+  projects.forEach(p=>{ if(p.dueISO===iso&&pct(p)<100) out.push({k:"due",t:p.title,id:p.id}); });
+  clients.forEach(c=>{ if(c.nextShootBy===iso) out.push({k:"update",t:c.name,cid:c.id}); });
+  gcalOn(iso).forEach(e=>out.push({k:"gcal",t:e.title}));
+  return out;
+}
+function calCell(dt){
+  const iso=localISO(dt), today=iso===localISO(new Date());
+  const dow=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dt.getDay()];
+  const chip=it=>{
+    const c=CAL_COL[it.k]||T.muted, pre=CAL_LAB[it.k]?`<b>${CAL_LAB[it.k]}</b> `:"";
+    const attr=it.id?`data-open="${esc(it.id)}"`:it.cid?`data-form="client" data-id="${esc(it.cid)}"`:"";
+    return `<div class="cal-chip" ${attr} style="color:${c};border-color:${c}55;background:${c}12">${pre}${esc(it.t)}</div>`;
+  };
+  const items=calItems(iso);
+  return `<div class="cal-cell ${today?"today":""}">
+    <div class="cal-dow"><span>${dow}</span><span class="cal-day">${dt.getDate()}</span></div>
+    ${items.length?items.map(chip).join(""):`<div class="cal-empty"></div>`}</div>`;
+}
+function calendarStrip(){
+  const base=new Date(); base.setHours(0,0,0,0);
+  const days=[...Array(14)].map((_,i)=>{ const d=new Date(base); d.setDate(d.getDate()+i); return d; });
+  const rowHTML=arr=>`<div class="cal-row">${arr.map(calCell).join("")}</div>`;
+  const gbtn=gcalConfigured()
+    ? `<button class="btn ghost mini" data-gcal="${gcalToken?"refresh":"connect"}">${gcalToken?"↻ GOOGLE SYNCED":"CONNECT GOOGLE CALENDAR"}</button>`
+    : "";
+  return `<section class="panel"><div class="eyebrow">Next 14 Days
+    <span class="spacer"></span>${gbtn}
+    <button class="btn gold mini" data-form="project">+ NEW PROJECT</button></div>
+    <div class="cal">${rowHTML(days.slice(0,7))}${rowHTML(days.slice(7))}</div>
+    <div class="a-m" style="padding-top:10px;color:var(--dim);font-size:11px">
+      <span style="color:${T.gold}">■</span> shoot &nbsp; <span style="color:${T.red}">■</span> edit due &nbsp;
+      <span style="color:#22d3b0">■</span> update shoot${gcalToken?` &nbsp; <span style="color:${T.muted}">■</span> google`:""}</div>
+  </section>`;
+}
+
+/* ── who's due for a fresh shoot to stay on schedule ── */
+const updateShootClients=()=>clients.filter(c=>c.nextShootBy)
+  .sort((a,b)=>(a.nextShootBy||"").localeCompare(b.nextShootBy||""));
+function updateShootsPanel(){
+  const list=updateShootClients(); if(!list.length) return "";
+  const row=c=>{
+    const d=dayDiff(c.nextShootBy);
+    const col=d==null?T.muted:d<0?T.red:d<=3?T.gold:T.muted;
+    const lbl=d==null?"NO DATE":d<0?`${-d}d OVERDUE`:d===0?"TODAY":d===1?"TOMORROW":`IN ${d} DAYS`;
+    return `<div class="list-row">
+      <div><div class="inv-label">${esc(c.name)}${c.company?` <span style="color:var(--dim);font-weight:400">· ${esc(c.company)}</span>`:""}</div>
+        <div class="inv-meta">update shoot by ${esc(isoShort(c.nextShootBy))}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="sla" style="color:${col};border:1px solid ${col}55;background:${col}12">${lbl}</span>
+        <button class="btn ghost mini" data-form="client" data-id="${esc(c.id)}">EDIT</button></div></div>`;
+  };
+  return `<section class="panel"><div class="eyebrow" style="color:var(--gold)">Update Shoots Needed — ${list.length}</div>
+    ${list.map(row).join("")}</section>`;
+}
+
+/* ── accounts receivable: everything a client still owes you ── */
+function arItems(){
+  const out=[];
+  projects.forEach(p=>{
+    const h=halfOf(p), price=+p.cost||0;
+    if(price){
+      if(!p.depositPaid) out.push({clientId:p.clientId,label:`${p.title} — deposit`,amount:h,due:p.dueISO,kind:"project"});
+      if(!p.finalPaid)   out.push({clientId:p.clientId,label:`${p.title} — final`,amount:price-h,due:p.dueISO,kind:"project"});
+    }
+    addonsOf(p).forEach(a=>{ if(!a.paid) out.push({clientId:p.clientId,label:`${p.title} — ${a.label||"add-on"}`,amount:+a.amount||0,kind:"addon"}); });
+  });
+  invoices.filter(i=>i.status!=="Paid").forEach(i=>out.push({clientId:i.clientId,label:i.label||"Invoice",amount:+i.amount||0,due:i.dueISO,pay:i.pay,kind:"invoice"}));
+  return out.filter(x=>x.amount>0);
+}
+function arByClient(){
+  const map=new Map();
+  arItems().forEach(it=>{
+    const g=map.get(it.clientId)||{clientId:it.clientId,items:[],total:0,pay:null};
+    g.items.push(it); g.total+=it.amount; if(it.pay&&!g.pay) g.pay=it.pay;
+    map.set(it.clientId,g);
+  });
+  return [...map.values()].sort((a,b)=>b.total-a.total);
+}
+const arTotal=()=>arItems().reduce((s,x)=>s+x.amount,0);
+/* best phone we have: SMS settings first, else the client's Contact field if it looks like a number */
+const arPhone=c=>{
+  const s=clientPhone(c.id); if(s) return s.replace(/[^\d+]/g,"");
+  const ct=(c.contact||"").trim(); if(!ct||/@/.test(ct)) return null;
+  const d=ct.replace(/[^\d+]/g,""); return d.replace(/\D/g,"").length>=10?d:null;
+};
+function reminderMsg(c,total){
+  const first=(c.name||"there").trim().split(/\s+/)[0];
+  return `Hi ${first} — quick reminder from Under The Sun Studios: your balance is ${money(total)}. Let me know if you have any questions. Thanks!`;
+}
+/* opens the phone's Messages app with the reminder pre-written — works before Twilio is set up */
+const smsHref=(num,body)=>{
+  const n=(num||"").replace(/[^\d+]/g,"");
+  const sep=/iP(hone|od|ad)|Macintosh/.test(navigator.userAgent)?"&":"?";
+  return `sms:${n}${sep}body=${encodeURIComponent(body)}`;
+};
+function copyReminder(cid){
+  const c=byId(clients,cid); if(!c) return;
+  const g=arByClient().find(x=>x.clientId===cid); if(!g) return;
+  navigator.clipboard.writeText(reminderMsg(c,g.total)).then(()=>toast("Reminder copied"),()=>toast("Copy failed"));
+}
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-copyreminder]"); if(!t) return;
+  copyReminder(t.dataset.copyreminder);
+});
+/* little hover list on the Studio "Outstanding" stat */
+function arPopoverHTML(){
+  const groups=arByClient();
+  if(!groups.length) return `<div class="pop-h">Outstanding</div><div style="font-size:12.5px;color:var(--dim)">All paid up — nothing outstanding.</div>`;
+  const rows=groups.slice(0,6).map(g=>{
+    const c=byId(clients,g.clientId)||{name:"—"};
+    return `<div class="pop-row"><span>${esc(c.name)}</span><span class="amount" style="color:var(--gold)">${money(g.total)}</span></div>`;
+  }).join("");
+  const more=groups.length>6?`<div class="pop-row" style="color:var(--dim)"><span>+ ${groups.length-6} more</span><span></span></div>`:"";
+  return `<div class="pop-h">Who owes you — ${groups.length} client${groups.length===1?"":"s"}</div>${rows}${more}<div class="pop-foot">Click to open &amp; send reminders &rarr;</div>`;
+}
+
+/* ── Outstanding Payments — full page with a text-reminder button per client ── */
+function arView(){
+  const groups=arByClient(), total=arTotal();
+  const invT=invoices.filter(i=>i.status!=="Paid").reduce((s,i)=>s+(+i.amount||0),0);
+  const projT=total-invT;
+  const card=g=>{
+    const c=byId(clients,g.clientId)||{name:"—"};
+    const ph=arPhone(c), msg=reminderMsg(c,g.total);
+    const overdue=g.items.some(it=>it.due&&dayDiff(it.due)!=null&&dayDiff(it.due)<0);
+    return `<section class="panel" style="margin-top:14px">
+      <div class="cd-head">
+        <div><div style="font-size:17px;font-weight:800">${esc(c.name)}${c.company?` <span style="color:var(--dim);font-weight:400">· ${esc(c.company)}</span>`:""}</div>
+          <div class="inv-meta" style="margin-top:2px">${g.items.length} open item${g.items.length===1?"":"s"} · ${ph?esc(ph):`<span style="color:var(--amber)">no number on file</span>`}</div></div>
+        <div style="text-align:right"><div class="big-num-label">OWES YOU</div>
+          <div class="big-num" style="color:${overdue?T.red:T.gold}">${money(g.total)}</div></div>
+      </div>
+      ${g.items.map(it=>{
+        const dd=it.due?dayDiff(it.due):null;
+        const dtag=dd==null?"":dd<0
+          ?`<span class="tag due-t" style="color:${T.red};border-color:${T.red}44;background:${T.red}14">${-dd}d OVERDUE</span>`
+          :`<span class="inv-meta">due ${esc(isoShort(it.due))}</span>`;
+        return `<div class="list-row">
+          <div><div class="inv-label">${esc(it.label)}</div><div class="inv-meta">${it.kind}</div></div>
+          <div style="display:flex;align-items:center;gap:10px">${dtag}<span class="amount">${money(it.amount)}</span></div></div>`;
+      }).join("")}
+      <div class="cd-actions" style="margin-top:12px">
+        ${ph?`<a class="btn gold" href="${smsHref(ph,msg)}">TEXT REMINDER ↗</a>`
+            :`<button class="btn gold" data-form="sms">ADD A NUMBER FIRST</button>`}
+        <button class="btn ghost" data-copyreminder="${esc(g.clientId)}">COPY MESSAGE</button>
+        <button class="btn ghost" data-preview="${esc(g.clientId)}">OPEN CLIENT</button>
+        ${g.pay?`<a class="btn outline" href="${esc(g.pay)}" target="_blank" rel="noopener">PAYMENT LINK ↗</a>`:""}
+      </div>
+      <div class="inv-meta" style="margin-top:8px;color:var(--dim);white-space:normal">&ldquo;${esc(msg)}&rdquo;</div>
+    </section>`;
+  };
+  return `${backBar("Outstanding Payments")}
+  <div class="hero"><div><h1>Outstanding<span>.</span></h1>
+    <div class="sub">${groups.length?`${groups.length} client${groups.length===1?"":"s"} owe you money`:"nothing outstanding right now"}</div></div>
+    <div><div class="big-num-label">TOTAL A/R</div>
+      <div class="big-num" style="color:${total?T.gold:T.green}">${money(total)}</div></div></div>
+  <div class="stats">
+    ${subStat("CLIENTS OWING",groups.length)}
+    ${subStat("FROM PROJECTS",money(projT),projT?T.gold:T.dim)}
+    ${subStat("FROM INVOICES",money(invT),invT?T.gold:T.dim)}
+  </div>
+  ${smsPub.endpoint?"":`<section class="panel" style="margin-top:14px"><div class="inv-meta" style="color:var(--dim);white-space:normal">Reminders open in your phone's Messages app with the text pre-written — you tap send. For the button to know where to send, put each client's number under <b style="color:var(--gold)">Alerts &amp; SMS</b> or in their <b style="color:var(--gold)">Contact</b> field. Wire up the Twilio function later and this can send on its own.</div></section>`}
+  ${groups.length?groups.map(card).join("")
+    :`<section class="panel" style="margin-top:14px"><div class="empty-state"><div class="t">All paid up</div>
+       <div class="s">No outstanding balances right now. Unpaid project deposits, finals, add-ons, and invoices will show up here.</div></div></section>`}`;
+}
+
 function ownerView(){
   const open=projects.filter(p=>pct(p)<100);
   const thisMonth=new Date().toISOString().slice(0,7);
@@ -3955,10 +4285,18 @@ function ownerView(){
     ${stat("COLLECTED THIS MONTH",money(collectedMonth(thisMonth)),T.green)}
     ${stat("COLLECTED LAST MONTH",money(collectedMonth(lastMonth)),T.dim)}
     ${stat("BILLED THIS MONTH",money(sumMonth(thisMonth)),T.gold)}
-    ${stat("OUTSTANDING (A/R)",money(outst),outst?T.gold:T.green)}
+    <div class="stat-wrap">
+      <div class="stat statlink" data-view="ar" role="button" tabindex="0">
+        <div class="l">OUTSTANDING (A/R)</div>
+        <div class="v" style="color:${outst?T.gold:T.green}">${money(outst)}</div>
+      </div>
+      <div class="stat-pop">${arPopoverHTML()}</div>
+    </div>
     ${stat("ACCOUNTS PAYABLE",money(apOwed),apOwed?T.red:T.green)}
     ${stat("SLA WATCH (DAY 5+)",risk,risk?T.red:T.green)}
   </div>
+  ${calendarStrip()}
+  ${updateShootsPanel()}
   ${alertStrip()}
   ${projectBoard()}
   <div class="two-col">
@@ -4414,6 +4752,7 @@ function paint(){
   else if(view==="inbound")      body=inboundView();
   else if(view==="editor")       body=editorView(previewEditor||editorNames()[0]);
   else if(view==="payments")     body=paymentsView();
+  else if(view==="ar")           body=arView();
   else if(view==="database")     body=databaseView();
   else if(view==="drives")       body=drivesView();
   else if(view==="sms")          body=smsView();
