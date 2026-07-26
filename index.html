@@ -596,6 +596,38 @@ footer{text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.
 .stat-pop .pop-row{display:flex;justify-content:space-between;gap:16px;padding:5px 0;border-top:1px solid var(--line-soft);font-size:12.5px;white-space:nowrap}
 .stat-pop .pop-foot{font-family:var(--mono);font-size:10px;color:var(--gold);margin-top:8px;letter-spacing:.04em}
 @media(max-width:720px){ .stat-pop{display:none} }
+/* ── view-as-editor banner ── */
+.impersonate-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:linear-gradient(180deg,rgba(242,201,76,.14),rgba(242,201,76,.06));
+  border:1px solid var(--gold);border-radius:12px;padding:10px 14px;margin-bottom:16px;
+  font-size:13px;color:var(--cream)}
+.impersonate-bar b{color:var(--gold)}
+.impersonate-bar .eye{opacity:.8}
+.impersonate-bar select{background:var(--panel-2);color:var(--cream);border:1px solid var(--line);
+  border-radius:8px;padding:5px 8px;font-size:12px}
+/* ── month-end export reminder ── */
+.eom-overlay{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  background:rgba(6,7,9,.72);backdrop-filter:blur(3px);padding:20px}
+.eom-card{width:min(440px,92vw);background:linear-gradient(180deg,var(--panel-up),var(--panel));
+  border:1px solid var(--gold);border-radius:18px;padding:22px 22px 18px;
+  box-shadow:0 30px 70px rgba(0,0,0,.6);position:relative;overflow:hidden}
+.eom-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.eom-h{font-family:var(--display);font-weight:700;font-size:20px;color:var(--gold);letter-spacing:.01em}
+.eom-body{font-size:14px;color:var(--cream);line-height:1.55;margin-top:8px}
+.eom-meta{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:12px;letter-spacing:.04em}
+.eom-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+/* ── Money module ── */
+.mrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--line-soft);font-size:13.5px}
+.mrow:first-of-type{border-top:none}
+.mrow.tot{border-top:1px solid var(--line);margin-top:2px;font-weight:700}
+.catbar{margin:10px 0}
+.catbar-top{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;color:var(--cream)}
+.catbar-track{height:7px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden}
+.catbar-track i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-soft));border-radius:5px}
+.pend{font-family:var(--mono);font-size:9px;color:#ffb03a;border:1px solid rgba(255,176,58,.3);background:rgba(255,176,58,.1);padding:1px 4px;border-radius:4px;letter-spacing:.05em}
+.sel.mini{padding:4px 7px;font-size:11px;min-width:0;height:auto}
+select.bkt{font-family:var(--mono);font-weight:600;letter-spacing:.02em}
 </style>
 <script type="text/plain" id="qbSrc"><!DOCTYPE html>
 <html lang="en">
@@ -1698,8 +1730,8 @@ let DEMO = !CONFIGURED;
    so nothing below this line changes between the two. */
 let initializeApp, getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
     sendPasswordResetEmail, getFirestore, collection, doc, getDoc, setDoc, addDoc,
-    updateDoc, deleteDoc, query, where, onSnapshot;
-let app, auth, db;
+    updateDoc, deleteDoc, query, where, onSnapshot, getFunctions, httpsCallable;
+let app, auth, db, fns;
 
 let loadError = null;
 if (CONFIGURED) {
@@ -1714,6 +1746,10 @@ if (CONFIGURED) {
     ({ getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
        query, where, onSnapshot } = F);
     app = initializeApp(CFG); auth = getAuth(app); db = getFirestore(app);
+    try{
+      const Fn = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js");
+      ({ getFunctions, httpsCallable } = Fn); fns = getFunctions(app);
+    }catch(e){ /* banking optional — app still runs without it */ }
   } catch (err) {
     loadError = "Can't reach Firebase. Check your connection, then reload.";
   }
@@ -1724,7 +1760,8 @@ if (!CONFIGURED || loadError) {
   ({ getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail,
      getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
      query, where, onSnapshot } = S);
-  auth = {}; db = {};
+  auth = {}; db = {}; fns = {};
+  getFunctions = ()=>({}); httpsCallable = ()=>(async()=>{ toast("Connect Firebase to link a bank"); return {data:{}}; });
 }
 
 /* ── demo sandbox: in-memory stand-in for Firebase (resets on refresh) ── */
@@ -1799,7 +1836,26 @@ function sandbox(){
     activity:{
       a1:{clientId:"c1",when:short(iso(-4)),what:"Vol. 3 rough cut posted for review",ts:4},
       a2:{clientId:"c1",when:short(iso(-5)),what:"Reel A delivered to review queue",ts:3},
-      a3:{clientId:"c2",when:short(iso(-6)),what:"Cyber liability cut sheet approved",ts:2} }
+      a3:{clientId:"c2",when:short(iso(-6)),what:"Cyber liability cut sheet approved",ts:2} },
+    bank_accounts:{
+      ba1:{name:"Everyday Checking",mask:"4021",type:"depository",subtype:"checking",balance_current:1284.55,balance_available:1180,bucket:"personal",institution:"Demo Bank"},
+      ba2:{name:"Business Debit",mask:"8890",type:"depository",subtype:"checking",balance_current:640.20,balance_available:640.20,bucket:"business",institution:"Demo Bank"},
+      ba3:{name:"Rewards Card",mask:"1123",type:"credit",subtype:"credit card",balance_current:2210.40,bucket:"personal",institution:"Demo Bank"} },
+    bank_txns:{
+      t1:{account_id:"ba1",date:iso(-1),name:"Trader Joe's",merchant_name:"Trader Joe's",amount:78.44,pfc_primary:"FOOD_AND_DRINK",pending:false,removed:false},
+      t2:{account_id:"ba3",date:iso(-2),name:"Adobe",merchant_name:"Adobe",amount:59.99,pfc_primary:"GENERAL_SERVICES",pending:false,removed:false},
+      t3:{account_id:"ba1",date:iso(-3),name:"Shell",merchant_name:"Shell",amount:52.10,pfc_primary:"TRANSPORTATION",pending:false,removed:false},
+      t4:{account_id:"ba1",date:iso(-5),name:"Payroll Deposit",merchant_name:null,amount:-1800,pfc_primary:"INCOME",pending:false,removed:false},
+      t5:{account_id:"ba2",date:iso(-4),name:"B&H Photo",merchant_name:"B&H Photo",amount:243.00,pfc_primary:"GENERAL_MERCHANDISE",pending:false,removed:false},
+      t6:{account_id:"ba3",date:iso(-6),name:"Netflix",merchant_name:"Netflix",amount:15.49,pfc_primary:"ENTERTAINMENT",pending:false,removed:false},
+      t7:{account_id:"ba1",date:iso(-7),name:"Rent",merchant_name:null,amount:1450,pfc_primary:"RENT_AND_UTILITIES",pending:false,removed:false},
+      t8:{account_id:"ba3",date:iso(-8),name:"Spotify",merchant_name:"Spotify",amount:11.99,pfc_primary:"ENTERTAINMENT",pending:false,removed:false},
+      t9:{account_id:"ba2",date:iso(-9),name:"Rode Mic",merchant_name:"B&H Photo",amount:129.00,pfc_primary:"GENERAL_MERCHANDISE",pending:false,removed:false} },
+    bank_recurring:{
+      r1:{flow:"outflow",merchant_name:"Netflix",description:"Netflix",average_amount:15.49,frequency:"MONTHLY",predicted_next_date:iso(22),is_active:true,account_id:"ba3"},
+      r2:{flow:"outflow",merchant_name:"Adobe",description:"Adobe Creative Cloud",average_amount:59.99,frequency:"MONTHLY",predicted_next_date:iso(9),is_active:true,account_id:"ba3"},
+      r3:{flow:"outflow",merchant_name:"Spotify",description:"Spotify",average_amount:11.99,frequency:"MONTHLY",predicted_next_date:iso(14),is_active:true,account_id:"ba3"},
+      r4:{flow:"outflow",merchant_name:null,description:"Rent",average_amount:1450,frequency:"MONTHLY",predicted_next_date:iso(24),is_active:true,account_id:"ba1"} }
   };
   const subs=[]; const bump=()=>subs.slice().forEach(f=>f());
   let cb=null, cur=null;
@@ -1885,6 +1941,9 @@ let leads=[];
 let drives=[];               /* hard-drive tracker */
 let settings={}, smsPub={};   /* config/sms (owner only) + config/public (everyone) */
 let view="owner", previewClient=null, previewEditor=null;
+let tracking={};        /* config/tracking — last export + month-end reminder dismissal */
+let asEditor=null;      /* owner impersonating an editor's view */
+let bankAccounts=[], bankTxns=[], bankRecurring=[], txnRules=[];  /* Plaid money data */
 let openProject=null, projFilter="all", projClient="all";
 let openClient=null;         /* owner drilled into a client's detail page */
 let readyTab="ready";        /* ready-to-post section: ready | archive */
@@ -2159,6 +2218,11 @@ async function loadFor(user){
   if(me.role==="owner"){
     view="owner";
     unsubs.push(onSnapshot(doc(db,"config","sms"),d=>{ settings=d.exists()?d.data():{}; paint(); }));
+    unsubs.push(onSnapshot(doc(db,"config","tracking"),d=>{ tracking=d.exists()?d.data():{}; paint(); }));
+    unsubs.push(live(collection(db,"bank_accounts"),  v=>bankAccounts=v));
+    unsubs.push(live(collection(db,"bank_txns"),      v=>bankTxns=v));
+    unsubs.push(live(collection(db,"bank_recurring"), v=>bankRecurring=v));
+    unsubs.push(live(collection(db,"txn_rules"),      v=>txnRules=v));
     unsubs.push(live(collection(db,"clients"),  v=>clients=v));
     unsubs.push(live(collection(db,"projects"), v=>{ leads=v.filter(isLead); projects=v.filter(p=>!isLead(p)); }));
     unsubs.push(live(collection(db,"invoices"), v=>invoices=v));
@@ -3066,7 +3130,7 @@ function editorView(name){
               <div class="card-title" style="margin-bottom:2px">${esc(j.title)}</div>
               <div style="font-family:var(--mono);font-size:11px;color:var(--muted)">deliver by ${esc(j.due||"")} · ${piecesFor(j,name).length} of ${(j.pieces||[]).length} deliverable${(j.pieces||[]).length===1?"":"s"} yours · you earn ${money(editCostFor(j,name))}</div></div>
           </div>
-          <div class="card-right">${me&&me.role==="owner"?`<button class="btn outline mini" data-open="${esc(j.id)}">OPEN &amp; EDIT</button>`:""}${slaChip(j)}
+          <div class="card-right">${me&&me.role==="owner"&&!asEditor?`<button class="btn outline mini" data-open="${esc(j.id)}">OPEN &amp; EDIT</button>`:""}${slaChip(j)}
             ${!inEdit?`<span style="font-family:var(--mono);font-size:10.5px;color:var(--dim)">NOT IN EDIT YET</span>`:""}</div>
         </div>
         ${board}
@@ -4215,6 +4279,258 @@ function arView(){
        <div class="s">No outstanding balances right now. Unpaid project deposits, finals, add-ons, and invoices will show up here.</div></div></section>`}`;
 }
 
+/* ── data export + month-end tracking (mirrors the Daily OS export) ── */
+function fmtDateTime(ms){
+  if(!ms) return "";
+  const d=new Date(ms);
+  return d.toLocaleDateString(undefined,{month:"short",day:"numeric"})+" at "+
+         d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+}
+const monthName=()=>new Date().toLocaleDateString(undefined,{month:"long"});
+function downloadFile(filename,text,type){
+  const blob=new Blob([text],{type:type||"text/plain;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },150);
+}
+/* stamp "we exported / tracked at" — survives across devices via Firestore */
+async function stampExport(){
+  try{ await setDoc(doc(db,"config","tracking"),{lastExport:Date.now(),lastExportBy:me?.email||""},{merge:true}); }
+  catch(e){ console.warn("stamp failed",e); }
+}
+/* everything we track, plus a computed month summary, as one JSON backup */
+function buildExport(){
+  const ym=new Date().toISOString().slice(0,7);
+  const paidThisMonth=cid=>paymentsOf(cid).filter(x=>(x.when||"").startsWith(ym)).reduce((s,x)=>s+x.amount,0);
+  const paidAll=cid=>paymentsOf(cid).reduce((s,x)=>s+x.amount,0);
+  const delivered=projects.filter(p=>p.deliveredTS&&new Date(p.deliveredTS).toISOString().slice(0,7)===ym).length;
+  const summary={
+    exportedAt:new Date().toISOString(), month:ym, by:me?.email||"",
+    collectedThisMonth:collectedMonth(ym),
+    billedThisMonth:payments().filter(x=>(x.when||"").startsWith(ym)).reduce((s,x)=>s+x.amount,0),
+    monthlyRetainerValue:monthlyRetainerTotal(),
+    outstandingAR:arTotal(),
+    accountsPayable:payables.filter(p=>p.status==="owed").reduce((s,p)=>s+(+p.amount||0),0),
+    openProjects:projects.filter(p=>pct(p)<100).length,
+    deliveredThisMonth:delivered,
+    clientCount:clients.length, editorCount:editorNames().length,
+    perClient:clients.map(c=>({
+      name:c.name, company:c.company||"", retainer:isRetainer(c),
+      retainerValue:retainerValue(c), thisMonth:paidThisMonth(c.id), allTime:paidAll(c.id),
+      outstanding:arByClient().find(g=>g.clientId===c.id)?.total||0,
+      nextShootBy:c.nextShootBy||null
+    }))
+  };
+  return { meta:{app:"UTS Client OS", exportedAt:new Date().toISOString(), by:me?.email||""},
+    summary, clients, projects, invoices, payables, activity, drives, users, leads,
+    config:{ public:smsPub, tracking } };
+}
+async function exportJSON(){
+  const data=buildExport();
+  downloadFile(`uts-clientos-${new Date().toISOString().slice(0,10)}.json`,
+    JSON.stringify(data,null,2),"application/json");
+  await stampExport(); toast("Full backup exported");
+}
+/* spreadsheet-friendly month snapshot for tracking trends over time */
+async function exportCSV(){
+  const s=buildExport().summary;
+  const esc2=v=>{ v=String(v??""); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; };
+  const lines=[];
+  lines.push("UTS Client OS — Month Report");
+  lines.push(`Month,${s.month}`);
+  lines.push(`Exported,${new Date().toLocaleString()}`);
+  lines.push("");
+  lines.push("Metric,Value");
+  lines.push(`Collected this month,${s.collectedThisMonth}`);
+  lines.push(`Billed this month,${s.billedThisMonth}`);
+  lines.push(`Monthly retainer value,${s.monthlyRetainerValue}`);
+  lines.push(`Outstanding (A/R),${s.outstandingAR}`);
+  lines.push(`Accounts payable,${s.accountsPayable}`);
+  lines.push(`Open projects,${s.openProjects}`);
+  lines.push(`Delivered this month,${s.deliveredThisMonth}`);
+  lines.push(`Clients,${s.clientCount}`);
+  lines.push(`Editors,${s.editorCount}`);
+  lines.push("");
+  lines.push("Client,Company,Retainer,Retainer $/mo,Paid this month,All-time spent,Outstanding");
+  s.perClient.forEach(c=>lines.push([c.name,c.company,c.retainer?"yes":"no",c.retainerValue,c.thisMonth,c.allTime,c.outstanding].map(esc2).join(",")));
+  downloadFile(`uts-month-report-${s.month}.csv`,lines.join("\n"),"text/csv;charset=utf-8");
+  await stampExport(); toast("Month report exported");
+}
+/* month-end nudge: shows on the 3 days before the last day, once per day until dismissed */
+function reminderDue(){
+  if(!me||me.role!=="owner"||asEditor) return false;
+  const now=new Date();
+  const last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  const day=now.getDate();
+  if(day<last-3||day>last-1) return false;               /* only the 3 days before the last day */
+  return (tracking.remindDismissedOn||"")!==localISO(now);
+}
+async function dismissReminder(){
+  try{ await setDoc(doc(db,"config","tracking"),{remindDismissedOn:localISO(new Date())},{merge:true}); }
+  catch(e){ tracking={...tracking,remindDismissedOn:localISO(new Date())}; }
+  paint();
+}
+function reminderOverlayHTML(){
+  const last=tracking.lastExport?`Last tracked ${fmtDateTime(tracking.lastExport)}`:"You haven't exported yet this system";
+  return `<div class="eom-overlay">
+    <div class="eom-card">
+      <div class="eom-h">Month-end check-in</div>
+      <div class="eom-body">You're in the last days of ${monthName()}. Export and track this month's numbers so you can see how the business is trending month over month.</div>
+      <div class="eom-meta">${last}</div>
+      <div class="eom-actions">
+        <button class="btn ghost" data-eom="close">REMIND ME TOMORROW</button>
+        <button class="btn gold" data-eom="export">EXPORT NOW</button>
+      </div>
+    </div></div>`;
+}
+
+/* ── Money: Plaid-linked balances + spending ── */
+async function callFn(name,payload){
+  if(!fns||!httpsCallable) throw new Error("no fns");
+  const r=await httpsCallable(fns,name)(payload||{}); return r.data;
+}
+function loadPlaid(){ return new Promise((res,rej)=>{
+  if(window.Plaid) return res();
+  const s=document.createElement("script");
+  s.src="https://cdn.plaid.com/link/v2/stable/link-initialize.js";
+  s.onload=()=>res(); s.onerror=()=>rej(new Error("plaid")); document.head.appendChild(s);
+}); }
+async function linkBank(){
+  try{
+    toast("Opening Plaid…");
+    const {link_token}=await callFn("plaidCreateLinkToken");
+    if(!link_token) return toast("Couldn't start Plaid — check the backend");
+    await loadPlaid();
+    const h=window.Plaid.create({ token:link_token,
+      onSuccess:async(pt,meta)=>{ toast("Linking…");
+        try{ await callFn("plaidExchange",{public_token:pt,institution:(meta&&meta.institution&&meta.institution.name)||null});
+             toast("Linked — pulling transactions"); }catch(e){ toast("Couldn't save the link"); } },
+      onExit:(err)=>{ if(err) toast("Link closed"); } });
+    h.open();
+  }catch(e){ toast(e.message==="no fns"?"Deploy the Plaid functions first":"Couldn't reach Plaid"); }
+}
+async function refreshBank(){ toast("Refreshing…"); try{ const r=await callFn("plaidSync"); toast("Synced"+(r&&r.added?` — ${r.added} new`:"")); }catch(e){ toast(e.message==="no fns"?"Deploy the Plaid functions first":"Sync failed"); } }
+
+const BUCKETS=["income","personal","business","ignore"];
+const BUCKET_LABEL={income:"Income",personal:"Personal",business:"Business",ignore:"Ignore"};
+const BUCKET_COLOR={income:T.green,personal:"#6fc8e8",business:T.gold,ignore:T.dim};
+const merchantKey=t=>((t.merchant_name||t.name||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60))||"unknown";
+const txnRuleFor=t=>{ const r=byId(txnRules,merchantKey(t)); return r?r.bucket:null; };
+function txnBucket(t){
+  if(t.bucket) return t.bucket;                 /* manual override on this txn */
+  const r=txnRuleFor(t); if(r) return r;        /* remembered per-merchant */
+  if((+t.amount||0)<0) return "income";         /* Plaid: negative = money in */
+  const a=byId(bankAccounts,t.account_id);
+  return (a&&a.bucket)||"personal";             /* else the account's default */
+}
+async function setAccountBucket(id,b){ try{ await updateDoc(doc(db,"bank_accounts",id),{bucket:b}); }catch(e){ toast("Save failed"); } }
+async function setTxnBucket(txnId,b){
+  const t=byId(bankTxns,txnId); if(!t) return;
+  try{
+    await updateDoc(doc(db,"bank_txns",txnId),{bucket:b});
+    const k=merchantKey(t);
+    if(k!=="unknown") await setDoc(doc(db,"txn_rules",k),{bucket:b,merchant:t.merchant_name||t.name||"",ts:Date.now()},{merge:true});
+  }catch(e){ toast("Save failed"); }
+}
+const prettyCat=c=>c?c.replace(/_/g," ").toLowerCase().replace(/\b\w/g,m=>m.toUpperCase()):"Other";
+const FREQ_MULT={WEEKLY:4.33,BIWEEKLY:2.17,SEMI_MONTHLY:2,MONTHLY:1,ANNUALLY:1/12};
+const monthlyize=(amt,freq)=>(+amt||0)*(FREQ_MULT[freq]||1);
+
+function moneyView(){
+  if(!bankAccounts.length){
+    return `${backBar("Money")}
+    <div class="hero"><div><h1>Money<span>.</span></h1><div class="sub">balances &amp; spending, one place</div></div></div>
+    <section class="panel"><div class="empty-state">
+      <div class="t">Link a bank or card to start</div>
+      <div class="s">Connect your accounts and every transaction flows in automatically — sorted into income, personal, and business so you see exactly what's happening and what to cut.</div>
+      <div style="margin-top:14px"><button class="btn gold" data-bank="link">LINK A BANK / CARD</button></div>
+      ${DEMO?`<div class="inv-meta" style="margin-top:10px;color:var(--dim)">Demo shows sample data — connect Firebase and deploy the Plaid functions to link real accounts.</div>`:""}
+    </div></section>`;
+  }
+  const ym=new Date().toISOString().slice(0,7);
+  const active=bankTxns.filter(t=>!t.removed);
+  const month=active.filter(t=>(t.date||"").startsWith(ym));
+  const absSum=(arr,b)=>arr.filter(t=>txnBucket(t)===b).reduce((s,t)=>s+Math.abs(+t.amount||0),0);
+  const income=absSum(month,"income"), personal=absSum(month,"personal"), business=absSum(month,"business");
+  const spend=personal+business, net=income-spend;
+  const cash=bankAccounts.filter(a=>a.type==="depository").reduce((s,a)=>s+(+a.balance_current||0),0);
+  const cards=bankAccounts.filter(a=>a.type==="credit").reduce((s,a)=>s+(+a.balance_current||0),0);
+  const money2=n=>(n<0?"−":"")+money(Math.abs(n));
+
+  const spendTxns=month.filter(t=>["personal","business"].includes(txnBucket(t))&&(+t.amount||0)>0);
+  const byCat={}; spendTxns.forEach(t=>{ const c=prettyCat(t.pfc_primary); byCat[c]=(byCat[c]||0)+(+t.amount||0); });
+  const cats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const catMax=cats.length?cats[0][1]:1;
+
+  const rec=bankRecurring.filter(r=>r.flow==="outflow"&&r.is_active!==false)
+    .sort((a,b)=>(a.predicted_next_date||"9999").localeCompare(b.predicted_next_date||"9999"));
+  const recMonthly=rec.reduce((s,r)=>s+monthlyize(r.average_amount||r.last_amount||0,r.frequency),0);
+  const mName=new Date().toLocaleDateString(undefined,{month:"long"});
+
+  const acctRow=a=>`<div class="list-row">
+    <div><div class="inv-label">${esc(a.name)}${a.mask?` ····${esc(a.mask)}`:""}</div>
+      <div class="inv-meta">${esc(a.subtype||a.type||"")}${a.type==="credit"?" · balance owed":""}</div></div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="amount" style="color:${a.type==="credit"?T.red:T.cream}">${money(+a.balance_current||0)}</span>
+      <select class="sel mini" data-acctbucket="${esc(a.id)}">
+        <option value="personal" ${a.bucket!=="business"?"selected":""}>Personal</option>
+        <option value="business" ${a.bucket==="business"?"selected":""}>Business</option></select>
+    </div></div>`;
+
+  const txnRow=t=>{ const b=txnBucket(t), inflow=(+t.amount||0)<0;
+    return `<div class="list-row">
+      <div><div class="inv-label">${esc(t.merchant_name||t.name||"—")}${t.pending?` <span class="pend">pending</span>`:""}</div>
+        <div class="inv-meta">${esc(isoShort(t.date))} · ${esc((byId(bankAccounts,t.account_id)||{}).name||"")}${t.pfc_primary?` · ${esc(prettyCat(t.pfc_primary))}`:""}</div></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="amount" style="color:${inflow?T.green:T.cream}">${inflow?"+":"−"}${money(Math.abs(+t.amount||0))}</span>
+        <select class="sel mini bkt" data-txnbucket="${esc(t.id)}" style="color:${BUCKET_COLOR[b]}">
+          ${BUCKETS.map(x=>`<option value="${x}" ${b===x?"selected":""}>${BUCKET_LABEL[x]}</option>`).join("")}</select>
+      </div></div>`;
+  };
+  const recent=[...active].sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,40);
+
+  return `${backBar("Money")}
+  <div class="hero"><div><h1>Money<span>.</span></h1><div class="sub">${mName} · balances &amp; spending</div></div>
+    <div style="display:flex;gap:8px"><button class="btn ghost" data-bank="refresh">REFRESH</button><button class="btn gold" data-bank="link">+ LINK</button></div></div>
+
+  <div class="stats">
+    ${subStat("CASH ON HAND",money(cash),cash>=0?T.green:T.red)}
+    ${subStat("CARD BALANCES",money(cards),cards?T.red:T.green)}
+    ${subStat("SPENT THIS MONTH",money(spend),T.gold)}
+    ${subStat("NET THIS MONTH",money2(net),net>=0?T.green:T.red)}
+  </div>
+
+  <div class="two-col">
+    <section class="panel"><div class="eyebrow">This Month</div>
+      <div class="mrow"><span style="color:${T.green}">Income</span><span class="amount" style="color:${T.green}">${money(income)}</span></div>
+      <div class="mrow"><span style="color:#6fc8e8">Personal spend</span><span class="amount">${money(personal)}</span></div>
+      <div class="mrow"><span style="color:${T.gold}">Business spend</span><span class="amount">${money(business)}</span></div>
+      <div class="mrow tot"><span>Net</span><span class="amount" style="color:${net>=0?T.green:T.red}">${money2(net)}</span></div>
+    </section>
+    <section class="panel"><div class="eyebrow">What's Eating the Most${cats.length?` — ${mName}`:""}</div>
+      ${cats.length?cats.map(([c,v])=>`<div class="catbar">
+        <div class="catbar-top"><span>${esc(c)}</span><span class="amount">${money(v)}</span></div>
+        <div class="catbar-track"><i style="width:${Math.max(4,Math.round(v/catMax*100))}%"></i></div></div>`).join("")
+        :`<div style="font-size:13px;color:var(--dim)">No spending recorded yet this month.</div>`}
+    </section>
+  </div>
+
+  <section class="panel"><div class="eyebrow">Recurring Charges${rec.length?` — ~${money(recMonthly)}/mo`:""}</div>
+    ${rec.length?rec.map(r=>`<div class="list-row">
+      <div><div class="inv-label">${esc(r.merchant_name||r.description||"Recurring")}</div>
+        <div class="inv-meta">${esc((r.frequency||"recurring").toLowerCase())}${r.predicted_next_date?` · next ${esc(isoShort(r.predicted_next_date))}`:""}</div></div>
+      <span class="amount">${money(r.average_amount||r.last_amount||0)}</span></div>`).join("")
+      :`<div style="font-size:13px;color:var(--dim)">Recurring charges show up here after a sync or two.</div>`}
+  </section>
+
+  <section class="panel"><div class="eyebrow">Accounts</div>${bankAccounts.map(acctRow).join("")}</section>
+
+  <section class="panel"><div class="eyebrow">Recent Transactions${month.length?` — ${month.length} this month`:""}</div>
+    ${recent.length?recent.map(txnRow).join(""):`<div style="font-size:13px;color:var(--dim)">No transactions yet — link an account or hit Refresh.</div>`}
+  </section>`;
+}
+
 function ownerView(){
   const open=projects.filter(p=>pct(p)<100);
   const thisMonth=new Date().toISOString().slice(0,7);
@@ -4338,6 +4654,19 @@ function ownerView(){
       <div class="inv-meta">${esc(clientName(p.clientId))}${p.revisionNote?` &middot; &ldquo;${esc(p.revisionNote)}&rdquo;`:""}</div></div>
       <button class="btn ghost mini" data-form="project" data-id="${esc(p.id)}">OPEN</button></div>`).join("")}
   </section>`:""}
+
+  <section class="panel"><div class="eyebrow">Business Data &amp; Month-End
+    <span class="spacer"></span>
+    <span style="font-family:var(--mono);font-size:10.5px;color:${tracking.lastExport?"var(--green)":"var(--gold)"}">${tracking.lastExport?`tracked ${fmtDateTime(tracking.lastExport)}`:"never tracked"}</span></div>
+    <div class="list-row">
+      <div><div class="inv-label">Export &amp; track your numbers</div>
+        <div class="inv-meta">${tracking.lastExport?`Last exported ${fmtDateTime(tracking.lastExport)}${tracking.lastExportBy?` · ${esc(tracking.lastExportBy)}`:""}`:"Never exported — grab your first backup"}</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost" data-export="csv">MONTH REPORT (CSV)</button>
+        <button class="btn gold" data-export="json">EXPORT ALL (JSON)</button>
+      </div></div>
+    <div class="inv-meta" style="padding-top:8px;color:var(--dim);white-space:normal">Backs up every client, project, invoice, payment, payable, drive, lead, and note — plus a computed month summary. A reminder pops up the last few days of each month so you always capture it.</div>
+  </section>
 
   <section class="panel"><div class="eyebrow">Manage
     <span class="spacer"></span>
@@ -4734,21 +5063,24 @@ function paint(){
   if(!me){ root.innerHTML=gate(); return; }
 
   const isOwner=me.role==="owner";
-  const label=isOwner?"Owner":me.role==="editor"?"Editor":"Client";
-  const tabs=isOwner?`
+  const impersonate=isOwner&&!!asEditor;
+  const label=impersonate?"Editor":isOwner?"Owner":me.role==="editor"?"Editor":"Client";
+  const tabs=(isOwner&&!impersonate)?`
     <button class="tab ${view==="owner"?"on":""}" data-view="owner">Studio</button>
     <button class="tab ${view==="inbound"?"on":""}" data-view="inbound">Inbound${leads.filter(l=>!l.firstReplyAt).length?` <span style="color:var(--gold)">&bull;</span>`:""}</button>
     <button class="tab ${view==="drives"?"on":""}" data-view="drives">Drives</button>
+    <button class="tab ${view==="money"?"on":""}" data-view="money">Money</button>
     <button class="tab ${view==="quote"?"on":""}" data-view="quote">Quote Builder</button>
     <button class="tab ${view==="editor"?"on":""}" data-view="editor">Editor</button>
     <button class="tab ${view==="client"?"on":""}" data-view="client">Client</button>`:"";
-  const pickers=isOwner&&view==="client"&&clients.length
+  const pickers=impersonate?"":isOwner&&view==="client"&&clients.length
     ? `<select id="cSel">${clients.map(c=>`<option value="${esc(c.id)}" ${previewClient===c.id?"selected":""}>${esc(c.name)}</option>`).join("")}</select>`
     : isOwner&&view==="editor"&&editorNames().length
     ? `<select id="eSel">${editorNames().map(e=>`<option ${previewEditor===e?"selected":""}>${esc(e)}</option>`).join("")}</select>` : "";
 
   let body;
-  if(me.role==="client")         body=clientView(me.clientId);
+  if(impersonate)                body=editorView(asEditor);
+  else if(me.role==="client")    body=clientView(me.clientId);
   else if(me.role==="editor")    body=editorView(me.editorName);
   else if(view==="client")       body=clientView(previewClient||clients[0]?.id);
   else if(view==="quote")        body=quoteView();
@@ -4758,9 +5090,17 @@ function paint(){
   else if(view==="ar")           body=arView();
   else if(view==="database")     body=databaseView();
   else if(view==="drives")       body=drivesView();
+  else if(view==="money")        body=moneyView();
   else if(view==="sms")          body=smsView();
   else if(view==="access")       body=accessView();
   else                           body=ownerView();
+
+  if(impersonate){
+    body=`<div class="impersonate-bar"><span class="eye">&#128065;</span> Viewing as <b>${esc(asEditor)}</b> — exactly what this editor sees
+      <span class="spacer"></span>
+      ${editorNames().length>1?`<select id="asEdSel">${editorNames().map(e=>`<option ${e===asEditor?"selected":""}>${esc(e)}</option>`).join("")}</select>`:""}
+      <button class="btn gold mini" data-exitedit="1">EXIT TO OWNER</button></div>`+body;
+  }
 
   root.innerHTML=`
     <header>
@@ -4768,12 +5108,14 @@ function paint(){
         <div><div class="brand-name">Under The Sun</div><div class="brand-tag">Bringing Ideas To Light</div></div></div>
       <div class="controls">${pickers}${tabs}
         <div class="whoami">${DEMO?`<span class="role" style="color:var(--red);border-color:rgba(240,85,107,.35);background:rgba(240,85,107,.1)">DEMO</span>`:""}<span class="role">${label}</span>
+          ${(isOwner&&!impersonate&&editorNames().length)?`<button class="linkbtn" data-asedit="1">View as editor</button>`:""}
           <button class="linkbtn" data-logout="1">Sign out</button></div>
       </div>
     </header>
     <main class="${view==="quote"||view==="drives"?"wide":""}">${body}</main>
-    <footer>Under The Sun Studios · Long Beach, CA</footer>`;
-  const _routeKey=[me.role,view,previewClient,previewEditor,openClient].join("|");
+    <footer>Under The Sun Studios · Long Beach, CA</footer>
+    ${reminderDue()?reminderOverlayHTML():""}`;
+  const _routeKey=[me.role,view,previewClient,previewEditor,openClient,asEditor].join("|");
   if(_routeKey===paint._lastRoute){ window.scrollTo(0,_scrollY); }
   else { window.scrollTo(0,0); }
   paint._lastRoute=_routeKey;
@@ -4784,7 +5126,7 @@ function paint(){
 
 /* ── events ── */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test],[data-openclient],[data-postnow],[data-unpost],[data-readytab],[data-save-drive],[data-del-drive],[data-backto]");
+  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test],[data-openclient],[data-postnow],[data-unpost],[data-readytab],[data-save-drive],[data-del-drive],[data-backto],[data-asedit],[data-exitedit],[data-export],[data-eom],[data-bank]");
   if(!t) return;
   const d=t.dataset;
   if(d.close!==undefined){ if(t===e.target||t.tagName==="BUTTON") closeModal(); return; }
@@ -4794,6 +5136,11 @@ document.addEventListener("click",e=>{
   if(d.reset){ doReset(); return; }
   if(d.logout){ doLogout(); return; }
   if(d.view){ view=d.view; openClient=null; driveSearch=""; paint(); return; }
+  if(d.asedit!==undefined){ asEditor=previewEditor||editorNames()[0]||null; if(asEditor) paint(); else toast("Add an editor first"); return; }
+  if(d.exitedit!==undefined){ asEditor=null; paint(); return; }
+  if(d.export){ d.export==="csv"?exportCSV():exportJSON(); return; }
+  if(d.eom){ if(d.eom==="export") exportJSON(); dismissReminder(); return; }
+  if(d.bank){ d.bank==="link"?linkBank():refreshBank(); return; }
   if(d.openclient!==undefined){ openClient=d.openclient||null; view="database"; paint(); return; }
   if(d.readytab){ readyTab=d.readytab; paint(); return; }
   if(d.postnow){ const [id,i]=d.postnow.split(":"); markPosted(id,+i); return; }
@@ -4840,6 +5187,9 @@ document.addEventListener("change",e=>{
   if(e.target.dataset.retoggle!==undefined) riToggle();
   if(e.target.id==="cSel"){ previewClient=e.target.value; paint(); }
   if(e.target.id==="eSel"){ previewEditor=e.target.value; paint(); }
+  if(e.target.id==="asEdSel"){ asEditor=e.target.value; paint(); }
+  if(e.target.dataset.acctbucket){ setAccountBucket(e.target.dataset.acctbucket,e.target.value); }
+  if(e.target.dataset.txnbucket){ setTxnBucket(e.target.dataset.txnbucket,e.target.value); }
   const ds=e.target.dataset||{};
   if(ds.pstatus){ const [id,i]=ds.pstatus.split(":"); setPieceStatus(id,+i,e.target.value); }
   if(ds.pstage)  setStage(ds.pstage,e.target.value);
