@@ -271,6 +271,19 @@ main.wide{max-width:1520px}
 .retboxsm .rl{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--gold-soft);text-transform:uppercase}
 .retboxsm .rv{font-family:var(--mono);font-size:17px;font-weight:600;color:var(--gold)}
 .retboxsm ul{margin:7px 0 0;padding-left:16px;font-size:12.5px;color:var(--muted);line-height:1.65}
+/* ── retainer status picker (not / active / inactive) ── */
+.ret-pick{display:flex;gap:8px;flex-wrap:wrap}
+.ret-opt{display:flex;gap:7px;align-items:center;padding:9px 12px;border:1px solid var(--line-soft);
+  border-radius:9px;cursor:pointer;background:var(--panel-up);font-size:13px;color:var(--cream);
+  transition:border-color .15s,background .15s}
+.ret-opt input{width:auto;flex:none;accent-color:var(--gold)}
+.ret-opt:hover{border-color:rgba(242,201,76,.4)}
+.ret-opt.ret-on:has(input:checked){border-color:rgba(74,222,128,.6);background:rgba(74,222,128,.1)}
+.ret-opt.ret-off:has(input:checked){border-color:rgba(240,85,107,.55);background:rgba(240,85,107,.1)}
+.ret-opt:has(input:checked){border-color:rgba(242,201,76,.6);background:rgba(242,201,76,.08)}
+.ret-tag{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;border-radius:4px;padding:1px 6px;margin-left:7px;vertical-align:middle}
+.ret-tag.on{color:var(--green);border:1px solid rgba(74,222,128,.4);background:rgba(74,222,128,.1)}
+.ret-tag.off{color:var(--red);border:1px solid rgba(240,85,107,.4);background:rgba(240,85,107,.1)}
 .addonrow{display:flex;gap:7px;align-items:center;margin-bottom:6px}
 .addonrow input[type=text]{flex:1;min-width:90px}
 .addonrow input[type=number]{width:100px;flex:none}
@@ -280,6 +293,26 @@ main.wide{max-width:1520px}
 .socialtoggle input{width:auto;flex:none;accent-color:var(--gold)}
 .socialtoggle .st-l{font-size:13.5px;color:var(--cream)}
 .socialtoggle .st-s{font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+/* ── workflow picker (shoot vs edit) ── */
+.wf-pick{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+@media(max-width:560px){.wf-pick{grid-template-columns:1fr}}
+.wf-opt{display:flex;gap:9px;align-items:flex-start;padding:11px 12px;border:1px solid var(--line-soft);
+  border-radius:10px;cursor:pointer;background:var(--panel-up);transition:border-color .15s,background .15s}
+.wf-opt:hover{border-color:rgba(242,201,76,.4)}
+.wf-opt input{width:auto;flex:none;accent-color:var(--gold);margin-top:2px}
+.wf-opt b{font-size:13px;color:var(--cream)}
+.wf-opt .wf-s{font-family:var(--mono);font-size:10px;color:var(--dim)}
+.wf-opt:has(input:checked){border-color:rgba(242,201,76,.6);background:rgba(242,201,76,.08)}
+/* ── custom steps (internal projects) ── */
+.step-row{display:flex;gap:9px;align-items:center;margin:7px 0}
+.step-row .step-name{flex:1;background:var(--panel-up);color:var(--cream);border:1px solid var(--line);
+  border-radius:7px;padding:8px 10px;font-size:13px}
+.step-row .step-name:focus{border-color:var(--gold);outline:none}
+.stepstrip{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:9px 0 2px}
+.stepstrip .ss-h{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--gold-soft);text-transform:uppercase}
+.ss-chip{font-family:var(--mono);font-size:10.5px;padding:3px 8px;border-radius:5px;border:1px solid var(--line);
+  color:var(--dim);background:var(--panel-up)}
+.ss-chip.on{color:var(--green);border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.1)}
 /* ── compact project board ── */
 .proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(252px,1fr));gap:10px}
 .pmini{position:relative;background:linear-gradient(180deg,var(--panel-up),var(--panel));
@@ -523,6 +556,10 @@ footer{text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.
 .drive-projrow .dp-t{color:var(--cream)}
 .drive-projrow .dp-c{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.05em}
 .drive-projrow .dp-sz{font-family:var(--mono);font-size:12px;color:var(--gold-soft);white-space:nowrap}
+.drive-loglist{margin-top:11px;padding-top:11px;border-top:1px dashed var(--line)}
+.drive-logrow:hover{background:rgba(242,201,76,.05);border-radius:7px}
+.logtag{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;color:#6fc8e8;border:1px solid rgba(111,200,232,.4);
+  background:rgba(111,200,232,.1);border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
 .drive-projlist{margin-top:13px;padding-top:11px;border-top:1px dashed var(--line)}
 
 /* ── ready-to-post ── */
@@ -1779,11 +1816,21 @@ function sandbox(){
       c1:{name:"Harrison Hyde",company:"Hyde CRE",contact:"harrison@hydecre.com",
           retainer:"$2,500/mo — 4 YouTube videos + posting",assetsUrl:"https://example.com/hyde-assets"},
       c2:{name:"Cindy Gallo",company:"Avner Gat — Public Adjusters",contact:"(555) 555-0134",
-          retainer:"Six-video package + ongoing social",assetsUrl:"https://example.com/cindy-assets"} },
+          retainer:"Six-video package + ongoing social",assetsUrl:"https://example.com/cindy-assets",
+          retainerStatus:"active",retainerValue:2500,retainerDay:1,
+          retainerActiveSince:iso(-140),
+          retainerHistory:[{status:"active",on:iso(-140)}],
+          retainerItems:[{name:"6 videos / month",qty:"6"},{name:"Social management",qty:""}],
+          socialManaged:true,
+          posts:[{d:iso(0),type:"Carousel",posted:false},{d:iso(1),type:"Reel",posted:false},
+                 {d:iso(-2),type:"Story",posted:true,postedOn:iso(-2)},{d:iso(4),type:"Reel",posted:false}],
+          postRules:[{type:"Reel",dow:2,from:null,until:null}]} },
     drives:{
       d1:{name:"UTS RAID 01",capacityGB:8000},
       d2:{name:"Field SSD — Samsung T7",capacityGB:2000},
-      d3:{name:"Archive HDD 2024",capacityGB:4000} },
+      d3:{name:"Archive HDD 2024",capacityGB:4000,logs:[
+        {name:"Ramirez Wedding — full shoot",client:"Ramirez",date:iso(-320),sizeGB:640,note:"Delivered 2024, keeping raws"},
+        {name:"LA B-roll library",client:null,date:iso(-200),sizeGB:180,note:"City drives, skyline, freeways"}]} },
     projects:{
       p1:{clientId:"c1",title:"Nothing to Hyde | Vol. 3",code:"NTH-03",type:"YouTube",stage:3,
           dueISO:iso(5),due:short(iso(5)),editStart:iso(-6),editor:"Pedro",editCost:100,
@@ -1800,15 +1847,23 @@ function sandbox(){
       p3:{clientId:"c2",title:"Tip Tuesday — Cyber Liability",code:"TT-CYB",type:"Social",stage:2,
           dueISO:iso(2),due:short(iso(2)),editStart:iso(-8),editor:"Faizan",editCost:100,
           note:"Cutting from the shoot transcript.",approvals:{},driveId:"d2",sizeGB:610,
-          social:true,posts:[{d:iso(0),type:"Carousel",posted:false},{d:iso(1),type:"Reel",posted:false},
-                  {d:iso(-2),type:"Story",posted:true,postedOn:iso(-2)},{d:iso(4),type:"Reel",posted:false}],
           pieces:[{name:"Main Cut",status:"done",postedOn:null},
                   {name:"Teaser Clip",status:"done",postedOn:iso(-3)}]},
       p4:{clientId:"c2",title:"Tip Tuesday — ALE Coverage",code:"TT-ALE",type:"Social",stage:0,
           dueISO:iso(16),due:short(iso(16)),editStart:null,editor:"Faizan",editCost:100,
           note:"Cut sheet built from transcript.",approvals:{},driveId:"d2",sizeGB:150,
-          social:true,
           pieces:[{name:"Main Cut",status:"done",postedOn:null}]},
+      p5:{clientId:"c1",title:"Client-Shot Testimonial",code:"TST-01",type:"Other",stage:1,
+          workflow:"edit",dueISO:iso(6),due:short(iso(6)),editStart:null,editor:"Pedro",editCost:150,
+          note:"Waiting on their raw files to download.",approvals:{},driveId:"d3",sizeGB:90,
+          pieces:[{name:"Testimonial Cut",status:"queued"}]},
+      p6:{clientId:"c1",title:"UTS Sizzle Reel (internal)",code:"INT-01",type:"Other",stage:2,
+          internal:true,dueISO:iso(12),due:short(iso(12)),editStart:iso(-2),editor:"Cody",editCost:0,
+          note:"In-house brand reel.",approvals:{},driveId:"d1",sizeGB:200,
+          extraSteps:[{name:"Pull best clips from archive",done:true},
+                      {name:"Licence music",done:false},
+                      {name:"Post to UTS channels",done:false}],
+          pieces:[{name:"Sizzle Cut",status:"editing"}]},
       L1:{pipeline:"lead",leadStage:"lead",clientId:null,editor:null,name:"Vista Dental Group",
           ask:"3 reels plus a brand day",channel:"Form",budget:"$3-6k",contact:"(555) 555-0188",
           createdAt:isoT(-0.02),firstReplyAt:null,touches:[]},
@@ -1892,6 +1947,10 @@ function sandbox(){
 /* ── constants ── */
 const T={gold:"#f2c94c",goldSoft:"#d8b654",cream:"#f2f0ea",muted:"#9195a0",dim:"#5c606a",green:"#4ade80",red:"#f0556b",bg:"#0a0b0d",line:"#2a2d34"};
 const STAGES=["Pre-Pro","Shoot","Edit","Review","Delivered"];
+/* edit-only jobs (client sends footage) swap the Shoot stage for a Download step */
+const EDIT_STAGES=["Pre-Pro","Download","Edit","Review","Delivered"];
+const stagesFor=p=>(p&&p.workflow==="edit")?EDIT_STAGES:STAGES;
+const stageLabel=(p,i)=>stagesFor(p)[+i]||STAGES[+i]||"";
 /* ── inbound ── */
 const LEAD_STAGES=[["lead","New"],["qualified","Qualified"],["proposal","Proposal Out"]];
 const LEAD_CHANNELS=["DM","Text","Call","Email","Referral","Form","In person"];
@@ -1907,8 +1966,9 @@ const PIECE_LABEL={queued:"QUEUED",editing:"IN EDIT",review:"IN REVIEW",revision
 const PIECE_ORDER=["queued","editing","review","revisions","done"];
 const NEXT={queued:"editing",editing:"review",review:"done",revisions:"editing"};
 const NEXT_SOCIAL={...NEXT,done:"posted"};
-/* posted only exists on projects where we run the socials */
-const orderFor=p=>p&&p.social?[...PIECE_ORDER,"posted"]:PIECE_ORDER;
+/* posted only exists for clients whose socials we run (or legacy social projects) */
+const isSocialClient=cid=>{const c=byId(clients,cid); return !!(c&&(c.socialManaged||c.social));};
+const orderFor=p=>(p&&(p.social||isSocialClient(p.clientId)))?[...PIECE_ORDER,"posted"]:PIECE_ORDER;
 /* a deliverable falls back to the project's editor until it's reassigned */
 const pieceEditor=(p,pc)=>pc&&pc.editor?pc.editor:(p.editor||null);
 /* every name touching the project — drives the editor's query and the rules */
@@ -2042,7 +2102,10 @@ document.addEventListener("click",e=>{
 const driveById=id=>byId(drives,id);
 const driveName=id=>driveById(id)?.name||"—";
 const projectsOnDrive=id=>projects.filter(p=>p.driveId===id);
-const driveUsedGB=d=>projectsOnDrive(d.id).reduce((s,p)=>s+(+p.sizeGB||0),0);
+/* standalone footage/shoots logged straight onto a drive — no project needed */
+const driveLogs=d=>(d&&d.logs)||[];
+const driveLogGB=d=>driveLogs(d).reduce((s,l)=>s+(+l.sizeGB||0),0);
+const driveUsedGB=d=>projectsOnDrive(d.id).reduce((s,p)=>s+(+p.sizeGB||0),0)+driveLogGB(d);
 const driveFillPct=d=>{ const cap=+d.capacityGB||0; if(!cap) return 0;
   return Math.min(100,Math.round(driveUsedGB(d)/cap*100)); };
 /* GB in, human string out — flips to TB past 1000GB */
@@ -2068,7 +2131,10 @@ function donut(pctv,size){
 /* ── ready-to-post ── deliverables from social-managed projects that are
    done (delivered). "posted" is tracked via postedOn date, not by changing
    the piece status — the deliverable stays DONE in the project card always. */
-const socialProjectsOf=cid=>projectsOf(cid).filter(p=>p.social);
+/* a client we run socials for surfaces ALL its projects' done deliverables as
+   ready-to-post (each month is a new project, so we don't flag them one by one).
+   Legacy per-project social:true still works. */
+const socialProjectsOf=cid=>isSocialClient(cid)?projectsOf(cid):projectsOf(cid).filter(p=>p.social);
 function readyToPost(cid){
   const out=[];
   socialProjectsOf(cid).forEach(p=>(p.pieces||[]).forEach((pc,i)=>{
@@ -2081,9 +2147,9 @@ function postedArchive(cid){
     if(pc.status==="done"&&pc.postedOn) out.push({p,pc,i}); }));
   return out;
 }
-const hasSocialManaged=cid=>socialProjectsOf(cid).length>0;
+const hasSocialManaged=cid=>isSocialClient(cid);
 
-function pct(p){
+function basePct(p){
   const st=+p.stage||0;
   if(st>=4) return 100;                 /* only Delivered reads 100% */
   if(st<2)  return st===0?5:15;
@@ -2091,6 +2157,15 @@ function pct(p){
   if(!list.length) return 15;
   const s=list.reduce((a,pc)=>a+(PIECE_SCORE[pc.status]??0),0)/list.length;
   return Math.min(95,Math.round(15+80*s));
+}
+/* custom steps (internal jobs) fold into the % — the standard pipeline is
+   weighted like 4 steps, each custom step counts as one more slice */
+function pct(p){
+  const base=basePct(p);
+  const steps=(p&&p.extraSteps)||[];
+  if(!steps.length) return base;
+  const W=4, done=steps.filter(s=>s.done).length;
+  return Math.round(((base/100)*W+done)/(W+steps.length)*100);
 }
 /* 50% deposit / 50% final */
 const halfOf=p=>Math.round((+p.cost||0)/2);
@@ -2394,14 +2469,31 @@ async function saveLink(pid,kind){
 
 async function saveClient(id){
   const name=fv("cf-name"); if(!name) return toast("Name required");
-  const on=document.getElementById("cf-isret")?.checked||false;
+  const status=document.querySelector('input[name="cf-retstatus"]:checked')?.value||"";
+  const on=!!status, newStatus=on?status:null;
+  const prev=id?byId(clients,id):null;
+  const prevStatus=retainerStatusOf(prev);
+  const today=todayISO();
+  let activeSince=prev?.retainerActiveSince||null;
+  let inactiveSince=prev?.retainerInactiveSince||null;
+  let history=Array.isArray(prev?.retainerHistory)?[...prev.retainerHistory]:[];
+  if(newStatus!==prevStatus){
+    if(newStatus==="active")   activeSince=today;
+    if(newStatus==="inactive") inactiveSince=today;
+    history=[...history,{status:newStatus||"ended",on:today}];
+  }
   riSync();
   const items=RI.filter(x=>(x.name||"").trim())
                 .map(x=>({name:x.name.trim(),qty:(x.qty||"").trim()}));
   const data={name,company:fv("cf-co"),contact:fv("cf-contact"),
               retainer:fv("cf-ret"),assetsUrl:fv("cf-assets"),
               nextShootBy:fv("cf-nextshoot")||null,
-              isRetainer:on,
+              socialManaged:document.getElementById("cf-social")?.checked||false,
+              retainerStatus:newStatus,
+              isRetainer:on,                          /* kept for backward-compat reads */
+              retainerActiveSince:activeSince,
+              retainerInactiveSince:inactiveSince,
+              retainerHistory:history,
               retainerValue:on?(+fv("cf-retval")||0):0,
               retainerItems:on?items:[],
               retainerDay:on?Math.min(28,Math.max(1,+fv("cf-retday")||1)):null};
@@ -2444,7 +2536,9 @@ async function saveProject(id){
     sizeGB:fv("pf-size")===""?null:Math.max(0,+fv("pf-size")||0),
     startISO:fv("pf-start")||null,
     editors:[...new Set([editor,...PF.map(x=>x.editor)].filter(Boolean))],
-    social:document.getElementById("pf-social")?.checked||false,
+    workflow:(document.querySelector('input[name="pf-wf"]:checked')?.value)||prev?.workflow||"shoot",
+    internal:document.getElementById("pf-internal")?.checked||false,
+    extraSteps:prev?.extraSteps||[],
     depositPaid:document.getElementById("pf-dep")?.checked||false,
     finalPaid:document.getElementById("pf-fin")?.checked||false,
     depositPaidOn:document.getElementById("pf-dep")?.checked?(fv("pf-dep-on")||todayISO()):null,
@@ -2529,10 +2623,21 @@ function showModal(html){
 const clientOpts=sel=>clients.map(c=>`<option value="${esc(c.id)}" ${sel===c.id?"selected":""}>${esc(c.name)}</option>`).join("");
 
 /* ── retainer helpers ── */
-const isRetainer=c=>!!(c&&c.isRetainer);
+/* retainer status: "active" | "inactive" | null (not a retainer).
+   Legacy clients with isRetainer:true read as active. */
+const retainerStatusOf=c=>{ if(!c) return null;
+  if(c.retainerStatus==="active"||c.retainerStatus==="inactive") return c.retainerStatus;
+  return c.isRetainer?"active":null; };
+const isRetainer=c=>!!retainerStatusOf(c);                 /* has a retainer relationship at all */
+const isActiveRetainer=c=>retainerStatusOf(c)==="active";
 const retainerValue=c=>isRetainer(c)?(+c.retainerValue||0):0;
 const retainerClients=()=>clients.filter(isRetainer);
-const monthlyRetainerTotal=()=>retainerClients().reduce((s,c)=>s+retainerValue(c),0);
+const activeRetainerClients=()=>clients.filter(isActiveRetainer);
+/* only ACTIVE retainers count toward money "held per month" */
+const monthlyRetainerTotal=()=>activeRetainerClients().reduce((s,c)=>s+retainerValue(c),0);
+/* the date they last flipped to their current status — drives the longevity view */
+const retainerSince=c=>{ const st=retainerStatusOf(c);
+  return st==="active"?(c.retainerActiveSince||null):st==="inactive"?(c.retainerInactiveSince||null):null; };
 const retainerOf=pid=>{ const p=byId(projects,pid); const c=p?byId(clients,p.clientId):null;
   return isRetainer(c)?c:null; };
 
@@ -2552,9 +2657,9 @@ function riRender(){
     +`<button class="btn outline mini" data-ri-add="1">+ ADD LINE ITEM</button>`;
 }
 function riToggle(){
-  const on=document.getElementById("cf-isret")?.checked;
+  const sel=document.querySelector('input[name="cf-retstatus"]:checked');
   const box=document.getElementById("cf-retwrap");
-  if(box) box.style.display=on?"":"none";
+  if(box) box.style.display=(sel&&sel.value)?"":"none";
 }
 
 function clientForm(id){
@@ -2567,11 +2672,18 @@ function clientForm(id){
     <div class="f"><label>Company</label><input id="cf-co" value="${esc(c.company||"")}" placeholder="Company / brand"></div>
     <div class="f"><label>Contact</label><input id="cf-contact" value="${esc(c.contact||"")}" placeholder="phone or email"></div>
     <div class="f"><label>Asset folder link (Dropbox / Drive)</label><input id="cf-assets" value="${esc(c.assetsUrl||"")}" placeholder="https://dropbox.com/…"><div class="hint">the button on their client page opens this folder</div></div>
-    <div class="f"><label>Retainer</label>
+    <div class="f"><label>Socials</label>
       <label class="socialtoggle" style="margin:0">
-        <input type="checkbox" id="cf-isret" data-retoggle="1" ${isRetainer(c)?"checked":""}>
-        <span><span class="st-l">This is a retainer client</span><br>
-          <span class="st-s">counts toward monthly retainer held on the Studio dashboard</span></span></label></div>
+        <input type="checkbox" id="cf-social" ${c.socialManaged?"checked":""}>
+        <span><span class="st-l">We manage this client's socials</span><br>
+          <span class="st-s">puts the posting calendar &amp; ready-to-post on their client page — every project's finished deliverables flow there, no per-project flagging</span></span></label></div>
+    <div class="f"><label>Retainer status</label>
+      <div class="ret-pick">
+        <label class="ret-opt"><input type="radio" name="cf-retstatus" value="" data-retoggle="1" ${!isRetainer(c)?"checked":""}><span>Not a retainer</span></label>
+        <label class="ret-opt ret-on"><input type="radio" name="cf-retstatus" value="active" data-retoggle="1" ${retainerStatusOf(c)==="active"?"checked":""}><span>Active retainer</span></label>
+        <label class="ret-opt ret-off"><input type="radio" name="cf-retstatus" value="inactive" data-retoggle="1" ${retainerStatusOf(c)==="inactive"?"checked":""}><span>Inactive</span></label>
+      </div>
+      <div class="hint">${retainerSince(c)?`${retainerStatusOf(c)==="active"?"Active":"Inactive"} since ${esc(isoShort(retainerSince(c)))} — changing status re-stamps today's date`:"changing the status stamps today's date, so you can see how long each client stays on retainer"}</div></div>
     <div id="cf-retwrap" style="display:${isRetainer(c)?"":"none"}">
       <div class="f"><label>Monthly retainer value ($)</label>
         <input id="cf-retval" type="number" min="0" step="50" value="${c.retainerValue??""}" placeholder="2500">
@@ -2621,7 +2733,7 @@ function projectForm(id,preClient){
   const d=new Date(); d.setDate(d.getDate()+7);
   const due=p.dueISO||d.toISOString().slice(0,10);
   const eds=["Cody",...editorNames()];
-  PF_SOCIAL=!!p.social;
+  PF_SOCIAL=!!p.social||isSocialClient(p.clientId||preClient);
   PF=(p.pieces&&p.pieces.length?p.pieces:[{name:"Main Cut",status:"queued"}])
       .map(x=>({name:x.name||"",status:x.status||"queued",frameUrl:x.frameUrl||"",
                 editor:x.editor||"",cost:x.cost??""}));
@@ -2632,9 +2744,19 @@ function projectForm(id,preClient){
     <div class="f span2"><label>Project title</label><input id="pf-title" value="${esc(p.title||"")}" placeholder="Nothing to Hyde | Vol. 5"></div>
     <div class="f"><label>Code</label><input id="pf-code" value="${esc(p.code||"")}" placeholder="NTH-05"></div>
     <div class="f"><label>Type</label><select id="pf-type">${TYPES.map(t=>`<option ${p.type===t?"selected":""}>${t}</option>`).join("")}</select></div>
-    <div class="f" style="grid-column:1/-1"><label>Socials</label><label class="socialtoggle" style="margin:0"><input type="checkbox" id="pf-social" ${p.social?"checked":""}><span><span class="st-l">We manage the socials on this one</span><br><span class="st-s">save, then open the project to set the posting calendar</span></span></label></div>
+    <div class="f span2"><label>Workflow</label>
+      <div class="wf-pick">
+        <label class="wf-opt"><input type="radio" name="pf-wf" value="shoot" ${(p.workflow||"shoot")!=="edit"?"checked":""}>
+          <span><b>Shoot &amp; edit</b><br><span class="wf-s">we shoot it, then cut it — full pipeline</span></span></label>
+        <label class="wf-opt"><input type="radio" name="pf-wf" value="edit" ${p.workflow==="edit"?"checked":""}>
+          <span><b>Edit only</b><br><span class="wf-s">client sends footage — a Download step replaces the shoot</span></span></label>
+      </div></div>
+    <div class="f span2"><label class="socialtoggle" style="margin:0">
+      <input type="checkbox" id="pf-internal" ${p.internal?"checked":""}>
+      <span><span class="st-l">Internal project</span><br>
+        <span class="st-s">in-house work — you can add custom steps to the workflow from the project page, and they count toward the %</span></span></label></div>
     <div class="f"><label>Start / shoot date</label><input type="date" id="pf-start" value="${esc(p.startISO||"")}"></div>
-    <div class="f"><label>Stage</label><select id="pf-stage">${STAGES.map((st,i)=>`<option value="${i}" ${(p.stage??0)===i?"selected":""}>${st}</option>`).join("")}</select></div>
+    <div class="f"><label>Stage</label><select id="pf-stage">${stagesFor(p).map((st,i)=>`<option value="${i}" ${(p.stage??0)===i?"selected":""}>${st}</option>`).join("")}</select></div>
     <div class="f"><label>Due date</label><input id="pf-due" type="date" value="${due}"></div>
     <div class="f"><label>Editor</label><select id="pf-editor">${eds.map(e=>`<option ${p.editor===e?"selected":""}>${esc(e)}</option>`).join("")}</select></div>
     <div class="f"><label>Edit cost ($)</label><input id="pf-cost" type="number" min="0" step="25" value="${p.editCost??0}"><div class="hint">0 = in-house</div></div>
@@ -2792,10 +2914,11 @@ function arc(p){
     <line x1="4" y1="${cy}" x2="68" y2="${cy}" stroke="${T.line}" stroke-width="1.5"/>
     <text x="${cx}" y="${cy+15}" text-anchor="middle" fill="${p===100?T.green:T.gold}" style="font-family:var(--display);font-size:12px;font-weight:700">${p}%</text></svg>`;
 }
-const pips=stage=>`<div class="pips">`+STAGES.map((s,i)=>{
+const pips=p=>{const stage=+((p&&typeof p==="object"?p.stage:p)||0);
+  return `<div class="pips">`+stagesFor(typeof p==="object"?p:null).map((s,i)=>{
   const on=i<=stage,cur=i===stage;
   return `<div class="pip"><span class="dot" style="background:${on?T.gold:"transparent"};border:1.5px solid ${on?T.gold:T.dim}"></span>
-    <span class="lbl" style="color:${cur?T.gold:on?T.muted:T.dim}">${s}</span></div>`;}).join("")+`</div>`;
+    <span class="lbl" style="color:${cur?T.gold:on?T.muted:T.dim}">${s}</span></div>`;}).join("")+`</div>`;};
 function chips(p){
   const list=p.pieces||[]; if(list.length<2) return "";
   return `<div class="chips">`+list.map(pc=>{
@@ -2835,7 +2958,7 @@ async function setStage(pid,v){
   if(!p.createdTS) patch.createdTS=projStartTS(p)||Date.now();   /* start the clock for older projects */
   if(+v>=4) patch.deliveredTS=p.deliveredTS||Date.now();         /* freeze total on delivery */
   else if(p.deliveredTS) patch.deliveredTS=null;                 /* reopened — clock runs again */
-  await guard(()=>updateDoc(doc(db,"projects",pid),patch),STAGES[+v]);
+  await guard(()=>updateDoc(doc(db,"projects",pid),patch),stageLabel(p,+v));
   if(+v===4) logActivity(p.clientId,`${p.title} delivered`);
 }
 async function setDue(pid,v){
@@ -2855,7 +2978,7 @@ function inlineEdit(p){
   const eds=["Cody",...editorNames()];
   return `<div class="inline-edit">
     <span class="lbl">Stage</span>
-    <select class="sel" data-pstage="${esc(p.id)}">${STAGES.map((st,i)=>
+    <select class="sel" data-pstage="${esc(p.id)}">${stagesFor(p).map((st,i)=>
       `<option value="${i}" ${(+p.stage||0)===i?"selected":""}>${st}</option>`).join("")}</select>
     <span class="lbl">Editor</span>
     <select class="sel" data-peditor="${esc(p.id)}">${eds.map(e=>
@@ -2896,6 +3019,48 @@ function delivRows(p,editable){
       </div>
     </div>`;}).join("");
 }
+/* ═══════════ CUSTOM STEPS (internal projects) ═══════════
+   Odd tasks an in-house job needs on top of the normal pipeline.
+   Each one you check off nudges the project % (see pct()). */
+function stepsPanel(p){
+  if(!p.internal) return "";
+  const steps=p.extraSteps||[];
+  const done=steps.filter(s=>s.done).length;
+  const rows=steps.map((s,i)=>`<div class="step-row">
+    <input type="checkbox" ${s.done?"checked":""} data-estep-done="${esc(p.id)}:${i}" title="mark done" style="width:auto;flex:none;accent-color:var(--gold)">
+    <input class="step-name" value="${esc(s.name||"")}" data-estep-name="${esc(p.id)}:${i}" placeholder="Name this step" style="${s.done?"text-decoration:line-through;color:var(--muted)":""}">
+    <button class="btn ghost mini" data-estep-del="${esc(p.id)}:${i}" title="remove">&#10005;</button>
+  </div>`).join("");
+  return `<div class="socialbox">
+    <div class="eyebrow">Custom Steps
+      <span class="spacer"></span>
+      <span style="font-family:var(--mono);font-size:10.5px;color:var(--dim)">${done}/${steps.length} done</span>
+      <button class="btn outline mini" data-estep-add="${esc(p.id)}">+ ADD STEP</button></div>
+    ${rows||`<div style="font-size:13px;color:var(--dim);padding:4px 0">No custom steps yet. Add the odd tasks this internal job needs &mdash; each one you check off moves the project %.</div>`}
+  </div>`;
+}
+/* compact checklist shown on the card for internal projects */
+function stepStrip(p){
+  const steps=(p&&p.internal&&p.extraSteps)||[];
+  if(!steps.length) return "";
+  const done=steps.filter(s=>s.done).length;
+  return `<div class="stepstrip"><span class="ss-h">STEPS ${done}/${steps.length}</span>`
+    +steps.map(s=>`<span class="ss-chip${s.done?" on":""}">${s.done?"&#10003; ":""}${esc(s.name||"\u2014")}</span>`).join("")
+    +`</div>`;
+}
+async function addStep(pid){ const p=byId(projects,pid); if(!p) return;
+  const extraSteps=[...(p.extraSteps||[]),{name:"",done:false}];
+  await guard(()=>updateDoc(doc(db,"projects",pid),{extraSteps}),"Step added"); }
+async function setStepName(pid,i,v){ const p=byId(projects,pid); if(!p) return;
+  const extraSteps=(p.extraSteps||[]).map((s,ix)=>ix===+i?{...s,name:v}:s);
+  await guard(()=>updateDoc(doc(db,"projects",pid),{extraSteps})); }
+async function toggleStep(pid,i){ const p=byId(projects,pid); if(!p) return;
+  const extraSteps=(p.extraSteps||[]).map((s,ix)=>ix===+i?{...s,done:!s.done}:s);
+  await guard(()=>updateDoc(doc(db,"projects",pid),{extraSteps}),extraSteps[+i].done?"Step done":"Step reopened"); }
+async function removeStep(pid,i){ const p=byId(projects,pid); if(!p) return;
+  const extraSteps=[...(p.extraSteps||[])]; extraSteps.splice(+i,1);
+  await guard(()=>updateDoc(doc(db,"projects",pid),{extraSteps}),"Step removed"); }
+
 /* ═══════════ ADD-ONS / EXTRA CHARGES ═══════════
    Anything that shows up mid-project — extra shoot day, rush fee, extra cut.
    Kept separate from the 50/50 base so the base split stays clean. */
@@ -2992,9 +3157,10 @@ function projectCard(p,owner){
         <div class="card-right"><span class="due">due ${esc(p.due||isoShort(p.dueISO))}</span>${slaChip(p)}
           ${rev?`<span class="sla" style="color:${T.red};border:1px solid ${T.red}55;background:${T.red}12">CLIENT REVISIONS</span>`:""}</div>
       </div>
-      ${pips(p.stage)}
+      ${pips(p)}
       ${owner?inlineEdit(p):""}
       <div style="margin:10px 0 2px">${delivRows(p,owner)}</div>
+      ${owner?stepStrip(p):""}
       ${rev&&p.revisionNote?`<div style="font-size:12.5px;color:${T.red};margin-bottom:6px">&ldquo;${esc(p.revisionNote)}&rdquo;</div>`:""}
       <div class="card-note">${esc(p.note||"")}</div>${internal}
       ${!owner&&me&&me.role==="owner"?`<div class="editbar"><button class="btn outline mini" data-open="${esc(p.id)}">OPEN &amp; EDIT (OWNER)</button></div>`:""}
@@ -3324,6 +3490,21 @@ const shiftMonth=(m,n)=>{const d=new Date(m+"-01T00:00:00"); d.setMonth(d.getMon
   return d.toISOString().slice(0,7);};
 const postsOf=p=>(p.posts||[]).slice().sort((a,b)=>a.d<b.d?-1:1);
 
+/* the calendar engine runs on whatever holds the posts — now a CLIENT
+   (each month is a new project, so the schedule lives on the client), with
+   legacy support for a project host. Resolve id -> {coll, ent}. */
+function socialHost(id){
+  const c=byId(clients,id); if(c) return {coll:"clients",ent:c};
+  const p=byId(projects,id); if(p) return {coll:"projects",ent:p};
+  return null;
+}
+/* after a change, refresh whichever surface is open */
+function reflowSocial(){
+  if(openClient) return paint();
+  if(openProject) return renderDetail();
+  paint();
+}
+
 /* ── recurring rules ──────────────────────────────────────────────
    A rule like "Reels — every Tuesday" fills the whole calendar without
    anything being written per day. Only the exceptions get stored:
@@ -3363,7 +3544,7 @@ function rulePostsRange(p,fromISO,toISO){
 }
 
 function socialPanel(p){
-  if(!p.social) return "";
+  if(!p) return "";
   const posts=postsOf(p), types=typesFor(p), rules=rulesOf(p);
   const virt=rulePosts(p,calMonth);
   const first=new Date(calMonth+"-01T00:00:00");
@@ -3416,7 +3597,7 @@ function socialPanel(p){
 }
 
 function ruleForm(pid){
-  const p=byId(projects,pid); if(!p) return;
+  const h=socialHost(pid); if(!h) return; const p=h.ent;
   const types=typesFor(p);
   showModal(`<h3>Standing schedule</h3>
   <div style="font-size:12.5px;color:var(--muted);margin:-8px 0 14px;line-height:1.6">
@@ -3437,60 +3618,61 @@ function ruleForm(pid){
   </div>`);
 }
 async function saveRule(pid){
-  const p=byId(projects,pid); if(!p) return;
+  const h=socialHost(pid); if(!h) return; const p=h.ent;
   const type=fv("rl-type"), dow=+fv("rl-dow");
   if(!type) return toast("Pick a post type");
   if(rulesOf(p).some(r=>r.type===type&&+r.dow===dow)) return toast("Already got that one");
   const postRules=[...rulesOf(p),{type,dow,from:fv("rl-from")||null,until:null}];
-  await guard(()=>updateDoc(doc(db,"projects",pid),{postRules}),
+  await guard(()=>updateDoc(doc(db,h.coll,pid),{postRules}),
     `${type} every ${DOW_FULL[dow]}`);
-  projectDetail(pid);
+  closeModal(); reflowSocial();
 }
 async function removeRule(pid,i){
-  const p=byId(projects,pid); if(!p) return;
+  const h=socialHost(pid); if(!h) return; const p=h.ent;
   const postRules=[...rulesOf(p)]; const r=postRules[i]; if(!r) return;
   if(!confirm(`Stop filling in ${r.type} every ${DOW_FULL[+r.dow]}?\n\nThe ones you already checked off stay checked.`)) return;
   postRules.splice(i,1);
-  await guard(()=>updateDoc(doc(db,"projects",pid),{postRules}),"Schedule removed");
+  await guard(()=>updateDoc(doc(db,h.coll,pid),{postRules}),"Schedule removed");
+  reflowSocial();
 }
 async function toggleRulePost(pid,key){
-  const p=byId(projects,pid); if(!p) return;
+  const h=socialHost(pid); if(!h) return; const p=h.ent;
   const done=new Set(p.postDone||[]);
   const nowOn=!done.has(key);
   nowOn?done.add(key):done.delete(key);
-  await guard(()=>updateDoc(doc(db,"projects",pid),{postDone:[...done]}),
+  await guard(()=>updateDoc(doc(db,h.coll,pid),{postDone:[...done]}),
     nowOn?"Marked posted":"Back to scheduled");
 }
 async function skipRulePost(pid,key){
-  const p=byId(projects,pid); if(!p) return;
+  const h=socialHost(pid); if(!h) return; const p=h.ent;
   const skip=new Set(p.postSkip||[]); skip.add(key);
   const done=new Set(p.postDone||[]); done.delete(key);
-  await guard(()=>updateDoc(doc(db,"projects",pid),
+  await guard(()=>updateDoc(doc(db,h.coll,pid),
     {postSkip:[...skip],postDone:[...done]}),"Skipped that one");
 }
 
 async function addPost(pid,iso){
-  const p=byId(projects,pid); if(!p) return;
+  const h=socialHost(pid); if(!h) return; const p=h.ent;
   const posts=[...(p.posts||[]),{d:iso,type:calType,posted:false}];
-  await guard(()=>updateDoc(doc(db,"projects",pid),{posts}),`${calType} on ${isoShort(iso)}`);
+  await guard(()=>updateDoc(doc(db,h.coll,pid),{posts}),`${calType} on ${isoShort(iso)}`);
 }
 async function togglePost(pid,iso,i){
-  const p=byId(projects,pid); if(!p) return;
+  const h=socialHost(pid); if(!h) return; const p=h.ent;
   const all=[...(p.posts||[])];
   const idxs=all.map((x,ix)=>[x,ix]).filter(([x])=>x.d===iso).map(([,ix])=>ix);
   const target=idxs[i]; if(target===undefined) return;
   all[target]={...all[target],posted:!all[target].posted,
     postedOn:!all[target].posted?todayISO():null};
-  await guard(()=>updateDoc(doc(db,"projects",pid),{posts:all}),
+  await guard(()=>updateDoc(doc(db,h.coll,pid),{posts:all}),
     all[target].posted?"Marked posted":"Back to scheduled");
 }
 async function removePost(pid,iso,i){
-  const p=byId(projects,pid); if(!p) return;
+  const h=socialHost(pid); if(!h) return; const p=h.ent;
   const all=[...(p.posts||[])];
   const idxs=all.map((x,ix)=>[x,ix]).filter(([x])=>x.d===iso).map(([,ix])=>ix);
   const target=idxs[i]; if(target===undefined) return;
   all.splice(target,1);
-  await guard(()=>updateDoc(doc(db,"projects",pid),{posts:all}),"Post removed");
+  await guard(()=>updateDoc(doc(db,h.coll,pid),{posts:all}),"Post removed");
 }
 function addTypeForm(pid){
   showModal(`<h3>Add a post type</h3>
@@ -3500,12 +3682,12 @@ function addTypeForm(pid){
     <button class="btn gold" data-savetype="${esc(pid)}">ADD TYPE</button></div>`);
 }
 async function saveType(pid){
-  const p=byId(projects,pid); const n=fv("nt-name").trim();
-  if(!p||!n) return toast("Give it a name");
-  const postTypes=[...new Set([...(p.postTypes||[]),n])];
+  const h=socialHost(pid); const n=fv("nt-name").trim();
+  if(!h||!n) return toast("Give it a name");
+  const postTypes=[...new Set([...(h.ent.postTypes||[]),n])];
   calType=n;
-  await guard(()=>updateDoc(doc(db,"projects",pid),{postTypes}),`${n} added`);
-  projectDetail(pid);
+  await guard(()=>updateDoc(doc(db,h.coll,pid),{postTypes}),`${n} added`);
+  closeModal(); reflowSocial();
 }
 async function setSocial(pid,on){
   await guard(()=>updateDoc(doc(db,"projects",pid),{social:!!on}),
@@ -3516,23 +3698,23 @@ async function setSocial(pid,on){
 function postDigest(){
   const t=todayISO(), tm=addDays(t,1), out=[];
   const back=addDays(t,-14);
-  projects.filter(p=>p.social).forEach(p=>{
-    const rule=rulePostsRange(p,back,tm);
-    [...(p.posts||[]),...rule].forEach(x=>{
+  clients.filter(c=>c.socialManaged).forEach(c=>{
+    const rule=rulePostsRange(c,back,tm);
+    [...(c.posts||[]),...rule].forEach(x=>{
       if(x.posted) return;
-      if(x.d===t)  out.push({p,post:x,when:"TODAY",kind:"post-today"});
-      else if(x.d===tm) out.push({p,post:x,when:"TOMORROW",kind:"post-tomorrow"});
-      else if(x.d<t&&x.d>=back) out.push({p,post:x,when:`${Math.abs(dayDiff(x.d))}D LATE`,kind:"post-late"});
+      if(x.d===t)  out.push({c,post:x,when:"TODAY",kind:"post-today"});
+      else if(x.d===tm) out.push({c,post:x,when:"TOMORROW",kind:"post-tomorrow"});
+      else if(x.d<t&&x.d>=back) out.push({c,post:x,when:`${Math.abs(dayDiff(x.d))}D LATE`,kind:"post-late"});
     });
   });
   return out;
 }
 
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-calnav],[data-calday],[data-calchip],[data-calrule],[data-addtype],[data-savetype],[data-social],[data-backto],[data-rule-form],[data-rule-save],[data-rule-del],[data-addon-form],[data-addon-save],[data-addon-paid],[data-addon-del]");
+  const t=e.target.closest("[data-calnav],[data-calday],[data-calchip],[data-calrule],[data-addtype],[data-savetype],[data-social],[data-backto],[data-rule-form],[data-rule-save],[data-rule-del],[data-addon-form],[data-addon-save],[data-addon-paid],[data-addon-del],[data-estep-add],[data-estep-del]");
   if(!t) return;
   const d=t.dataset;
-  if(d.calnav){ calMonth=shiftMonth(calMonth,+d.calnav); return renderDetail(); }
+  if(d.calnav){ calMonth=shiftMonth(calMonth,+d.calnav); return reflowSocial(); }
   if(d.calrule){ e.stopPropagation();
     const cut=d.calrule.indexOf("|");
     const pid=d.calrule.slice(0,cut), key=d.calrule.slice(cut+1);
@@ -3548,8 +3730,10 @@ document.addEventListener("click",e=>{
   if(d.addonSave) return saveAddon(d.addonSave);
   if(d.addonPaid){ const [pid,i]=d.addonPaid.split(":"); return toggleAddonPaid(pid,+i); }
   if(d.addonDel){ const [pid,i]=d.addonDel.split(":"); return removeAddon(pid,+i); }
+  if(d.estepAdd){ return addStep(d.estepAdd); }
+  if(d.estepDel){ const [pid,i]=d.estepDel.split(":"); return removeStep(pid,+i); }
   if(d.calday){ const [pid,iso]=d.calday.split(":"); return addPost(pid,iso); }
-  if(d.backto)   return projectDetail(d.backto);
+  if(d.backto)   return (byId(clients,d.backto)?closeModal():projectDetail(d.backto));
   if(d.addtype)  return addTypeForm(d.addtype);
   if(d.savetype) return saveType(d.savetype);
   if(d.social)   return setSocial(d.social,t.checked);
@@ -3562,8 +3746,9 @@ document.addEventListener("change",e=>{
     return setPieceCost(pid,+i,t.value); }
   if(t.dataset.pnamepiece){ const [pid,i]=t.dataset.pnamepiece.split(":");
     return setPieceName(pid,+i,t.value); }
-  if(t.dataset.caltype!==undefined){ calType=t.value; return renderDetail(); }
-  if(t.dataset.social!==undefined&&t.dataset.social) return setSocial(t.dataset.social,t.checked);
+  if(t.dataset.caltype!==undefined){ calType=t.value; return reflowSocial(); }
+  if(t.dataset.estepDone){ const [pid,i]=t.dataset.estepDone.split(":"); return toggleStep(pid,+i); }
+  if(t.dataset.estepName){ const [pid,i]=t.dataset.estepName.split(":"); return setStepName(pid,+i,t.value); }
 });
 
 
@@ -3624,7 +3809,7 @@ function miniCard(p){
     ${tMS!=null?`<div class="m-clock" ${tLive&&tStart?`data-elapsed-live="1" data-elapsed-since="${tStart}"`:""}>&#9201; ${elapsedDH(tMS)}${tLive?"":" · total"}</div>`:""}
     <div class="m-bar"><i style="width:${pct(p)}%"></i></div>
     <div class="m-tags">
-      ${tag(STAGES[+p.stage||0].toUpperCase())}
+      ${tag(stageLabel(p,+p.stage||0).toUpperCase())}
       ${tag(d.label,d.k)}
       ${dr?tag(dr.label,dr.k):""}
       ${l.length>1?tag(`${done}/${l.length} DONE`):""}
@@ -3668,15 +3853,21 @@ function projectBoard(){
 function digest(){
   const live=projects.filter(p=>pct(p)<100);
   const out=[];
+  const push=(o)=>out.push(o);
   live.forEach(p=>{
+    const meta=`${clientName(p.clientId)}${p.editor?" · "+p.editor:""}`;
+    const base={title:p.title,meta,openId:p.id,openKind:"project"};
     const d=deliveryState(p), dr=draftState(p);
-    if(d.k==="late")  out.push({p,kind:"delivery",label:d.label});
-    else if(d.k==="soon") out.push({p,kind:"delivery-soon",label:d.label});
-    if(dr&&dr.k==="late") out.push({p,kind:"draft",label:dr.label});
-    if(needsRev(p)) out.push({p,kind:"revision",label:"CLIENT REVISIONS"});
+    if(d.k==="late")  push({...base,kind:"delivery",label:d.label});
+    else if(d.k==="soon") push({...base,kind:"delivery-soon",label:d.label});
+    if(dr&&dr.k==="late") push({...base,kind:"draft",label:dr.label});
+    if(needsRev(p)) push({...base,kind:"revision",label:"CLIENT REVISIONS"});
   });
-  postDigest().forEach(x=>out.push({p:x.p,kind:x.kind,
-    label:`${x.post.type.toUpperCase()} POST ${x.when}`}));
+  postDigest().forEach(x=>push({
+    title:`${clientName(x.c.id)} — ${x.post.type}`,
+    meta:`social · ${isoShort(x.post.d)}`,
+    openId:x.c.id, openKind:"client",
+    kind:x.kind, label:`${x.post.type.toUpperCase()} POST ${x.when}`}));
   return out.sort((a,b)=>(a.label.includes("OVERDUE")||a.label.includes("LATE")?0:1)
                         -(b.label.includes("OVERDUE")||b.label.includes("LATE")?0:1));
 }
@@ -3684,14 +3875,15 @@ function alertStrip(){
   const d=digest().filter(x=>x.kind!=="delivery-soon"||true);
   if(!d.length) return "";
   const canText=!!(smsPub.endpoint&&settings.studio);
+  const warm=k=>k==="delivery-soon"||k==="post-tomorrow";
   return `<div class="alertstrip"><div class="eyebrow">Needs you today
     <span class="spacer"></span>
     <button class="btn ghost mini" data-alerts="1">${notifyOn()?"ALERTS ON":"TURN ON ALERTS"}</button>
     ${canText?`<button class="btn ghost mini" data-digest="1">TEXT ME THIS LIST</button>`:""}</div>
-    ${d.slice(0,8).map(x=>`<div class="alert-row" data-open="${esc(x.p.id)}">
-      <div><div class="a-t">${esc(x.p.title)}</div>
-        <div class="a-m">${esc(clientName(x.p.clientId))}${x.p.editor?" · "+esc(x.p.editor):""}</div></div>
-      <span class="sla" style="color:${x.kind==="delivery-soon"||x.kind==="post-tomorrow"?T.gold:T.red};border:1px solid ${(x.kind==="delivery-soon"||x.kind==="post-tomorrow"?T.gold:T.red)}55;background:${(x.kind==="delivery-soon"||x.kind==="post-tomorrow"?T.gold:T.red)}12">${esc(x.label)}</span>
+    ${d.slice(0,8).map(x=>`<div class="alert-row" ${x.openKind==="client"?`data-openclient="${esc(x.openId)}"`:`data-open="${esc(x.openId)}"`}>
+      <div><div class="a-t">${esc(x.title)}</div>
+        <div class="a-m">${esc(x.meta)}</div></div>
+      <span class="sla" style="color:${warm(x.kind)?T.gold:T.red};border:1px solid ${(warm(x.kind)?T.gold:T.red)}55;background:${(warm(x.kind)?T.gold:T.red)}12">${esc(x.label)}</span>
     </div>`).join("")}
     ${d.length>8?`<div class="a-m" style="padding-top:8px">+ ${d.length-8} more</div>`:""}
     <div class="a-m" style="padding-top:9px;color:var(--dim)">Browser alerts fire while the portal is open. For texts when it's closed, hook up the Twilio function under Alerts &amp; Numbers.</div>
@@ -3709,16 +3901,16 @@ const seenKey=(id,kind)=>`uts-alert:${id}:${kind}:${todayISO()}`;
 function fireAlerts(){
   if(!me||me.role!=="owner"||!notifyOn()) return;
   digest().filter(x=>x.kind!=="delivery-soon").forEach(x=>{
-    const k=seenKey(x.p.id,x.kind+":"+x.label);
+    const k=seenKey(x.openId,x.kind+":"+x.label);
     try{ if(localStorage.getItem(k)) return; localStorage.setItem(k,"1"); }catch(e){}
-    try{ new Notification(`${x.label} — ${x.p.title}`,
-      {body:`${clientName(x.p.clientId)}${x.p.editor?" · "+x.p.editor:""}`,tag:k}); }catch(e){}
+    try{ new Notification(`${x.label} — ${x.title}`,
+      {body:x.meta,tag:k}); }catch(e){}
   });
 }
 async function textDigest(){
   const d=digest().filter(x=>x.kind!=="delivery-soon");
   if(!d.length) return toast("Nothing due — board is clear");
-  const body="UTS today:\n"+d.slice(0,6).map(x=>`• ${x.p.title} — ${x.label}`).join("\n");
+  const body="UTS today:\n"+d.slice(0,6).map(x=>`• ${x.title} — ${x.label}`).join("\n");
   await sendSMS("studio",body); toast("Sent to your phone");
 }
 
@@ -3729,8 +3921,8 @@ function retainerBox(c){
   const items=(c.retainerItems||[]).filter(x=>x.name);
   return `<div class="retboxsm">
     <div class="rt">
-      <span class="rl">${esc(c.name)} — retainer${c.retainerDay?` · bills the ${c.retainerDay}${c.retainerDay===1?"st":c.retainerDay===2?"nd":c.retainerDay===3?"rd":"th"}`:""}</span>
-      <span class="rv">${money(retainerValue(c))}<span style="font-size:11px;color:var(--dim)">/mo</span></span>
+      <span class="rl">${esc(c.name)} — retainer${isActiveRetainer(c)?"":" (INACTIVE)"}${retainerSince(c)?` · since ${esc(isoShort(retainerSince(c)))}`:c.retainerDay?` · bills the ${c.retainerDay}${c.retainerDay===1?"st":c.retainerDay===2?"nd":c.retainerDay===3?"rd":"th"}`:""}</span>
+      <span class="rv" style="${isActiveRetainer(c)?"":"color:var(--dim)"}">${money(retainerValue(c))}<span style="font-size:11px;color:var(--dim)">/mo</span></span>
     </div>
     ${items.length?`<ul>${items.map(x=>`<li>${esc(x.name)}${x.qty?` <span style="color:var(--dim)">— ${esc(x.qty)}</span>`:""}</li>`).join("")}</ul>`:""}
     <div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:8px;letter-spacing:.06em">
@@ -3771,13 +3963,8 @@ function renderDetail(){
         <div class="timerbox" ${!tDelivered&&tStart?`data-elapsed-live="1" data-elapsed-since="${tStart}"`:""}>${tMS==null?"—":elapsedDH(tMS)}</div>
         ${tNote}</div>
     </div>
-    <label class="socialtoggle">
-      <input type="checkbox" data-social="${esc(p.id)}" ${p.social?"checked":""}>
-      <span><span class="st-l">We manage the socials on this one</span><br>
-        <span class="st-s">adds a posting calendar and a POSTED status on every deliverable</span></span>
-    </label>
     ${retainerBox(byId(clients,p.clientId))}
-    ${socialPanel(p)}
+    ${stepsPanel(p)}
     ${addonPanel(p)}
     ${projectCard(p,true)}
     <div class="modal-actions">
@@ -4633,20 +4820,23 @@ function ownerView(){
     <span class="spacer"></span>
     <span style="font-family:var(--mono);font-size:11px;color:var(--gold)">${money(monthlyRetainerTotal())} / MO · ${money(monthlyRetainerTotal()*12)} / YR</span></div>
     ${retainerClients().length?retainerClients()
-      .sort((a,b)=>retainerValue(b)-retainerValue(a)).map(c=>{
+      .sort((a,b)=>{ const ai=isActiveRetainer(a)?0:1, bi=isActiveRetainer(b)?0:1;
+        return ai-bi || retainerValue(b)-retainerValue(a); }).map(c=>{
         const items=(c.retainerItems||[]).filter(x=>x.name);
-        const share=monthlyRetainerTotal()?Math.round(retainerValue(c)/monthlyRetainerTotal()*100):0;
-        return `<div class="list-row">
-        <div><div class="inv-label">${esc(c.name)}${c.company?` <span style="color:var(--dim);font-weight:400">· ${esc(c.company)}</span>`:""}</div>
+        const active=isActiveRetainer(c), since=retainerSince(c);
+        const share=active&&monthlyRetainerTotal()?Math.round(retainerValue(c)/monthlyRetainerTotal()*100):0;
+        return `<div class="list-row" style="${active?"":"opacity:.62"}">
+        <div><div class="inv-label">${esc(c.name)}${c.company?` <span style="color:var(--dim);font-weight:400">· ${esc(c.company)}</span>`:""}
+          <span class="ret-tag ${active?"on":"off"}">${active?"ACTIVE":"INACTIVE"}${since?` · since ${esc(isoShort(since))}`:""}</span></div>
           <div class="inv-meta">${items.length?items.map(x=>esc(x.name)+(x.qty?` (${esc(x.qty)})`:"")).join(" · "):"no line items set"}${c.retainerDay?` &middot; bills the ${c.retainerDay}`:""}</div></div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="inv-meta" style="font-family:var(--mono)">${share}%</span>
-          <span class="amount" style="color:var(--gold)">${money(retainerValue(c))}<span style="font-size:10px;color:var(--dim)">/mo</span></span>
+          <span class="inv-meta" style="font-family:var(--mono)">${active?share+"%":"—"}</span>
+          <span class="amount" style="color:${active?"var(--gold)":"var(--dim)"}">${money(retainerValue(c))}<span style="font-size:10px;color:var(--dim)">/mo</span></span>
           <button class="btn ghost mini" data-form="client" data-id="${esc(c.id)}">EDIT</button></div></div>`;}).join("")
       +`<div class="list-row" style="border-top:1px solid rgba(232,181,66,.27)">
-        <span style="font-family:var(--mono);font-size:11px;color:var(--gold-soft);letter-spacing:.1em">TOTAL HELD PER MONTH — ${retainerClients().length} CLIENT${retainerClients().length===1?"":"S"}</span>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--gold-soft);letter-spacing:.1em">TOTAL HELD PER MONTH — ${activeRetainerClients().length} ACTIVE${(retainerClients().length-activeRetainerClients().length)?` · ${retainerClients().length-activeRetainerClients().length} INACTIVE`:""}</span>
         <span class="amount" style="color:var(--gold);font-weight:600;font-size:16px">${money(monthlyRetainerTotal())}</span></div>`
-      :`<div style="font-size:13px;color:var(--dim)">No retainer clients yet. Edit a client and tick "This is a retainer client" to start tracking recurring revenue here.</div>`}
+      :`<div style="font-size:13px;color:var(--dim)">No retainer clients yet. Edit a client and set their retainer status to Active to start tracking recurring revenue here.</div>`}
   </section>
 
   ${revs.length?`<section class="panel"><div class="eyebrow" style="color:var(--red)">Client Revisions Requested — ${revs.length}</div>
@@ -4755,7 +4945,7 @@ function databaseView(){
       const rItems=(c.retainerItems||[]).filter(x=>x.name);
       return `<div class="db-row">
         <div style="cursor:pointer;flex:1;min-width:0" data-openclient="${esc(c.id)}">
-          <div class="db-name">${esc(c.name)}${isRetainer(c)?`<span class="retbadge">Retainer ${money(retainerValue(c))}/mo</span>`:""}${hasSocialManaged(c.id)?`<span class="retbadge" style="border-color:rgba(111,200,232,.5);color:#6fc8e8;background:rgba(111,200,232,.1)">Social</span>`:""}</div>
+          <div class="db-name">${esc(c.name)}${isRetainer(c)?`<span class="retbadge" style="${isActiveRetainer(c)?"":"border-color:var(--line);color:var(--dim);background:transparent"}">Retainer${isActiveRetainer(c)?"":" (inactive)"} ${money(retainerValue(c))}/mo</span>`:""}${hasSocialManaged(c.id)?`<span class="retbadge" style="border-color:rgba(111,200,232,.5);color:#6fc8e8;background:rgba(111,200,232,.1)">Social</span>`:""}</div>
           <div class="db-meta">${esc(c.company||"&mdash;")}${c.contact?` &middot; ${esc(c.contact)}`:""}${isRetainer(c)&&rItems.length?`<br>${rItems.map(x=>esc(x.name)+(x.qty?` (${esc(x.qty)})`:"")).join(" &middot; ")}`:""}</div>
           <div class="db-meta" style="color:${cDue?"var(--gold)":"var(--dim)"}">${cOpen} open &middot; ${cDue?`balance ${money(cDue)}`:"paid up"}</div>
         </div>
@@ -4801,12 +4991,14 @@ function clientDetailView(cid){
     ${subStat("BALANCE DUE",money(due),due?T.gold:T.green)}
     ${subStat("BILLED",money(billed))}
     ${subStat("PAID",money(paidT),T.green)}
-    ${isRetainer(c)?subStat("RETAINER",money(retainerValue(c))+"/mo",T.gold):""}
+    ${isRetainer(c)?subStat(isActiveRetainer(c)?"RETAINER":"RETAINER · INACTIVE",money(retainerValue(c))+"/mo",isActiveRetainer(c)?T.gold:T.dim):""}
   </div>
-  ${isRetainer(c)&&rItems.length?`<div class="retboxsm">
-    <div class="rt"><span class="rl">Retainer covers</span><span class="rv">${money(retainerValue(c))}/mo</span></div>
-    <ul>${rItems.map(x=>`<li>${esc(x.name)}${x.qty?` &mdash; ${esc(x.qty)}`:""}</li>`).join("")}</ul></div>`:""}
+  ${isRetainer(c)?`<div class="retboxsm">
+    <div class="rt"><span class="rl">${isActiveRetainer(c)?"Active retainer":"Inactive retainer"}${retainerSince(c)?` · since ${esc(isoShort(retainerSince(c)))}`:""}</span><span class="rv" style="${isActiveRetainer(c)?"":"color:var(--dim)"}">${money(retainerValue(c))}/mo</span></div>
+    ${rItems.length?`<ul>${rItems.map(x=>`<li>${esc(x.name)}${x.qty?` &mdash; ${esc(x.qty)}`:""}</li>`).join("")}</ul>`:""}
+    ${(c.retainerHistory&&c.retainerHistory.length>1)?`<div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:8px;letter-spacing:.05em">${c.retainerHistory.length} status change${c.retainerHistory.length===1?"":"s"} on record — ${c.retainerHistory.slice(-3).map(h=>`${h.status} ${isoShort(h.on)}`).join(" → ")}</div>`:""}</div>`:""}
   ${hasSocialManaged(cid)?readyToPostSection(cid):""}
+  ${hasSocialManaged(cid)?`<section class="panel">${socialPanel(c)}</section>`:""}
   <section class="panel"><div class="eyebrow">Projects &mdash; ${mine.length}
     <span class="spacer"></span><button class="btn outline mini" data-form="project" data-client="${esc(c.id)}">+ PROJECT</button></div>
     ${mine.length?`<div class="grid-gap cards">${mine.map(p=>projectCard(p,true)).join("")}</div>`
@@ -4899,21 +5091,25 @@ function drivesView(){
   const cards=drives.map(d=>{
     const used=driveUsedGB(d), cap=+d.capacityGB||0, fp=driveFillPct(d), free=Math.max(0,cap-used);
     let projs=projectsOnDrive(d.id).slice().sort((a,b)=>(+b.sizeGB||0)-(+a.sizeGB||0));
+    const logs=driveLogs(d).map((l,i)=>({...l,__i:i})).sort((a,b)=>(+b.sizeGB||0)-(+a.sizeGB||0));
     /* when searching, filter projects and highlight matches */
     const searching=!!q;
     const filtered=searching?projs.filter(p=>{
       const fields=[p.title,p.code,clientName(p.clientId)].join(" ").toLowerCase();
       return fields.includes(q);
     }):projs;
+    const flogs=searching?logs.filter(l=>[l.name,l.client,l.note].join(" ").toLowerCase().includes(q)):logs;
     /* hide entire drive card if searching and nothing matches */
-    if(searching&&!filtered.length) return "";
+    if(searching&&!filtered.length&&!flogs.length) return "";
     return `<div class="drive-card">
       <div class="drive-head">${donut(fp,102)}
         <div class="drive-meta">
           <div class="drive-name">${esc(d.name)}</div>
           <div class="drive-cap">${sizeFmt(used)} used &middot; ${sizeFmt(cap)} total</div>
           <div class="drive-free" style="color:${fp>=90?T.red:fp>=75?T.gold:T.green}">${sizeFmt(free)} free</div>
-          <div style="margin-top:9px;display:flex;gap:6px"><button class="btn ghost mini" data-form="drive" data-id="${esc(d.id)}">EDIT DRIVE</button></div>
+          <div style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn ghost mini" data-form="drive" data-id="${esc(d.id)}">EDIT DRIVE</button>
+            <button class="btn outline mini" data-form="drivelog" data-drive="${esc(d.id)}">+ LOG FOOTAGE</button></div>
         </div>
       </div>
       <div class="drive-projlist">
@@ -4926,6 +5122,15 @@ function drivesView(){
           :searching?""
           :`<div style="font-size:12.5px;color:var(--dim)">No projects assigned yet. Open a project and pick this drive.</div>`}
       </div>
+      ${(flogs.length||!searching)?`<div class="drive-loglist">
+        <div style="font-family:var(--mono);font-size:9.5px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:7px">
+          ${searching?`${flogs.length} logged match${flogs.length===1?"":"es"}`:`Logged footage${logs.length?` &middot; ${logs.length}`:""}`}</div>
+        ${flogs.length?flogs.map(l=>`<div class="drive-projrow drive-logrow" data-form="drivelog" data-drive="${esc(d.id)}" data-logi="${l.__i}" style="cursor:pointer">
+          <div style="min-width:0"><div class="dp-t">${hl(l.name||"Footage")} <span class="logtag">LOGGED</span></div>
+            <div class="dp-c">${l.client?hl(l.client)+" &middot; ":""}${l.date?esc(isoShort(l.date)):"no date"}${l.note?` &middot; ${hl(l.note)}`:""}</div></div>
+          <div class="dp-sz">${l.sizeGB?sizeFmt(l.sizeGB):"&mdash;"}</div></div>`).join("")
+          :searching?"":`<div style="font-size:12.5px;color:var(--dim)">No loose footage logged. Use <b>+ Log footage</b> for old shoots or archives with no active project.</div>`}
+      </div>`:""}
     </div>`;}).join("");
 
   const anyResults=cards.replace(/\s/g,"").length>0;
@@ -4990,6 +5195,55 @@ async function saveDrive(id){
 async function removeDrive(id){
   if(projectsOnDrive(id).length) return toast("Reassign its projects first");
   await guard(()=>deleteDoc(doc(db,"drives",id)),"Drive deleted"); closeModal();
+}
+/* ── log loose footage / an old shoot straight onto a drive (no project) ── */
+function driveLogForm(driveId,li){
+  const d=byId(drives,driveId)||{}; const l=(li!=null&&li!=="")?driveLogs(d)[+li]||{}:{};
+  const editing=li!=null&&li!=="";
+  const gb=+l.sizeGB||0, asTB=gb>=1000, szVal=asTB?(gb/1000):(gb||"");
+  showModal(`<h3>${editing?"Edit Logged Footage":"Log Footage"}</h3>
+  <div style="font-size:12.5px;color:var(--muted);margin:-8px 0 14px;line-height:1.6">
+    For footage that lives on <b>${esc(d.name||"this drive")}</b> without an active project — old shoots, archives, B-roll. It counts toward the drive's used space, no project required.</div>
+  <div class="f-grid cols">
+    <div class="f span2"><label>What is it</label>
+      <input id="lg-name" value="${esc(l.name||"")}" placeholder="Wedding shoot – Ramirez / B-roll city drives"></div>
+    <div class="f"><label>Client / source (optional)</label>
+      <input id="lg-client" value="${esc(l.client||"")}" placeholder="Ramirez"></div>
+    <div class="f"><label>Shoot / archive date</label>
+      <input id="lg-date" type="date" value="${esc(l.date||"")}"></div>
+    <div class="f"><label>Size</label><input id="lg-size" type="number" min="0" step="0.5" value="${szVal}" placeholder="e.g. 120"></div>
+    <div class="f"><label>Unit</label><select id="lg-unit">
+      <option value="GB" ${!asTB?"selected":""}>GB</option>
+      <option value="TB" ${asTB?"selected":""}>TB</option></select></div>
+    <div class="f span2"><label>Note (optional)</label>
+      <input id="lg-note" value="${esc(l.note||"")}" placeholder="Delivered long ago — keeping the raws just in case"></div>
+  </div>
+  <div class="actions">
+    ${editing?`<button class="btn ghost danger" data-del-log="${esc(driveId)}:${li}">DELETE</button>`:""}
+    <button class="btn ghost" data-close="1">CANCEL</button>
+    <button class="btn gold" data-save-log="${esc(driveId)}:${editing?li:""}">${editing?"SAVE":"LOG IT"}</button>
+  </div>`);
+}
+async function saveDriveLog(driveId,li){
+  const d=byId(drives,driveId); if(!d) return;
+  const name=fv("lg-name"); if(!name) return toast("Give it a name");
+  const unit=document.getElementById("lg-unit")?.value||"GB";
+  const val=+fv("lg-size")||0;
+  const sizeGB=unit==="TB"?Math.round(val*1000):Math.round(val);
+  const entry={name,client:fv("lg-client")||null,date:fv("lg-date")||null,
+    sizeGB,note:fv("lg-note")||null};
+  const logs=[...driveLogs(d)];
+  if(li!=null&&li!=="") logs[+li]=entry; else logs.push(entry);
+  await guard(()=>updateDoc(doc(db,"drives",driveId),{logs}),
+    (li!=null&&li!=="")?"Footage updated":`${name} logged`);
+  closeModal();
+}
+async function removeDriveLog(driveId,li){
+  const d=byId(drives,driveId); if(!d) return;
+  const logs=[...driveLogs(d)]; if(logs[+li]===undefined) return;
+  logs.splice(+li,1);
+  await guard(()=>updateDoc(doc(db,"drives",driveId),{logs}),"Footage removed");
+  closeModal();
 }
 
 /* ── Alerts & SMS page ── */
@@ -5126,7 +5380,7 @@ function paint(){
 
 /* ── events ── */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test],[data-openclient],[data-postnow],[data-unpost],[data-readytab],[data-save-drive],[data-del-drive],[data-backto],[data-asedit],[data-exitedit],[data-export],[data-eom],[data-bank]");
+  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test],[data-openclient],[data-postnow],[data-unpost],[data-readytab],[data-save-drive],[data-del-drive],[data-save-log],[data-del-log],[data-backto],[data-asedit],[data-exitedit],[data-export],[data-eom],[data-bank]");
   if(!t) return;
   const d=t.dataset;
   if(d.close!==undefined){ if(t===e.target||t.tagName==="BUTTON") closeModal(); return; }
@@ -5147,6 +5401,9 @@ document.addEventListener("click",e=>{
   if(d.unpost){ const [id,i]=d.unpost.split(":"); markUnposted(id,+i); return; }
   if(d.backto){ openProject=byId(projects,d.backto)?d.backto:null; renderDetail(); return; }
   if(d.form==="drive")  return driveForm(d.id||null);
+  if(d.form==="drivelog") return driveLogForm(d.drive||null, d.logi!==undefined?d.logi:null);
+  if(d.saveLog!==undefined){ const [did,li]=d.saveLog.split(":"); return saveDriveLog(did, li===undefined?null:li); }
+  if(d.delLog){ const [did,li]=d.delLog.split(":"); return removeDriveLog(did,li); }
   if(d.saveDrive!==undefined)  return saveDrive(d.saveDrive||null);
   if(d.delDrive)  return removeDrive(d.delDrive);
   if(d.preview){ previewClient=d.preview; view="client"; paint(); return; }
@@ -5196,6 +5453,10 @@ document.addEventListener("change",e=>{
   if(ds.pdue)    setDue(ds.pdue,e.target.value);
   if(ds.peditor) setEditorOn(ds.peditor,e.target.value);
   if(ds.ptype)   guard(()=>updateDoc(doc(db,"projects",ds.ptype),{type:e.target.value}),e.target.value);
+  if(e.target.name==="pf-wf"){
+    const opt=document.querySelector('#pf-stage option[value="1"]');
+    if(opt) opt.textContent=e.target.value==="edit"?"Download":"Shoot";
+  }
   if(e.target.id==="pf-price"){
     const v=+e.target.value||0, h=Math.round(v/2);
     const box=e.target.closest(".f-grid");
