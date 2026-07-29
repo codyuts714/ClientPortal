@@ -1371,6 +1371,7 @@ let authUser=null, me=null, booting=true, gateMsg=null;
 let clients=[], projects=[], invoices=[], payables=[], activity=[], users=[];
 let leads=[];
 let drives=[];               /* hard-drive tracker */
+let folderPresets={presets:[],defaultName:null};  /* config/folderPresets — saved "go-to" folder structures */
 let settings={}, smsPub={};   /* config/sms (owner only) + config/public (everyone) */
 let view="owner", previewClient=null, previewEditor=null;
 let tracking={};        /* config/tracking — last export + month-end reminder dismissal */
@@ -1883,6 +1884,7 @@ async function loadFor(user){
     view="owner";
     unsubs.push(onSnapshot(doc(db,"config","sms"),d=>{ settings=d.exists()?d.data():{}; paint(); }));
     unsubs.push(onSnapshot(doc(db,"config","tracking"),d=>{ tracking=d.exists()?d.data():{}; paint(); }));
+    unsubs.push(onSnapshot(doc(db,"config","folderPresets"),d=>{ folderPresets=d.exists()?{presets:[],defaultName:null,...d.data()}:{presets:[],defaultName:null}; paint(); }));
     unsubs.push(live(collection(db,"bank_accounts"),  v=>bankAccounts=v));
     unsubs.push(live(collection(db,"bank_txns"),      v=>bankTxns=v));
     unsubs.push(live(collection(db,"bank_recurring"), v=>bankRecurring=v));
@@ -2788,6 +2790,8 @@ function projectCard(p,owner){
       ${owner?`${payBar(p)}
       <div class="editbar">
         <button class="btn ghost mini" data-form="project" data-id="${esc(p.id)}">EDIT PROJECT</button>
+        <button class="btn ${p.projectRootFolder?"outline":"ghost"} mini" data-fs-folders="${esc(p.id)}"${FS_OK?"":' title="Desktop Chrome or Edge only"'}>${p.projectRootFolder?"FOLDERS &#10003;":"CREATE FOLDERS"}</button>
+        <button class="btn ghost mini" data-fs-pp="${esc(p.id)}"${FS_OK?"":' title="Desktop Chrome or Edge only"'}>CREATE PP PROJECT</button>
         <button class="btn ${p.frameUrl?"outline":"ghost"} mini" data-link="${esc(p.id)}:frame">${p.frameUrl?"FRAME.IO LINK":"+ FRAME.IO"}</button>
         <button class="btn ${p.footageUrl?"outline":"ghost"} mini" data-link="${esc(p.id)}:raw">${p.footageUrl?"DROPBOX LINK":"+ DROPBOX"}</button>
         ${p.frameUrl?`<a class="btn outline mini link" href="${esc(p.frameUrl)}" target="_blank" rel="noopener">OPEN FRAME &#8599;</a>`:""}
@@ -5166,6 +5170,428 @@ document.addEventListener("input",e=>{
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape") closeModal();
   if(e.key==="Enter"&&document.getElementById("g-pass")) doLogin();
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   FOLDERS & PREMIERE — Step 1: one-click project folder creation
+   Self-contained. Desktop Chromium only (File System Access API).
+   Additive: only writes the already-scaffolded folder-path fields
+   on the project + (optionally) links it to a drive-tracker entry.
+   ═══════════════════════════════════════════════════════════════ */
+const FS_OK = typeof window!=="undefined" && "showDirectoryPicker" in window;
+/* strip \ / : * ? " < > | and trailing dots/spaces */
+const fsSanitize=n=>String(n||"").replace(/[\\/:*?"<>|]/g,"").replace(/[.\s]+$/,"").trim();
+
+/* default "go-to" structure — Raw Footage is locked / always created */
+const FS_DEFAULT_STRUCTURE=[
+  {name:"Raw Footage",    on:true, locked:true},
+  {name:"Photos",         on:true},
+  {name:"Project Assets", on:true},
+  {name:"Exports",        on:true}
+];
+
+/* ── Premiere generator constants ── */
+const FS_ASPECTS={ "9x16":{w:1080,h:1920,label:"9×16 · 1080×1920"}, "16x9":{w:1920,h:1080,label:"16×9 · 1920×1080"} };
+const FS_FPS=[23.976,24,25,29.97,30,50,59.94,60];
+const FS_MEDIA_VID=["mp4","mov","mxf","mts","m2ts"];
+const FS_MEDIA_AUD=["wav","mp3"];
+const FS_MEDIA_IMG=["jpg","jpeg","png","arw"];
+const FS_MEDIA_EXT=[...FS_MEDIA_VID,...FS_MEDIA_AUD,...FS_MEDIA_IMG];
+/* FCP7 rate: NTSC rates 23.976/29.97/59.94 use timebase 24/30/60 + ntsc TRUE; whole rates ntsc FALSE */
+function fsRate(fps){ fps=+fps||24; const ntsc=[23.976,29.97,59.94].includes(fps);
+  const tb= fps===23.976?24: fps===29.97?30: fps===59.94?60: Math.round(fps);
+  return {tb, ntsc, xml:`<rate><timebase>${tb}</timebase><ntsc>${ntsc?"TRUE":"FALSE"}</ntsc></rate>`}; }
+let PPDELIV=[];   /* deliverables editor working state */
+
+/* ── IndexedDB: persist granted directory handles (not serializable to Firestore) ── */
+function fsIdb(){ return new Promise((res,rej)=>{ const r=indexedDB.open("uts-fs-handles",1);
+  r.onupgradeneeded=()=>r.result.createObjectStore("handles");
+  r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function fsPutHandle(key,h){ const d=await fsIdb(); return new Promise((res,rej)=>{
+  const tx=d.transaction("handles","readwrite"); tx.objectStore("handles").put(h,key);
+  tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+async function fsGetHandle(key){ const d=await fsIdb(); return new Promise((res,rej)=>{
+  const tx=d.transaction("handles","readonly"); const q=tx.objectStore("handles").get(key);
+  q.onsuccess=()=>res(q.result||null); q.onerror=()=>rej(q.error); }); }
+async function fsEnsurePerm(h,mode="readwrite"){ if(!h) return false; const o={mode};
+  try{ if((await h.queryPermission(o))==="granted") return true;
+       if((await h.requestPermission(o))==="granted") return true; }catch(e){}
+  return false; }
+
+/* ── structure editor state (mirrors the PF/RI deliverable-editor pattern) ── */
+let FSTRUCT=[];
+function fsEnsureLocked(){ if(!FSTRUCT.some(f=>f.locked)) FSTRUCT.unshift({name:"Raw Footage",on:true,locked:true}); }
+function fsStructForProject(p){
+  if(Array.isArray(p.folderStructurePreset)&&p.folderStructurePreset.length)
+    return p.folderStructurePreset.map(f=>({name:f.name,on:f.on!==false,locked:!!f.locked}));
+  const def=folderPresets.defaultName
+    ? (folderPresets.presets||[]).find(x=>x.name===folderPresets.defaultName) : null;
+  if(def&&Array.isArray(def.folders)&&def.folders.length)
+    return def.folders.map(f=>({name:f.name,on:f.on!==false,locked:!!f.locked}));
+  return FS_DEFAULT_STRUCTURE.map(f=>({...f}));
+}
+function fsStructSync(){
+  const rows=[...document.querySelectorAll(".fs-row")]; if(!rows.length) return;
+  FSTRUCT=rows.map(r=>({ name:r.querySelector(".fs-name").value,
+    on:r.querySelector(".fs-on").checked, locked:r.dataset.locked==="1" }));
+  fsEnsureLocked();
+}
+function fsStructRender(){
+  const box=document.getElementById("fsStructList"); if(!box) return;
+  box.innerHTML=FSTRUCT.map((f,i)=>`
+    <div class="fs-row" data-locked="${f.locked?1:0}" style="display:flex;gap:8px;align-items:center;margin:5px 0">
+      <input type="checkbox" class="fs-on" ${f.on?"checked":""} ${f.locked?"disabled":""}>
+      <input class="fs-name" value="${esc(f.name)}" ${f.locked?"readonly":""} style="flex:1" placeholder="Folder name">
+      ${f.locked
+        ?`<span style="font-size:10px;color:var(--gold-soft);font-family:var(--mono);letter-spacing:.08em">LOCKED</span>`
+        :`<button class="btn ghost mini" data-fs-del="${i}" aria-label="Remove">&#10005;</button>`}
+    </div>`).join("");
+}
+
+/* ── Create Folders modal ── */
+function fsFolderModal(pid){
+  const p=byId(projects,pid); if(!p) return;
+  if(!FS_OK) return showModal(`<h3>Create Folders</h3>
+    <p style="color:var(--dim);font-size:13px;line-height:1.5">This needs the File System Access API,
+    which only works in <b>desktop Chrome or Edge</b> (including this app installed as a desktop PWA).
+    It isn't available in Safari, Firefox, or any phone browser.</p>
+    <div class="modal-actions"><button class="btn ghost" data-close="1">OK</button></div>`);
+  FSTRUCT=fsStructForProject(p);
+  const cName=fsSanitize(clientName(p.clientId))||"Client";
+  const pName=fsSanitize(p.title)||"Project";
+  const mainDefault=`${cName}_${pName}_${p.startISO||todayISO()}`;
+  const presetOpts=(folderPresets.presets||[]).map(x=>
+    `<option value="${esc(x.name)}" ${folderPresets.defaultName===x.name?"selected":""}>${esc(x.name)}${folderPresets.defaultName===x.name?" (default)":""}</option>`).join("");
+  showModal(`<h3>Create Folders</h3>
+    <div class="f"><label>Main folder</label>
+      <input id="fs-main" value="${esc(mainDefault)}">
+      <div class="hint">Client_Project_Date — created on the drive you pick</div></div>
+    <div class="f"><label>Folder structure <span style="color:var(--dim);font-weight:400">— toggle, rename, add</span></label>
+      <div id="fsStructList"></div>
+      <button class="btn ghost mini" data-fs-add="1" style="margin-top:6px">+ ADD FOLDER</button></div>
+    <div class="f"><label>Presets</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select id="fs-preset" style="min-width:140px">${presetOpts||`<option value="">— none saved —</option>`}</select>
+        <button class="btn ghost mini" data-fs-load="1" ${presetOpts?"":"disabled"}>LOAD</button>
+        <button class="btn ghost mini" data-fs-savepreset="1">SAVE AS PRESET</button>
+        <button class="btn ghost mini" data-fs-default="1" ${presetOpts?"":"disabled"}>SET DEFAULT</button>
+      </div>
+      <div class="hint">Save a go-to structure and set one as the default for new projects.</div></div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close="1">CANCEL</button>
+      <button class="btn gold" data-fs-create="${esc(pid)}">CHOOSE DRIVE &amp; CREATE</button>
+    </div>`);
+  fsStructRender();
+}
+
+/* ── presets: stored studio-wide in config/folderPresets ── */
+function fsCurrentFolders(){ fsStructSync();
+  return FSTRUCT.map(f=>({name:fsSanitize(f.name)||f.name,on:f.on!==false,locked:!!f.locked})); }
+async function fsSavePreset(){
+  const name=(prompt("Name this structure preset:")||"").trim(); if(!name) return;
+  const folders=fsCurrentFolders();
+  const presets=[...(folderPresets.presets||[]).filter(x=>x.name!==name),{name,folders}];
+  await guard(()=>setDoc(doc(db,"config","folderPresets"),
+    {presets, defaultName: folderPresets.defaultName||name}), `Preset "${name}" saved`);
+}
+async function fsSetDefaultPreset(){
+  const sel=document.getElementById("fs-preset"); const name=sel&&sel.value; if(!name) return;
+  await guard(()=>setDoc(doc(db,"config","folderPresets"),
+    {presets:folderPresets.presets||[], defaultName:name}), `"${name}" is now the default`);
+}
+function fsLoadPreset(){
+  const sel=document.getElementById("fs-preset"); const name=sel&&sel.value; if(!name) return;
+  const pr=(folderPresets.presets||[]).find(x=>x.name===name); if(!pr) return;
+  FSTRUCT=(pr.folders||[]).map(f=>({name:f.name,on:f.on!==false,locked:!!f.locked}));
+  fsEnsureLocked(); fsStructRender();
+}
+
+/* ── create the tree on disk (idempotent — never overwrites) ── */
+async function fsCreate(pid){
+  const p=byId(projects,pid); if(!p) return;
+  fsStructSync();
+  const main=fsSanitize(document.getElementById("fs-main").value);
+  if(!main) return toast("Give the main folder a name");
+  const folders=[];
+  for(const f of FSTRUCT){ if(f.on){ const n=fsSanitize(f.name); if(n&&!folders.includes(n)) folders.push(n); } }
+  if(!folders.includes("Raw Footage")) folders.unshift("Raw Footage");
+  const key="proj:"+pid;
+  let dest=await fsGetHandle(key);
+  if(dest&&!(await fsEnsurePerm(dest))) dest=null;
+  if(!dest){
+    try{ dest=await window.showDirectoryPicker({mode:"readwrite"}); }
+    catch(e){ return; }                       /* user cancelled the picker */
+    await fsPutHandle(key,dest);
+  }
+  const created=[], existed=[];
+  try{
+    const rootH=await dest.getDirectoryHandle(main,{create:true});
+    for(const name of folders){
+      let there=true;
+      try{ await rootH.getDirectoryHandle(name); }catch(e){ there=false; }
+      await rootH.getDirectoryHandle(name,{create:true});
+      (there?existed:created).push(name);
+    }
+  }catch(e){ console.warn("fsCreate",e); return toast("Couldn't create folders — check drive access"); }
+  const has=n=>folders.includes(n);
+  const patch={
+    folderStructurePreset:FSTRUCT.map(f=>({name:f.name,on:f.on!==false,locked:!!f.locked})),
+    destinationHandleId:key,
+    projectRootFolder:main,
+    rawFolder:main+"/Raw Footage",
+    exportsFolder: has("Exports")?main+"/Exports":(p.exportsFolder??null),
+    premiereProjectFolder: has("Project Assets")?main+"/Project Assets":(p.premiereProjectFolder??null)
+  };
+  await guard(()=>updateDoc(doc(db,"projects",pid),patch));
+  fsSuccess(pid, dest.name, main, created, existed);
+}
+
+/* ── success + optional drive-tracker registration (Feature C, minimal) ── */
+function fsSuccess(pid, destName, main, created, existed){
+  const p=byId(projects,pid);
+  const dr=p&&p.driveId?byId(drives,p.driveId):null;
+  showModal(`<h3>Folders ready</h3>
+    <p style="font-size:13px;color:var(--cream)"><b>${esc(main)}</b> is on your drive.</p>
+    ${created.length?`<div class="hint" style="color:var(--green)">Created: ${created.map(esc).join(", ")}</div>`:""}
+    ${existed.length?`<div class="hint">Already there, left alone: ${existed.map(esc).join(", ")}</div>`:""}
+    <div class="f" style="margin-top:12px"><label>Log to drive tracker</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="fs-drivename" value="${esc(dr?dr.name:destName)}" placeholder="Drive name / label">
+        <button class="btn gold mini" data-fs-linkdrive="${esc(pid)}">${dr?"UPDATE":"LINK DRIVE"}</button>
+      </div>
+      <div class="hint">Browsers can't read a drive's real label or free space, so name it however you track it.${dr?` Currently on <b>${esc(dr.name)}</b>.`:""}</div></div>
+    <div class="modal-actions"><button class="btn ghost" data-close="1">DONE</button></div>`);
+}
+async function fsLinkDrive(pid){
+  const p=byId(projects,pid); if(!p) return;
+  const name=fsSanitize((document.getElementById("fs-drivename")||{}).value)||"External drive";
+  let dr=drives.find(d=>(d.name||"").toLowerCase()===name.toLowerCase());
+  if(!dr){ const ref=await addDoc(collection(db,"drives"),{name,capacityGB:0}); dr={id:ref.id,name}; }
+  await guard(()=>updateDoc(doc(db,"projects",pid),{driveId:dr.id}), `Linked to ${name}`);
+  closeModal(); projectDetail(pid);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CREATE PP PROJECT — reads Raw Footage, builds a Premiere-importable
+   FCP7 (xmeml) XML: bins + a raw/stringout sequence with the footage
+   placed end-to-end + one empty sequence per deliverable. A 15s
+   adjustment layer sits on V3 of every DELIVERABLE (never the raw).
+   ═══════════════════════════════════════════════════════════════ */
+
+/* read every recognized file in the project's Raw Footage folder */
+async function fsReadRaw(rootH){
+  let raw; try{ raw=await rootH.getDirectoryHandle("Raw Footage"); }catch(e){ return []; }
+  const out=[];
+  for await(const [name,h] of raw.entries()){
+    if(h.kind!=="file") continue;
+    const ext=name.split(".").pop().toLowerCase();
+    if(FS_MEDIA_EXT.includes(ext)) out.push({name,handle:h,ext});
+  }
+  return out;
+}
+/* probe duration + resolution via a hidden media element (best effort — HEVC/MXF may not read) */
+function fsProbe(file,ext){ return new Promise(res=>{
+  const isVid=FS_MEDIA_VID.includes(ext), isAud=FS_MEDIA_AUD.includes(ext);
+  if(!isVid&&!isAud){ return res({dur:null,w:null,h:null,kind:"image"}); }
+  const el=document.createElement(isVid?"video":"audio"); el.preload="metadata";
+  const url=URL.createObjectURL(file); let done=false;
+  const finish=o=>{ if(done)return; done=true; try{URL.revokeObjectURL(url);}catch(e){} res(o); };
+  el.onloadedmetadata=()=>finish({dur:isFinite(el.duration)&&el.duration>0?el.duration:null,
+    w:el.videoWidth||null,h:el.videoHeight||null,kind:isVid?"video":"audio"});
+  el.onerror=()=>finish({dur:null,w:null,h:null,kind:isVid?"video":"audio"});
+  setTimeout(()=>finish({dur:null,w:null,h:null,kind:isVid?"video":"audio"}),8000);
+  el.src=url;
+}); }
+
+/* deliverables editor (mirrors the folder-structure editor) */
+function fsDelivForProject(p){
+  const saved=Array.isArray(p.deliverables)?p.deliverables:[];
+  const byName={}; saved.forEach(d=>{ if(d&&d.name) byName[d.name.toLowerCase()]=d; });
+  /* pull the deliverable titles straight from the project's pieces; keep any
+     aspect/fps you set for a matching name last time */
+  const pieces=(p.pieces||[]).map(x=>x&&x.name).filter(Boolean);
+  if(pieces.length) return pieces.map(name=>{ const s=byName[name.toLowerCase()]||{};
+    return {name, aspect:s.aspect||"9x16", fps:+s.fps||24}; });
+  if(saved.length) return saved.map(d=>({name:d.name||"Reel",aspect:d.aspect||"9x16",fps:+d.fps||24}));
+  return [{name:"Reel",aspect:"9x16",fps:24}];
+}
+/* absolute drive path is remembered on the drive-tracker entry (browsers hide it) */
+function fsDriveBasePath(p){
+  const dr=p&&p.driveId?byId(drives,p.driveId):null;
+  return (dr&&dr.basePath)||p.ppBasePath||"";
+}
+function fsDelivSync(){
+  const rows=[...document.querySelectorAll(".pp-row")]; if(!rows.length) return;
+  PPDELIV=rows.map(r=>({ name:r.querySelector(".pp-name").value||"Reel",
+    aspect:r.querySelector(".pp-aspect").value, fps:+r.querySelector(".pp-fps").value||24 }));
+}
+function fsDelivRender(){
+  const box=document.getElementById("ppDelivList"); if(!box) return;
+  box.innerHTML=PPDELIV.map((d,i)=>`
+    <div class="pp-row" style="display:flex;gap:6px;align-items:center;margin:5px 0">
+      <input class="pp-name" value="${esc(d.name)}" placeholder="Name" style="flex:1;min-width:90px">
+      <select class="pp-aspect">${Object.entries(FS_ASPECTS).map(([k,v])=>`<option value="${k}" ${d.aspect===k?"selected":""}>${v.label}</option>`).join("")}</select>
+      <select class="pp-fps">${FS_FPS.map(f=>`<option value="${f}" ${(+d.fps)===f?"selected":""}>${f}</option>`).join("")}</select>
+      <button class="btn ghost mini" data-fs-deliv-del="${i}" aria-label="Remove">&#10005;</button>
+    </div>`).join("");
+}
+
+function fsPPModal(pid){
+  const p=byId(projects,pid); if(!p) return;
+  if(!FS_OK) return showModal(`<h3>Create PP Project</h3>
+    <p style="color:var(--dim);font-size:13px">Desktop Chrome or Edge only (File System Access API).</p>
+    <div class="modal-actions"><button class="btn ghost" data-close="1">OK</button></div>`);
+  if(!p.projectRootFolder) return showModal(`<h3>Create PP Project</h3>
+    <p style="color:var(--dim);font-size:13px">Run <b>Create Folders</b> first — the XML gets written into the project folder and reads from its Raw Footage.</p>
+    <div class="modal-actions"><button class="btn ghost" data-close="1">OK</button></div>`);
+  PPDELIV=fsDelivForProject(p);
+  const adj=p.ppAdjLayer||{};
+  const adjOn=adj.on!==false, adjDur=+adj.dur||15, lutOn=!!adj.lut;
+  showModal(`<h3>Create PP Project</h3>
+    <div class="f"><label>Deliverables <span style="color:var(--dim);font-weight:400">— pulled from this project; set the format for each</span></label>
+      <div id="ppDelivList"></div>
+      <button class="btn ghost mini" data-fs-deliv-add="1" style="margin-top:6px">+ ADD DELIVERABLE</button></div>
+    <div class="f"><label>Drive path <span style="color:var(--dim);font-weight:400">— one-time per drive</span></label>
+      <input id="pp-base" value="${esc(fsDriveBasePath(p))}" placeholder="D:\\UTS">
+      <div class="hint">${fsDriveBasePath(p)
+        ? `Saved for this drive — raw clips will link automatically.`
+        : `The browser hides the absolute path, so paste the drive path holding <b>${esc(p.projectRootFolder)}</b> <b>once</b>. I save it to this drive, and every future project on it links with no typing.`}</div></div>
+    <div class="f"><label class="socialtoggle" style="margin:0">
+      <input type="checkbox" id="pp-adj" ${adjOn?"checked":""}>
+      <span><span class="st-l">Adjustment layer on V3 of each deliverable</span><br>
+      <span class="st-s">deliverables only — never the raw/stringout</span></span></label>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap">
+        <span style="font-size:12px;color:var(--dim)">Duration (s)</span>
+        <input id="pp-adjdur" type="number" min="1" step="1" value="${adjDur}" style="width:70px">
+        <label class="socialtoggle" style="margin:0"><input type="checkbox" id="pp-lut" ${lutOn?"checked":""}><span><span class="st-l">Apply studio LUT</span></span></label>
+      </div>
+      <div class="hint" style="color:var(--gold-soft)">Straight talk: a Lumetri LUT does not survive FCP7-XML — the adjustment layer lands on V3 but the LUT won't come with it. For a LUT baked in automatically I'd build a template <b>.prproj</b> (say the word), or send a real Premiere XML export of your adj-layer+LUT sequence and I'll splice that exact block in.</div></div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close="1">CANCEL</button>
+      <button class="btn gold" data-fs-build="${esc(pid)}">READ RAW &amp; BUILD XML</button></div>`);
+  fsDelivRender();
+}
+
+async function fsBuild(pid){
+  const p=byId(projects,pid); if(!p) return;
+  fsDelivSync(); if(!PPDELIV.length) PPDELIV=[{name:"Reel",aspect:"9x16",fps:24}];
+  const main=p.projectRootFolder; if(!main) return toast("Run Create Folders first");
+  const basePath=(document.getElementById("pp-base")||{}).value||"";
+  const adjOn=!!(document.getElementById("pp-adj")||{}).checked;
+  const adjDur=+((document.getElementById("pp-adjdur")||{}).value)||15;
+  const lutOn=!!(document.getElementById("pp-lut")||{}).checked;
+  const key=p.destinationHandleId||("proj:"+pid);
+  let dest=await fsGetHandle(key);
+  if(dest&&!(await fsEnsurePerm(dest))) dest=null;
+  if(!dest){ try{ dest=await window.showDirectoryPicker({mode:"readwrite"}); }catch(e){ return; } await fsPutHandle(key,dest); }
+  let rootH; try{ rootH=await dest.getDirectoryHandle(main); }
+  catch(e){ return toast(`Can't find "${main}" on this drive — run Create Folders first`); }
+  toast("Reading Raw Footage…");
+  const raw=await fsReadRaw(rootH);
+  const clips=[];
+  for(const it of raw){
+    let meta={dur:null,w:null,h:null,kind:FS_MEDIA_VID.includes(it.ext)?"video":FS_MEDIA_AUD.includes(it.ext)?"audio":"image"};
+    try{ meta=await fsProbe(await it.handle.getFile(), it.ext); }catch(e){}
+    clips.push({name:it.name,ext:it.ext,...meta});
+  }
+  clips.sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
+  const {xml,flagged}=fsBuildXml(p,main,clips,PPDELIV,{basePath,adjOn,adjDur,lutOn});
+  const xmlName=fsSanitize(main)+".xml";
+  try{ const fh=await rootH.getFileHandle(xmlName,{create:true});
+    const w=await fh.createWritable(); await w.write(xml); await w.close(); }
+  catch(e){ console.warn("fsBuild write",e); return toast("Couldn't write the .xml"); }
+  await guard(()=>updateDoc(doc(db,"projects",pid),{
+    deliverables:PPDELIV.map(d=>({name:d.name,aspect:d.aspect,fps:d.fps})),
+    ppBasePath:basePath||null, ppAdjLayer:{on:adjOn,dur:adjDur,lut:lutOn},
+    premiereXmlPath:main+"/"+xmlName, mediaFileCount:clips.length }));
+  if(basePath && p.driveId){ try{ await updateDoc(doc(db,"drives",p.driveId),{basePath}); }catch(e){} }
+  fsBuildDone(pid,xmlName,clips.filter(c=>c.kind!=="audio").length,flagged,adjOn);
+}
+
+/* the generator — returns {xml, flagged[]} */
+function fsBuildXml(p,main,clips,deliverables,opt){
+  const xe=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const NOMINAL=10, flagged=[];
+  const firstVid=clips.find(c=>c.kind==="video"&&c.w&&c.h);
+  const srcW=firstVid?firstVid.w:3840, srcH=firstVid?firstVid.h:2160;
+  const rr=fsRate(24);   /* raw stringout: source spec unknown in-browser → sensible default 24 */
+  /* place video + image clips end-to-end on V1 */
+  let pos=0, fileSeq=0; const seen={}, items=[];
+  clips.forEach((c,i)=>{
+    if(c.kind==="audio") return;
+    const secs=c.dur||(c.kind==="image"?5:NOMINAL);
+    if(!c.dur&&c.kind!=="image") flagged.push(`${c.name} → ${secs}s`);
+    const frames=Math.max(1,Math.round(secs*rr.tb));
+    const start=pos, end=pos+frames; pos=end;
+    let fileBlock;
+    if(seen[c.name]) fileBlock=`<file id="${seen[c.name]}"/>`;
+    else{ const fid="file-"+(++fileSeq); seen[c.name]=fid;
+      const pathurl=opt.basePath
+        ? `<pathurl>file://localhost/${xe(encodeURI(opt.basePath.replace(/\\/g,"/").replace(/\/+$/,"")+"/"+main+"/Raw Footage/"+c.name))}</pathurl>` : "";
+      const media=(c.w&&c.h)
+        ? `<media><video><samplecharacteristics><width>${c.w}</width><height>${c.h}</height></samplecharacteristics></video><audio><channelcount>2</channelcount></audio></media>`
+        : `<media><audio><channelcount>2</channelcount></audio></media>`;
+      fileBlock=`<file id="${fid}"><name>${xe(c.name)}</name>${pathurl}${rr.xml}<duration>${frames}</duration>${media}</file>`;
+    }
+    items.push(`<clipitem id="clipitem-${i+1}"><name>${xe(c.name)}</name><duration>${frames}</duration>${rr.xml}<start>${start}</start><end>${end}</end><in>0</in><out>${frames}</out>${fileBlock}</clipitem>`);
+  });
+  const rawSeq=`<sequence id="sequence-raw"><name>RAW — Stringout</name><duration>${pos}</duration>${rr.xml}<media><video><format><samplecharacteristics>${rr.xml}<width>${srcW}</width><height>${srcH}</height><anamorphic>FALSE</anamorphic><pixelaspectratio>square</pixelaspectratio><fielddominance>none</fielddominance></samplecharacteristics></format><track>${items.join("")}</track></video><audio><format><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate></samplecharacteristics></format><track></track><track></track></audio></media><timecode>${rr.xml}<string>00:00:00:00</string><frame>0</frame><displayformat>NDF</displayformat></timecode></sequence>`;
+
+  const delivSeqs=deliverables.map((d,i)=>{
+    const a=FS_ASPECTS[d.aspect]||FS_ASPECTS["9x16"], dr=fsRate(d.fps);
+    let v3="";
+    if(opt.adjOn){ const f=Math.max(1,Math.round((opt.adjDur||15)*dr.tb));
+      v3=`<track><clipitem id="adj-${i+1}"><name>Adjustment Layer</name><duration>${f}</duration>${dr.xml}<start>0</start><end>${f}</end><in>0</in><out>${f}</out><file id="adjfile-${i+1}"><name>Adjustment Layer</name>${dr.xml}<media><video><samplecharacteristics>${dr.xml}<width>${a.w}</width><height>${a.h}</height></samplecharacteristics></video></media></file></clipitem></track>`; }
+    const vtracks=opt.adjOn?`<track></track><track></track>${v3}`:`<track></track>`;
+    return `<sequence id="sequence-deliv-${i+1}"><name>${xe(d.name||("Deliverable "+(i+1)))}</name><duration>0</duration>${dr.xml}<media><video><format><samplecharacteristics>${dr.xml}<width>${a.w}</width><height>${a.h}</height><anamorphic>FALSE</anamorphic><pixelaspectratio>square</pixelaspectratio><fielddominance>none</fielddominance></samplecharacteristics></format>${vtracks}</video><audio><format><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate></samplecharacteristics></format><track></track><track></track></audio></media><timecode>${dr.xml}<string>00:00:00:00</string><frame>0</frame><displayformat>NDF</displayformat></timecode></sequence>`;
+  }).join("");
+
+  const binNames=Array.isArray(p.folderStructurePreset)
+    ? p.folderStructurePreset.filter(f=>f.on!==false).map(f=>f.name)
+    : ["Raw Footage","Photos","Project Assets","Exports"];
+  const bins=binNames.map(n=>`<bin><name>${xe(n)}</name><children/></bin>`).join("");
+
+  const xml=`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xmeml>
+<xmeml version="4">
+  <project>
+    <name>${xe(main)}</name>
+    <children>
+      ${bins}
+      ${rawSeq}
+      ${delivSeqs}
+    </children>
+  </project>
+</xmeml>`;
+  return {xml,flagged};
+}
+
+function fsBuildDone(pid,xmlName,count,flagged,adjOn){
+  showModal(`<h3>Premiere project built</h3>
+    <p style="font-size:13px;color:var(--cream)"><b>${esc(xmlName)}</b> is in your project folder. In Premiere: <b>File → Import</b> and pick it.</p>
+    <div class="hint">${count} clip${count===1?"":"s"} placed on <b>RAW — Stringout</b>. Each deliverable is its own empty sequence${adjOn?" with a 15s adjustment layer on V3":""}.</div>
+    ${flagged.length?`<div class="hint" style="color:var(--gold-soft)">No duration read (placed at nominal length, not dropped): ${flagged.slice(0,10).map(esc).join(", ")}${flagged.length>10?` +${flagged.length-10} more`:""}</div>`:""}
+    ${adjOn?`<div class="hint">The adjustment layer imports as a clip marking V3; the LUT can't travel through XML — want it baked automatically, I'll build a template .prproj.</div>`:""}
+    <div class="modal-actions"><button class="btn ghost" data-close="1">DONE</button></div>`);
+}
+
+/* ── scoped click handling for the folder feature (own listener, like the rest of the app) ── */
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-fs-folders],[data-fs-pp],[data-fs-add],[data-fs-del],[data-fs-load],[data-fs-savepreset],[data-fs-default],[data-fs-create],[data-fs-linkdrive],[data-fs-deliv-add],[data-fs-deliv-del],[data-fs-build]");
+  if(!t) return;
+  const d=t.dataset;
+  if(d.fsFolders!==undefined) return fsFolderModal(d.fsFolders);
+  if(d.fsPp!==undefined) return fsPPModal(d.fsPp);
+  if(d.fsAdd!==undefined){ fsStructSync(); FSTRUCT.push({name:"",on:true}); return fsStructRender(); }
+  if(d.fsDel!==undefined){ fsStructSync(); FSTRUCT.splice(+d.fsDel,1); fsEnsureLocked(); return fsStructRender(); }
+  if(d.fsDelivAdd!==undefined){ fsDelivSync(); PPDELIV.push({name:"Reel",aspect:"9x16",fps:24}); return fsDelivRender(); }
+  if(d.fsDelivDel!==undefined){ fsDelivSync(); PPDELIV.splice(+d.fsDelivDel,1); if(!PPDELIV.length) PPDELIV.push({name:"Reel",aspect:"9x16",fps:24}); return fsDelivRender(); }
+  if(d.fsBuild!==undefined) return fsBuild(d.fsBuild);
+  if(d.fsLoad!==undefined) return fsLoadPreset();
+  if(d.fsSavepreset!==undefined) return fsSavePreset();
+  if(d.fsDefault!==undefined) return fsSetDefaultPreset();
+  if(d.fsCreate!==undefined) return fsCreate(d.fsCreate);
+  if(d.fsLinkdrive!==undefined) return fsLinkDrive(d.fsLinkdrive);
 });
 
 /* ── boot ── */
