@@ -5650,7 +5650,9 @@ onAuthStateChanged(auth,u=>{
 });
 
 if("serviceWorker" in navigator){
-  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+  let _swReloaded=false;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{ if(!_swReloaded){ _swReloaded=true; location.reload(); } });
+  window.addEventListener("load",async()=>{ try{ const reg=await navigator.serviceWorker.register("sw.js"); reg.update(); }catch(e){} });
 }
 })();
 </script>
