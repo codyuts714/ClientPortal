@@ -1,4 +1,4 @@
-const CACHE = "uts-client-os-v8";
+const CACHE = "uts-client-os-v9";
 const CORE = [
   "./", "./index.html", "./manifest.json", "./favicon.ico",
   "./icons/apple-touch-icon.png", "./icons/icon-192.png", "./icons/icon-512.png",
