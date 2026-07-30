@@ -3617,6 +3617,7 @@ function editorView(name){
    that's already signed in here, and its Send-to-inbound button lands a lead
    on the board. Same file, same data, no collisions. */
 let qbFrame=null, qbReady=false, qbState=null;
+let qbTargetLeadId=null, qbPrefill=null;  /* set when building a proposal FOR a specific inbound lead */
 
 function quoteView(){
   return `<div class="hero"><div><h1>Quote Builder<span>.</span></h1>
@@ -3698,6 +3699,11 @@ function wireQB(tries){
   if(qbState){ try{ Object.assign(w.S,qbState); }catch(e){} }
   if(!hadLocalState) w.loadCloud();
   else { w.fill&&w.fill(); w.render(); sizeQB(); }
+  if(qbPrefill){ try{ w.S.client=w.S.client||{};
+      if(qbPrefill.name) w.S.client.name=qbPrefill.name;
+      if(qbPrefill.proj) w.S.client.proj=qbPrefill.proj;
+      w.fill&&w.fill(); w.render&&w.render(); sizeQB();
+    }catch(e){} qbPrefill=null; }
   clearInterval(wireQB._t);
   wireQB._t=setInterval(()=>{ if(qbFrame&&qbFrame.isConnected) captureQB(); },1500);
   sizeQB(); setTimeout(sizeQB,400);
@@ -3731,6 +3737,23 @@ function sizeQB(){
 /* a finished quote becomes a lead sitting at Proposal Out */
 async function leadFromQuote(q){
   const now=new Date().toISOString();
+  /* building for an existing inbound lead → attach the quote to it, don't duplicate */
+  if(qbTargetLeadId){
+    const target=qbTargetLeadId, l=byId(leads,target); qbTargetLeadId=null;
+    if(l){
+      const quote={number:q.quoteNumber||"",value:q.value||0,deposit:q.deposit||0,
+        scope:q.scope||"",package:q.package||"",usage:q.usage||"",
+        expires:q.expires||"",link:q.quoteLink||"",quotedAt:q.quotedAt||now};
+      const quoteLines=(q.deliverables||[]).map(d=>({name:d.name,qty:d.qty||1,optional:!!d.optional}));
+      const touch={at:now,type:"Quote sent",
+        note:`${q.package||"Custom build"} · ${money(q.value||0)}${q.usage?" · "+q.usage:""}`,sys:true};
+      await guard(()=>updateDoc(doc(db,"projects",target),
+        {leadStage:"proposal",quote,quoteLines,touches:[...(l.touches||[]),touch]}),null);
+      toast("Proposal attached to "+(l.name||"lead"));
+      view="inbound"; paint();
+      return;
+    }
+  }
   const lead={
     pipeline:"lead", leadStage:q.leadStage||"proposal",
     clientId:null, editor:null,
@@ -3752,6 +3775,20 @@ async function leadFromQuote(q){
   await addDoc(collection(db,"projects"),lead);
   toast("On the inbound board at Proposal Out");
 }
+
+/* CREATE PROPOSAL on a lead → open the builder prefilled + attach the result back to that lead */
+function startProposalForLead(id){
+  const l=byId(leads,id); if(!l) return;
+  qbTargetLeadId=id;
+  qbPrefill={ name:l.name||"", proj:l.ask||"" };
+  qbState=null;                 /* fresh builder for this lead */
+  view="quote"; openClient=null; paint();
+  toast("Building a proposal for "+(l.name||"lead"));
+}
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-lead-proposal]"); if(!t) return;
+  startProposalForLead(t.dataset.leadProposal);
+});
 
 document.addEventListener("click",e=>{
   const t=e.target.closest("[data-qbreload]");
@@ -4372,6 +4409,7 @@ function leadCard(l){
       ${l.firstReplyAt?"":`<button class="btn outline mini" data-lead-tmpl="${esc(l.id)}">TEMPLATES</button>`}
       <button class="btn ghost mini" data-lead-hist="${esc(l.id)}">HISTORY</button>
       <button class="btn ghost mini" data-lead-edit="${esc(l.id)}">EDIT</button>
+      <button class="btn outline mini" data-lead-proposal="${esc(l.id)}">${l.quote&&l.quote.number?"EDIT PROPOSAL":"CREATE PROPOSAL"}</button>
       ${l.leadStage==="proposal"?`<button class="btn gold mini" data-lead-won="${esc(l.id)}">WON &rarr;</button>`:""}
       <button class="btn ghost mini" data-lead-lost="${esc(l.id)}">LOST</button>
     </div>
@@ -5730,7 +5768,7 @@ document.addEventListener("click",e=>{
   if(d.login){ doLogin(); return; }
   if(d.reset){ doReset(); return; }
   if(d.logout){ doLogout(); return; }
-  if(d.view){ view=d.view; openClient=null; driveSearch=""; paint(); return; }
+  if(d.view){ if(d.view==="quote"){ qbTargetLeadId=null; qbPrefill=null; } view=d.view; openClient=null; driveSearch=""; paint(); return; }
   if(d.asedit!==undefined){ asEditor=previewEditor||editorNames()[0]||null; if(asEditor) paint(); else toast("Add an editor first"); return; }
   if(d.exitedit!==undefined){ asEditor=null; paint(); return; }
   if(d.export){ d.export==="csv"?exportCSV():exportJSON(); return; }
