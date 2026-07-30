@@ -687,6 +687,24 @@ footer{text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.
 .sel.mini{padding:4px 7px;font-size:11px;min-width:0;height:auto}
 select.bkt{font-family:var(--mono);font-weight:600;letter-spacing:.02em}
 
+/* Create Folders / Create PP Project editor rows — readable, padded inputs */
+.fs-row,.pp-row{gap:8px;align-items:center}
+.fs-row input.fs-name,.pp-row input.pp-name{flex:1;min-width:0;background:var(--panel);color:var(--cream);
+  border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-family:var(--body);font-size:14px;outline:none}
+.fs-row input.fs-name:focus,.pp-row input.pp-name:focus{border-color:var(--gold)}
+.fs-row input.fs-name::placeholder,.pp-row input.pp-name::placeholder{color:var(--dim)}
+.pp-row select{flex:none;font-size:12.5px;padding:9px 10px}
+.fs-row input[type=checkbox].fs-on{width:20px;height:20px;flex:none;accent-color:var(--gold);margin:0}
+.fs-row .btn.mini,.pp-row .btn.mini{flex:none}
+#fs-main,#pp-base,#fs-dest,#pp-dest,#fs-drivename{width:100%;background:var(--panel);color:var(--cream);
+  border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-family:var(--body);font-size:14px;outline:none}
+#fs-main:focus,#pp-base:focus{border-color:var(--gold)}
+@media (max-width:560px){
+  .fs-row,.pp-row{flex-wrap:wrap}
+  .pp-row input.pp-name{flex-basis:100%}
+  .pp-row select{flex:1;min-width:0}
+}
+
 </style>
 <script type="text/plain" id="qbSrc"><!DOCTYPE html>
 <html lang="en">
@@ -1768,7 +1786,7 @@ fill(); fillRights(); setTab('build');
 <script>
 /* Fallback if config/settings.js failed to load (e.g. 404 on the host): keep whatever it
    defined, otherwise default to demo mode so the app still loads instead of white-screening. */
-window.CFG = window.CFG || { apiKey:"PASTE_YOUR_KEY", authDomain:"", projectId:"", storageBucket:"", messagingSenderId:"", appId:"" };
+window.CFG = window.CFG || { apiKey:"AIzaSyARSyOP-sfro2C24vsuzRsMpg8KDHLXOgI", authDomain:"uts-studio-brain.firebaseapp.com", projectId:"uts-studio-brain", storageBucket:"uts-studio-brain.firebasestorage.app", messagingSenderId:"428521283913", appId:"1:428521283913:web:4b890d0af456cfe686ba98", measurementId:"G-S3KBLZZVJZ" };
 window.APP_VERSION = window.APP_VERSION || "0";
 window.FEATURES = window.FEATURES || {};
 if(window.CFG && String(window.CFG.apiKey||"").startsWith("PASTE")){
@@ -6299,6 +6317,8 @@ onAuthStateChanged(auth,u=>{
 });
 
 if("serviceWorker" in navigator){
+  let _swReloading=false;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{ if(_swReloading) return; _swReloading=true; location.reload(); });
   window.addEventListener("load",async()=>{ try{ const reg=await navigator.serviceWorker.register("sw.js"); reg.update(); }catch(e){} });
 }
 })();
