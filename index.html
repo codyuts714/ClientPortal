@@ -2,6 +2,27 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<script>
+/* TEMP diagnostic: surface uncaught errors on screen instead of a white page */
+(function(){
+  function show(msg){
+    try{
+      var d=document.getElementById("__errbox");
+      if(!d){ d=document.createElement("div"); d.id="__errbox";
+        d.style.cssText="position:fixed;z-index:2147483647;left:0;right:0;top:0;padding:14px 16px;background:#2a0d0d;color:#ffd6d6;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;max-height:70vh;overflow:auto;border-bottom:2px solid #ff5a5a";
+        (document.body||document.documentElement).appendChild(d); }
+      d.textContent="\u26A0 App error \u2014 copy this to Claude:\n\n"+msg;
+    }catch(e){}
+  }
+  window.addEventListener("error",function(e){
+    var stack=e.error&&e.error.stack?"\n"+e.error.stack:"";
+    show((e.message||(e.error&&e.error.message)||"error")+(e.filename?"\n@ "+e.filename+":"+e.lineno+":"+e.colno:"")+stack);
+  });
+  window.addEventListener("unhandledrejection",function(e){
+    var r=e.reason; show("Unhandled promise rejection:\n"+((r&&r.stack)||(r&&r.message)||String(r)));
+  });
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Under The Sun Studios — Client OS</title>
 
@@ -5650,8 +5671,6 @@ onAuthStateChanged(auth,u=>{
 });
 
 if("serviceWorker" in navigator){
-  let _swReloaded=false;
-  navigator.serviceWorker.addEventListener("controllerchange",()=>{ if(!_swReloaded){ _swReloaded=true; location.reload(); } });
   window.addEventListener("load",async()=>{ try{ const reg=await navigator.serviceWorker.register("sw.js"); reg.update(); }catch(e){} });
 }
 })();
