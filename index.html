@@ -692,8 +692,6 @@ select.bkt{font-family:var(--mono);font-weight:600;letter-spacing:.02em}
 .pp-row input.pp-name{min-width:220px}
 
 /* ── Content Ideas ── */
-.idea-quick{display:flex;gap:8px;align-items:center;margin:2px 0 12px}
-.idea-quick input{flex:1;min-width:0}
 .idea{border:1px solid var(--line-soft);border-radius:10px;margin:8px 0;overflow:hidden;background:rgba(255,255,255,.012)}
 .idea.open{border-color:var(--line);background:rgba(242,201,76,.04)}
 .idea-head{display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer;user-select:none}
@@ -709,15 +707,20 @@ select.bkt{font-family:var(--mono);font-weight:600;letter-spacing:.02em}
 .idea-pill.st-used{color:var(--green);border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.08)}
 .idea-meta{font-family:var(--mono);font-size:10px;color:var(--dim);white-space:nowrap}
 .idea-body{padding:0 12px 12px;border-top:1px solid var(--line-soft)}
-.idea-notes{width:100%;min-height:170px;resize:vertical;margin-top:10px;
-  background:var(--panel,#111318);color:var(--cream);border:1px solid var(--line);border-radius:9px;
-  padding:11px 12px;font-family:var(--mono);font-size:12.5px;line-height:1.65;white-space:pre-wrap}
+.idea-notes{width:100%;min-height:210px;resize:vertical;margin-top:10px;
+  background:var(--panel);color:var(--cream);border:1px solid var(--line);border-radius:9px;
+  padding:12px 13px;font-family:var(--mono);font-size:13px;line-height:1.7;white-space:pre-wrap}
 .idea-notes:focus{outline:none;border-color:var(--gold-soft)}
+.idea-notes-lg{min-height:360px}
+.idea-title-input{width:100%;background:var(--panel);color:var(--cream);border:1px solid var(--line);
+  border-radius:9px;padding:11px 13px;font-family:var(--body);font-size:15px;font-weight:600;margin-bottom:2px}
+.idea-title-input:focus{outline:none;border-color:var(--gold-soft)}
+.idea-compose{border-color:var(--gold-soft);background:rgba(242,201,76,.05)}
 .idea-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:9px}
 .idea-statwrap{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.05em;
   text-transform:uppercase;display:flex;gap:7px;align-items:center}
 .idea-statwrap .sel{text-transform:none;letter-spacing:0}
-@media (max-width:560px){.idea-title{flex-basis:100%;order:-1}.idea-meta{display:none}}
+@media (max-width:560px){.idea-title{flex-basis:100%;order:-1}.idea-meta{display:none}.idea-notes-lg{min-height:300px}}
 
 /* ── Studio Inventory ── */
 .inv-subt{font-family:var(--mono);font-size:10.5px;color:var(--dim)}
@@ -1887,49 +1890,49 @@ if (!CONFIGURED || loadError) {
 const INVENTORY_SEED=[
   /* Storage */
   {name:"Synology DS1525+",category:"Storage",qty:1,value:1135},
-  {name:"Synology E10G22-T1-Mini 10GbE Network Module",category:"Storage",qty:1,value:110},
+  {name:"Synology E10G22-T1-Mini 10GbE Module",category:"Storage",qty:1,value:110},
   {name:"Seagate IronWolf Pro 12TB HDD",category:"Storage",qty:2,value:460},
-  {name:"Samsung T7 4TB Portable SSD",category:"Storage",qty:1,value:900},
-  {name:"Samsung T7 2TB Portable SSD",category:"Storage",qty:2,value:400},
-  {name:"Crucial X10 Pro 2TB Portable SSD",category:"Storage",qty:1,value:400},
-  {name:"Crucial X9 Pro 4TB Portable SSD",category:"Storage",qty:1,value:270},
-  {name:"Crucial X9 Pro 1TB Portable SSD",category:"Storage",qty:1,value:135},
-  {name:"Crucial T710 PCIe Gen5 NVMe 1TB SSD",category:"Storage",qty:2,value:250},
+  {name:"Samsung T7 4TB",category:"Storage",qty:1,value:900},
+  {name:"Samsung T7 2TB",category:"Storage",qty:2,value:400},
+  {name:"Crucial X10 Pro 2TB",category:"Storage",qty:1,value:400},
+  {name:"Crucial X9 Pro 4TB",category:"Storage",qty:1,value:270},
+  {name:"Crucial X9 Pro 1TB",category:"Storage",qty:1,value:135},
+  {name:"Crucial T710 PCIe Gen5 NVMe 1TB",category:"Storage",qty:2,value:250},
   /* Computer / Office */
   {name:"MSI MAG Z790 Tomahawk WiFi Motherboard",category:"Computer / Office",qty:1,value:300},
   {name:"Intel Core i9-13900K",category:"Computer / Office",qty:1,value:600},
   {name:"NVIDIA GeForce RTX 4070",category:"Computer / Office",qty:1,value:700},
-  {name:"G.SKILL Ripjaws S5 DDR5 96GB (2×48GB)",category:"Computer / Office",qty:1,value:1400},
-  {name:"Corsair iCUE H150i Elite CAPELLIX XT 360mm AIO Cooler",category:"Computer / Office",qty:1,value:230},
+  {name:"G.SKILL Ripjaws S5 DDR5 96GB",category:"Computer / Office",qty:1,value:1400},
+  {name:"Corsair iCUE H150i Elite CAPELLIX XT 360mm Cooler",category:"Computer / Office",qty:1,value:230},
   {name:"Corsair SP120 RGB Elite Triple Fan Kit",category:"Computer / Office",qty:1,value:80},
   {name:"Desktop PC Case",category:"Computer / Office",qty:1,value:100},
   {name:"Samsung ViewFinity S5 34\" Ultrawide Monitor",category:"Computer / Office",qty:1,value:330},
-  {name:"Dell UltraSharp U2412M Monitor",category:"Computer / Office",qty:1,value:170},
+  {name:"Dell UltraSharp U2412M",category:"Computer / Office",qty:1,value:170},
   {name:"PreSonus Eris 4.5BT Studio Monitors",category:"Computer / Office",qty:1,value:160},
-  {name:"MacBook Pro 14\" M1 Pro (16GB RAM)",category:"Computer / Office",qty:1,value:1200},
+  {name:"MacBook Pro 14\" M1 Pro 16GB",category:"Computer / Office",qty:1,value:1200},
   /* Camera / Production */
   {name:"Sony A7S III",category:"Camera / Production",qty:1,value:3500},
   {name:"Sony FX30",category:"Camera / Production",qty:1,value:1600},
   {name:"Sony FE 16-35mm",category:"Camera / Production",qty:1,value:1300},
-  {name:"Sony FE PZ 28-135mm f/4 G OSS",category:"Camera / Production",qty:1,value:2800},
+  {name:"Sony FE PZ 28-135mm f/4",category:"Camera / Production",qty:1,value:1800},
   {name:"Sigma 24-70mm f/2.8 DG DN Art",category:"Camera / Production",qty:1,value:1100},
-  {name:"Canon EF 8-15mm f/4L Fisheye",category:"Camera / Production",qty:1,value:900},
+  {name:"Canon EF 8-15mm Fisheye",category:"Camera / Production",qty:1,value:900},
   {name:"Helios 44 (Sony E Adapted)",category:"Camera / Production",qty:1,value:150},
-  {name:"Tiltaing Camera Cage TA-T18-E Kit",category:"Camera / Production",qty:1,value:389},
-  {name:"Tilta Mini Matte Box MB-T15 Kit",category:"Camera / Production",qty:1,value:99},
+  {name:"Tilta Camera Cage TA-T18-E",category:"Camera / Production",qty:1,value:389},
+  {name:"Tilta Mini Matte Box",category:"Camera / Production",qty:1,value:99},
   {name:"ND Filter (24-70mm)",category:"Camera / Production",qty:1,value:100},
   {name:"ND Filter (28-135mm)",category:"Camera / Production",qty:1,value:200},
   {name:"Tripod",category:"Camera / Production",qty:1,value:150},
+  {name:"DJI RS 4 Pro",category:"Camera / Production",qty:2,value:870},
+  {name:"DJI Mic 3 Set",category:"Camera / Production",qty:2,value:330},
   {name:"DJI Mavic 3 Pro",category:"Camera / Production",qty:1,value:2200},
-  {name:"DJI Mavic 3 Pro Intelligent Flight Battery",category:"Camera / Production",qty:1,value:190},
-  {name:"DJI Mavic Fast Charger",category:"Camera / Production",qty:1,value:100},
+  {name:"Extra Mavic Battery",category:"Camera / Production",qty:1,value:190},
+  {name:"Mavic Fast Charger",category:"Camera / Production",qty:1,value:100},
   {name:"DJI Avata 2 (5 Batteries)",category:"Camera / Production",qty:1,value:1650},
   {name:"DJI FPV Controller 2",category:"Camera / Production",qty:1,value:200},
-  {name:"DJI RS 4 Pro Gimbal",category:"Camera / Production",qty:2,value:870},
-  {name:"DJI Mic 3 (2-TX Combo)",category:"Camera / Production",qty:2,value:330},
-  {name:"C-Stand",category:"Camera / Production",qty:3,value:130},
-  {name:"Godox 150W RGB Video Light",category:"Camera / Production",qty:1,value:350},
+  {name:"Godox 150 RGB Video Light",category:"Camera / Production",qty:1,value:350},
   {name:"Amaran 100d",category:"Camera / Production",qty:1,value:180},
+  {name:"C-Stand",category:"Camera / Production",qty:3,value:130},
   {name:"Hi8 Camcorder",category:"Camera / Production",qty:1,value:200}
 ];
 const INV_CATEGORIES=["Storage","Computer / Office","Camera / Production","Audio","Lighting","Grip / Support","Other"];
@@ -2142,6 +2145,8 @@ let clients=[], projects=[], invoices=[], payables=[], activity=[], users=[];
 let leads=[];
 let drives=[];               /* hard-drive tracker */
 let inventory=[];            /* studio inventory — insurance schedule */
+let invLoaded=false;         /* true once the first inventory snapshot has arrived (guards auto-seed) */
+let _invSeeding=false;       /* prevents concurrent auto-seed writes */
 let folderPresets={presets:[],defaultName:null};  /* config/folderPresets — saved "go-to" folder structures */
 let settings={}, smsPub={};   /* config/sms (owner only) + config/public (everyone) */
 let view="owner", previewClient=null, previewEditor=null;
@@ -2152,6 +2157,7 @@ let openProject=null, projFilter="all", projClient="all";
 let openClient=null;         /* owner drilled into a client's detail page */
 let openIdeas=new Set();      /* content-idea ids expanded on a client detail page */
 let ideaBuf={};              /* ideaId -> in-flight notes text so re-renders don't lose typing */
+let ideaDraft=null;          /* {cid,title,notes,status} while composing a new idea inline */
 let dbTab="clients";         /* Client Database sub-tab: clients | health */
 let readyTab="ready";        /* ready-to-post section: ready | archive */
 let driveSearch="";          /* drive tracker project search query */
@@ -2667,7 +2673,7 @@ async function loadFor(user){
     unsubs.push(live(collection(db,"invoices"), v=>invoices=v));
     unsubs.push(live(collection(db,"payables"), v=>payables=v));
     unsubs.push(live(collection(db,"drives"),   v=>drives=v));
-    unsubs.push(live(collection(db,"inventory"),v=>inventory=v));
+    unsubs.push(live(collection(db,"inventory"),v=>{ inventory=v; invLoaded=true; maybeSeedInventory(); }));
     unsubs.push(live(collection(db,"activity"), v=>activity=v.sort((a,b)=>(b.ts||0)-(a.ts||0))));
     unsubs.push(live(collection(db,"users"),    v=>users=v.map(u=>({...u,email:u.id}))));
   }
@@ -3013,8 +3019,8 @@ async function removeAccess(email){
 /* ═══════════ MODALS ═══════════ */
 const M=()=>document.getElementById("modal");
 function closeModal(){ openProject=null; M().innerHTML=""; }
-function showModal(html){
-  M().innerHTML=`<div class="modal-wrap" data-close="1"><div class="modal">
+function showModal(html,wide){
+  M().innerHTML=`<div class="modal-wrap" data-close="1"><div class="modal${wide?" wide":""}">
     <button class="x" data-close="1" aria-label="Close">✕</button>${html}</div></div>`;
 }
 const clientOpts=sel=>clients.map(c=>`<option value="${esc(c.id)}" ${sel===c.id?"selected":""}>${esc(c.name)}</option>`).join("");
@@ -5498,15 +5504,27 @@ function contentIdeasSection(c){
         </div>
       </div>`:""}
     </div>`;}).join("")
-    :`<div style="font-size:13px;color:var(--dim)">No ideas captured yet. Type a title above and hit <b>Add</b> — then click it open to paste in scripts and notes.</div>`;
+    :`<div style="font-size:13px;color:var(--dim)">No ideas captured yet. Hit <b>+ Add Idea</b> to jot a title and paste in scripts or notes — click any idea afterward to open and edit it.</div>`;
+  const composing=ideaDraft&&ideaDraft.cid===c.id;
+  const composeBlock=composing?`<div class="idea open idea-compose">
+      <div class="idea-body" style="border-top:none;padding-top:12px">
+        <input id="idraft-title" class="idea-title-input" data-draft-field="title" value="${esc(ideaDraft.title||"")}" placeholder="Idea title — e.g. “3 signs your claim is being lowballed”">
+        <textarea id="idraft-notes" class="idea-notes idea-notes-lg" data-draft-field="notes" placeholder="Hook, script, shot list, links… paste anything. This is where the idea actually lives, so drop it all in here.">${esc(ideaDraft.notes||"")}</textarea>
+        <div class="idea-tools">
+          <label class="idea-statwrap">Status
+            <select class="sel" data-draft-status="1">
+              ${Object.entries(IDEA_STATUS).map(([k,v])=>`<option value="${k}" ${(ideaDraft.status||"idea")===k?"selected":""}>${v}</option>`).join("")}
+            </select></label>
+          <span class="spacer"></span>
+          <button class="btn ghost mini" data-idea-cancel="1">CANCEL</button>
+          <button class="btn gold mini" data-idea-savedraft="${esc(c.id)}">SAVE IDEA</button>
+        </div>
+      </div>
+    </div>`:"";
   return `<section class="panel"><div class="eyebrow">Content Ideas &mdash; ${ideas.length}
       <span class="spacer"></span>
-      <button class="btn outline mini" data-form="idea" data-client="${esc(c.id)}">+ IDEA WITH NOTES</button></div>
-    <div class="idea-quick">
-      <input id="ci-quick-${esc(c.id)}" placeholder="New idea title — e.g. &ldquo;3 signs your claim is being lowballed&rdquo;"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('[data-ci-quickadd=&quot;${esc(c.id)}&quot;]').click();}">
-      <button class="btn gold" data-ci-quickadd="${esc(c.id)}">ADD</button>
-    </div>
+      ${composing?"":`<button class="btn gold mini" data-idea-new="${esc(c.id)}">+ ADD IDEA</button>`}</div>
+    ${composeBlock}
     ${rows}
   </section>`;
 }
@@ -5518,13 +5536,13 @@ function ideaForm(cid,id){
     <div class="f"><label>Status</label>
       <select id="if-status" class="sel">${Object.entries(IDEA_STATUS).map(([k,v])=>`<option value="${k}" ${(it.status||"idea")===k?"selected":""}>${v}</option>`).join("")}</select></div>
     <div class="f"><label>Notes / script</label>
-      <textarea id="if-notes" class="idea-notes" placeholder="Hook, script, shot list, links… paste anything.">${esc(it.notes||"")}</textarea></div>
+      <textarea id="if-notes" class="idea-notes idea-notes-lg" placeholder="Hook, script, shot list, links… paste anything — this box scrolls, so write as much as you want.">${esc(it.notes||"")}</textarea></div>
   </div>
   <div class="actions">
     ${id?`<button class="btn ghost danger" data-ci-del="${esc(cid)}:${esc(id)}">DELETE</button>`:""}
     <button class="btn ghost" data-close="1">CANCEL</button>
     <button class="btn gold" data-save-idea="${esc(cid)}:${esc(id||"")}">${id?"SAVE":"ADD IDEA"}</button>
-  </div>`);
+  </div>`,true);
 }
 async function saveIdeaForm(cid,id){
   const title=fv("if-title"); if(!title) return toast("Give the idea a title");
@@ -5537,12 +5555,29 @@ async function saveIdeaForm(cid,id){
   await saveIdeas(cid,ideas,id?"Idea updated":"Idea added");
   closeModal();
 }
-async function quickAddIdea(cid){
-  const el=document.getElementById("ci-quick-"+cid); const title=(el?.value||"").trim();
-  if(!title) return toast("Type a title first");
-  const c=byId(clients,cid)||{}; const nid=uid();
-  const ideas=[...ideasOf(c),{id:nid,title,status:"idea",notes:""}];
-  openIdeas.add(nid);
+function startIdeaDraft(cid){
+  ideaDraft={cid,title:"",notes:"",status:"idea"};
+  paint();
+  const el=document.getElementById("idraft-title"); if(el) el.focus();
+}
+function syncIdeaDraft(){
+  if(!ideaDraft) return;
+  const t=document.getElementById("idraft-title"), n=document.getElementById("idraft-notes");
+  if(t) ideaDraft.title=t.value;
+  if(n) ideaDraft.notes=n.value;
+}
+function cancelIdeaDraft(){
+  const hasContent=ideaDraft&&((ideaDraft.title||"").trim()||(ideaDraft.notes||"").trim());
+  if(hasContent&&!confirm("Discard this idea?")) return;
+  ideaDraft=null; paint();
+}
+async function saveIdeaDraft(cid){
+  syncIdeaDraft();
+  const title=(ideaDraft?.title||"").trim();
+  if(!title) return toast("Give the idea a title");
+  const c=byId(clients,cid)||{};
+  const ideas=[...ideasOf(c),{id:uid(),title,status:ideaDraft.status||"idea",notes:ideaDraft.notes||""}];
+  ideaDraft=null;
   await saveIdeas(cid,ideas,"Idea added");
 }
 function toggleIdea(cid,id){
@@ -5642,8 +5677,9 @@ function inventoryView(){
     return `${backBar("Studio Inventory")}
     <div class="hero"><div><h1>Inventory<span>.</span></h1><div class="sub">Gear &amp; replacement values for insurance</div></div></div>
     <section class="panel"><div class="empty-state">
-      <div class="t">No inventory yet</div>
-      <div class="s">Load your starter list (${INVENTORY_SEED.length} items, ${money(INVENTORY_SEED.reduce((s,it)=>s+it.qty*it.value,0))}) to get going,<br>then add serial numbers and new gear as you buy it.</div>
+      <div class="t">Loading your inventory…</div>
+      <div class="s">Your ${INVENTORY_SEED.length}-item starter list (${money(INVENTORY_SEED.reduce((s,it)=>s+it.qty*it.value,0))}) loads automatically.<br>
+        If it stays empty, Firestore is blocking the <b>inventory</b> collection — add it to your rules, then tap below.</div>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px">
         <button class="btn gold" data-invseed="1">LOAD STARTER INVENTORY</button>
         <button class="btn outline" data-form="invitem">+ ADD ONE ITEM</button>
@@ -5755,6 +5791,27 @@ async function seedInventory(){
   await guard(async()=>{
     for(const it of INVENTORY_SEED){ await addDoc(collection(db,"inventory"),{...it,serial:"",notes:""}); }
   },"Starter inventory loaded");
+}
+/* Auto-load: the moment an owner's empty inventory finishes loading, write the
+   starter list once (ever) so the tab is always populated — no button press.
+   Runs only after the first snapshot (invLoaded) so we never double-seed, and
+   records a flag in config/tracking so it won't refill a list you emptied on
+   purpose. If Firestore rules block writes it stays un-flagged and retries. */
+async function maybeSeedInventory(){
+  if(_invSeeding) return;
+  if(!me||me.role!=="owner"||asEditor) return;   /* owner only */
+  if(!invLoaded) return;                          /* wait for the real snapshot */
+  if(inventory.length) return;                    /* already has data */
+  if(tracking&&tracking.inventorySeeded) return;  /* seeded before, then intentionally emptied */
+  _invSeeding=true;
+  try{
+    for(const it of INVENTORY_SEED){ await addDoc(collection(db,"inventory"),{...it,serial:"",notes:""}); }
+    try{ await setDoc(doc(db,"config","tracking"),{inventorySeeded:true},{merge:true}); }catch(e){}
+    toast("Inventory loaded");
+  }catch(e){
+    _invSeeding=false;   /* likely a rules permission error — allow a later retry */
+    if(e&&e.code==="permission-denied") toast("Inventory blocked by Firestore rules");
+  }
 }
 function exportInventoryCSV(){
   const esc2=v=>{ v=String(v??""); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; };
@@ -6093,11 +6150,11 @@ function paint(){
     <button class="tab ${view==="owner"?"on":""}" data-view="owner">Studio</button>
     <button class="tab ${view==="inbound"?"on":""}" data-view="inbound">Inbound${leads.filter(l=>!l.firstReplyAt).length?` <span style="color:var(--gold)">&bull;</span>`:""}</button>
     <button class="tab ${view==="drives"?"on":""}" data-view="drives">Drives</button>
-    <button class="tab ${view==="inventory"?"on":""}" data-view="inventory">Inventory</button>
     <button class="tab ${view==="money"?"on":""}" data-view="money">Money</button>
     <button class="tab ${view==="quote"?"on":""}" data-view="quote">Quote Builder</button>
     <button class="tab ${view==="editor"?"on":""}" data-view="editor">Editor</button>
-    <button class="tab ${view==="client"?"on":""}" data-view="client">Client</button>`:"";
+    <button class="tab ${view==="client"?"on":""}" data-view="client">Client</button>
+    <button class="tab ${view==="inventory"?"on":""}" data-view="inventory">Inventory</button>`:"";
   const pickers=impersonate?"":isOwner&&view==="client"&&clients.length
     ? `<select id="cSel">${clients.map(c=>`<option value="${esc(c.id)}" ${previewClient===c.id?"selected":""}>${esc(c.name)}</option>`).join("")}</select>`
     : isOwner&&view==="editor"&&editorNames().length
@@ -6148,11 +6205,12 @@ function paint(){
   if(view==="quote"&&me.role==="owner") mountQB();
   if(openProject) renderDetail();
   fireAlerts();
+  maybeSeedInventory();
 }
 
 /* ── events ── */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test],[data-openclient],[data-postnow],[data-unpost],[data-readytab],[data-dbtab],[data-save-drive],[data-del-drive],[data-save-log],[data-del-log],[data-backto],[data-asedit],[data-exitedit],[data-export],[data-eom],[data-bank],[data-ci-toggle],[data-ci-quickadd],[data-ci-save],[data-ci-del],[data-save-idea],[data-save-invitem],[data-del-invitem],[data-openinv],[data-invexport],[data-invseed]");
+  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test],[data-openclient],[data-postnow],[data-unpost],[data-readytab],[data-dbtab],[data-save-drive],[data-del-drive],[data-save-log],[data-del-log],[data-backto],[data-asedit],[data-exitedit],[data-export],[data-eom],[data-bank],[data-ci-toggle],[data-ci-quickadd],[data-ci-save],[data-ci-del],[data-save-idea],[data-idea-new],[data-idea-cancel],[data-idea-savedraft],[data-save-invitem],[data-del-invitem],[data-openinv],[data-invexport],[data-invseed]");
   if(!t) return;
   const d=t.dataset;
   if(d.close!==undefined){ if(t===e.target||t.tagName==="BUTTON") closeModal(); return; }
@@ -6174,7 +6232,9 @@ document.addEventListener("click",e=>{
   if(d.unpost){ const [id,i]=d.unpost.split(":"); markUnposted(id,+i); return; }
   if(d.backto){ openProject=byId(projects,d.backto)?d.backto:null; renderDetail(); return; }
   if(d.ciToggle){ const [cid,iid]=d.ciToggle.split(":"); return toggleIdea(cid,iid); }
-  if(d.ciQuickadd){ return quickAddIdea(d.ciQuickadd); }
+  if(d.ideaNew){ return startIdeaDraft(d.ideaNew); }
+  if(d.ideaCancel!==undefined){ return cancelIdeaDraft(); }
+  if(d.ideaSavedraft){ return saveIdeaDraft(d.ideaSavedraft); }
   if(d.ciSave){ const [cid,iid]=d.ciSave.split(":"); return saveIdeaNotes(cid,iid); }
   if(d.ciDel){ const [cid,iid]=d.ciDel.split(":"); return removeIdea(cid,iid); }
   if(d.form==="idea") return ideaForm(d.client||openClient||null,d.id||null);
@@ -6228,6 +6288,7 @@ document.addEventListener("click",e=>{
 document.addEventListener("change",e=>{
   if(e.target.dataset.retoggle!==undefined) riToggle();
   if(e.target.dataset.ciStatus){ const [cid,iid]=e.target.dataset.ciStatus.split(":"); setIdeaStatus(cid,iid,e.target.value); }
+  if(e.target.dataset.draftStatus!==undefined&&ideaDraft){ ideaDraft.status=e.target.value; }
   if(e.target.id==="cSel"){ previewClient=e.target.value; paint(); }
   if(e.target.id==="eSel"){ previewEditor=e.target.value; paint(); }
   if(e.target.id==="asEdSel"){ asEditor=e.target.value; paint(); }
@@ -6255,6 +6316,7 @@ document.addEventListener("change",e=>{
    alert firing) doesn't wipe what Cody is typing before he hits save */
 document.addEventListener("input",e=>{
   if(e.target.dataset.ciInput) ideaBuf[e.target.dataset.ciInput]=e.target.value;
+  if(e.target.dataset.draftField&&ideaDraft) ideaDraft[e.target.dataset.draftField]=e.target.value;
 });
 /* ── drive tracker: live search (oninput, not onchange) ── */
 document.addEventListener("input",e=>{
