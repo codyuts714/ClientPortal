@@ -691,6 +691,62 @@ select.bkt{font-family:var(--mono);font-weight:600;letter-spacing:.02em}
 .fs-row input.fs-name{min-width:260px}
 .pp-row input.pp-name{min-width:220px}
 
+/* ── Content Ideas ── */
+.idea-quick{display:flex;gap:8px;align-items:center;margin:2px 0 12px}
+.idea-quick input{flex:1;min-width:0}
+.idea{border:1px solid var(--line-soft);border-radius:10px;margin:8px 0;overflow:hidden;background:rgba(255,255,255,.012)}
+.idea.open{border-color:var(--line);background:rgba(242,201,76,.04)}
+.idea-head{display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer;user-select:none}
+.idea-head:hover{background:rgba(255,255,255,.03)}
+.idea-caret{color:var(--gold);font-size:11px;width:12px;flex:none}
+.idea-title{font-weight:600;font-size:14px;color:var(--cream);flex:1;min-width:0}
+.idea-pill{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
+  padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.idea-pill.st-idea{color:var(--muted)}
+.idea-pill.st-scripting{color:#6fc8e8;border-color:rgba(111,200,232,.4);background:rgba(111,200,232,.08)}
+.idea-pill.st-ready{color:var(--gold);border-color:rgba(242,201,76,.45);background:rgba(242,201,76,.08)}
+.idea-pill.st-shot{color:#c9a6ff;border-color:rgba(201,166,255,.4);background:rgba(201,166,255,.08)}
+.idea-pill.st-used{color:var(--green);border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.08)}
+.idea-meta{font-family:var(--mono);font-size:10px;color:var(--dim);white-space:nowrap}
+.idea-body{padding:0 12px 12px;border-top:1px solid var(--line-soft)}
+.idea-notes{width:100%;min-height:170px;resize:vertical;margin-top:10px;
+  background:var(--panel,#111318);color:var(--cream);border:1px solid var(--line);border-radius:9px;
+  padding:11px 12px;font-family:var(--mono);font-size:12.5px;line-height:1.65;white-space:pre-wrap}
+.idea-notes:focus{outline:none;border-color:var(--gold-soft)}
+.idea-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:9px}
+.idea-statwrap{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.05em;
+  text-transform:uppercase;display:flex;gap:7px;align-items:center}
+.idea-statwrap .sel{text-transform:none;letter-spacing:0}
+@media (max-width:560px){.idea-title{flex-basis:100%;order:-1}.idea-meta{display:none}}
+
+/* ── Studio Inventory ── */
+.inv-subt{font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+.inv-table{margin-top:4px}
+.inv-row{display:grid;grid-template-columns:minmax(0,1fr) 54px 100px 110px minmax(120px,1.1fr) 74px;
+  align-items:center;gap:10px;padding:10px 6px;border-top:1px solid var(--line-soft);cursor:pointer;border-radius:8px}
+.inv-row:hover:not(.inv-headrow){background:rgba(255,255,255,.03)}
+.inv-headrow{cursor:default;border-top:none;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--dim)}
+.inv-headrow:hover{background:none}
+.inv-c-qty,.inv-c-val,.inv-c-tot{font-family:var(--mono);font-size:13px;text-align:right}
+.inv-c-tot{color:var(--gold)}
+.inv-name{display:block;font-size:14px;color:var(--cream);font-weight:500}
+.inv-note{display:block;font-size:11px;color:var(--dim);margin-top:2px}
+.inv-serial{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.inv-serial.none{color:var(--dim);opacity:.6;font-style:italic}
+.inv-c-act{text-align:right}
+@media (max-width:720px){
+  .inv-row{grid-template-columns:minmax(0,1fr) auto;gap:4px 10px}
+  .inv-headrow{display:none}
+  .inv-c-qty,.inv-c-val{display:inline}
+  .inv-c-qty::before{content:"×"}
+  .inv-c-val::before{content:"@ "}
+  .inv-c-qty,.inv-c-val,.inv-c-tot{text-align:left;grid-column:1}
+  .inv-c-name{grid-column:1/-1}
+  .inv-c-tot{grid-column:2;grid-row:1;text-align:right;align-self:start}
+  .inv-c-ser{grid-column:1/-1}
+  .inv-c-act{grid-column:2;grid-row:1}
+}
 </style>
 <script type="text/plain" id="qbSrc"><!DOCTYPE html>
 <html lang="en">
@@ -1826,6 +1882,58 @@ if (!CONFIGURED || loadError) {
   getFunctions = ()=>({}); httpsCallable = ()=>(async()=>{ toast("Connect Firebase to link a bank"); return {data:{}}; });
 }
 
+/* ── Studio inventory starter list (Cody's pasted insurance schedule) ──
+   Used to seed demo mode AND offered as a one-tap import into live data. */
+const INVENTORY_SEED=[
+  /* Storage */
+  {name:"Synology DS1525+",category:"Storage",qty:1,value:1135},
+  {name:"Synology E10G22-T1-Mini 10GbE Network Module",category:"Storage",qty:1,value:110},
+  {name:"Seagate IronWolf Pro 12TB HDD",category:"Storage",qty:2,value:460},
+  {name:"Samsung T7 4TB Portable SSD",category:"Storage",qty:1,value:900},
+  {name:"Samsung T7 2TB Portable SSD",category:"Storage",qty:2,value:400},
+  {name:"Crucial X10 Pro 2TB Portable SSD",category:"Storage",qty:1,value:400},
+  {name:"Crucial X9 Pro 4TB Portable SSD",category:"Storage",qty:1,value:270},
+  {name:"Crucial X9 Pro 1TB Portable SSD",category:"Storage",qty:1,value:135},
+  {name:"Crucial T710 PCIe Gen5 NVMe 1TB SSD",category:"Storage",qty:2,value:250},
+  /* Computer / Office */
+  {name:"MSI MAG Z790 Tomahawk WiFi Motherboard",category:"Computer / Office",qty:1,value:300},
+  {name:"Intel Core i9-13900K",category:"Computer / Office",qty:1,value:600},
+  {name:"NVIDIA GeForce RTX 4070",category:"Computer / Office",qty:1,value:700},
+  {name:"G.SKILL Ripjaws S5 DDR5 96GB (2×48GB)",category:"Computer / Office",qty:1,value:1400},
+  {name:"Corsair iCUE H150i Elite CAPELLIX XT 360mm AIO Cooler",category:"Computer / Office",qty:1,value:230},
+  {name:"Corsair SP120 RGB Elite Triple Fan Kit",category:"Computer / Office",qty:1,value:80},
+  {name:"Desktop PC Case",category:"Computer / Office",qty:1,value:100},
+  {name:"Samsung ViewFinity S5 34\" Ultrawide Monitor",category:"Computer / Office",qty:1,value:330},
+  {name:"Dell UltraSharp U2412M Monitor",category:"Computer / Office",qty:1,value:170},
+  {name:"PreSonus Eris 4.5BT Studio Monitors",category:"Computer / Office",qty:1,value:160},
+  {name:"MacBook Pro 14\" M1 Pro (16GB RAM)",category:"Computer / Office",qty:1,value:1200},
+  /* Camera / Production */
+  {name:"Sony A7S III",category:"Camera / Production",qty:1,value:3500},
+  {name:"Sony FX30",category:"Camera / Production",qty:1,value:1600},
+  {name:"Sony FE 16-35mm",category:"Camera / Production",qty:1,value:1300},
+  {name:"Sony FE PZ 28-135mm f/4 G OSS",category:"Camera / Production",qty:1,value:2800},
+  {name:"Sigma 24-70mm f/2.8 DG DN Art",category:"Camera / Production",qty:1,value:1100},
+  {name:"Canon EF 8-15mm f/4L Fisheye",category:"Camera / Production",qty:1,value:900},
+  {name:"Helios 44 (Sony E Adapted)",category:"Camera / Production",qty:1,value:150},
+  {name:"Tiltaing Camera Cage TA-T18-E Kit",category:"Camera / Production",qty:1,value:389},
+  {name:"Tilta Mini Matte Box MB-T15 Kit",category:"Camera / Production",qty:1,value:99},
+  {name:"ND Filter (24-70mm)",category:"Camera / Production",qty:1,value:100},
+  {name:"ND Filter (28-135mm)",category:"Camera / Production",qty:1,value:200},
+  {name:"Tripod",category:"Camera / Production",qty:1,value:150},
+  {name:"DJI Mavic 3 Pro",category:"Camera / Production",qty:1,value:2200},
+  {name:"DJI Mavic 3 Pro Intelligent Flight Battery",category:"Camera / Production",qty:1,value:190},
+  {name:"DJI Mavic Fast Charger",category:"Camera / Production",qty:1,value:100},
+  {name:"DJI Avata 2 (5 Batteries)",category:"Camera / Production",qty:1,value:1650},
+  {name:"DJI FPV Controller 2",category:"Camera / Production",qty:1,value:200},
+  {name:"DJI RS 4 Pro Gimbal",category:"Camera / Production",qty:2,value:870},
+  {name:"DJI Mic 3 (2-TX Combo)",category:"Camera / Production",qty:2,value:330},
+  {name:"C-Stand",category:"Camera / Production",qty:3,value:130},
+  {name:"Godox 150W RGB Video Light",category:"Camera / Production",qty:1,value:350},
+  {name:"Amaran 100d",category:"Camera / Production",qty:1,value:180},
+  {name:"Hi8 Camcorder",category:"Camera / Production",qty:1,value:200}
+];
+const INV_CATEGORIES=["Storage","Computer / Office","Camera / Production","Audio","Lighting","Grip / Support","Other"];
+
 /* ── demo sandbox: in-memory stand-in for Firebase (resets on refresh) ── */
 function sandbox(){
   const iso=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);};
@@ -1847,6 +1955,14 @@ function sandbox(){
           retainerHistory:[{status:"active",on:iso(-140)}],
           retainerItems:[{name:"6 videos / month",qty:"6"},{name:"Social management",qty:""}],
           socialManaged:true,
+          contentIdeas:[
+            {id:"ci1",title:"5 mistakes people make after a house fire",status:"scripting",
+             notes:"Hook: \"If your house just caught fire, do NOT call your insurance company first.\"\n\n1. Signing the insurer's paperwork before documenting\n2. Throwing anything away\n3. Accepting the first estimate\n4. Not knowing about ALE\n5. Going it alone vs hiring a public adjuster\n\nCTA: DM \"FIRE\" for the free checklist."},
+            {id:"ci2",title:"What is a public adjuster? (explainer)",status:"idea",
+             notes:"Quick 30s: we work for YOU, not the insurance company. Paste the good explainer script here when it's written."},
+            {id:"ci3",title:"Client win — $80k more than the first offer",status:"ready",
+             notes:"Testimonial-style. Need to confirm we can use the number + get their OK on camera."}
+          ],
           posts:[{d:iso(0),type:"Carousel",posted:false},{d:iso(1),type:"Reel",posted:false},
                  {d:iso(-2),type:"Story",posted:true,postedOn:iso(-2)},{d:iso(4),type:"Reel",posted:false}],
           postRules:[{type:"Reel",dow:2,from:null,until:null}]} },
@@ -1935,7 +2051,8 @@ function sandbox(){
       r1:{flow:"outflow",merchant_name:"Netflix",description:"Netflix",average_amount:15.49,frequency:"MONTHLY",predicted_next_date:iso(22),is_active:true,account_id:"ba3"},
       r2:{flow:"outflow",merchant_name:"Adobe",description:"Adobe Creative Cloud",average_amount:59.99,frequency:"MONTHLY",predicted_next_date:iso(9),is_active:true,account_id:"ba3"},
       r3:{flow:"outflow",merchant_name:"Spotify",description:"Spotify",average_amount:11.99,frequency:"MONTHLY",predicted_next_date:iso(14),is_active:true,account_id:"ba3"},
-      r4:{flow:"outflow",merchant_name:null,description:"Rent",average_amount:1450,frequency:"MONTHLY",predicted_next_date:iso(24),is_active:true,account_id:"ba1"} }
+      r4:{flow:"outflow",merchant_name:null,description:"Rent",average_amount:1450,frequency:"MONTHLY",predicted_next_date:iso(24),is_active:true,account_id:"ba1"} },
+    inventory:INVENTORY_SEED.reduce((o,it,i)=>{o["inv"+(i+1)]={...it,serial:""};return o;},{})
   };
   const subs=[]; const bump=()=>subs.slice().forEach(f=>f());
   let cb=null, cur=null;
@@ -2024,6 +2141,7 @@ let authUser=null, me=null, booting=true, gateMsg=null;
 let clients=[], projects=[], invoices=[], payables=[], activity=[], users=[];
 let leads=[];
 let drives=[];               /* hard-drive tracker */
+let inventory=[];            /* studio inventory — insurance schedule */
 let folderPresets={presets:[],defaultName:null};  /* config/folderPresets — saved "go-to" folder structures */
 let settings={}, smsPub={};   /* config/sms (owner only) + config/public (everyone) */
 let view="owner", previewClient=null, previewEditor=null;
@@ -2032,6 +2150,8 @@ let asEditor=null;      /* owner impersonating an editor's view */
 let bankAccounts=[], bankTxns=[], bankRecurring=[], txnRules=[];  /* Plaid money data */
 let openProject=null, projFilter="all", projClient="all";
 let openClient=null;         /* owner drilled into a client's detail page */
+let openIdeas=new Set();      /* content-idea ids expanded on a client detail page */
+let ideaBuf={};              /* ideaId -> in-flight notes text so re-renders don't lose typing */
 let dbTab="clients";         /* Client Database sub-tab: clients | health */
 let readyTab="ready";        /* ready-to-post section: ready | archive */
 let driveSearch="";          /* drive tracker project search query */
@@ -2547,6 +2667,7 @@ async function loadFor(user){
     unsubs.push(live(collection(db,"invoices"), v=>invoices=v));
     unsubs.push(live(collection(db,"payables"), v=>payables=v));
     unsubs.push(live(collection(db,"drives"),   v=>drives=v));
+    unsubs.push(live(collection(db,"inventory"),v=>inventory=v));
     unsubs.push(live(collection(db,"activity"), v=>activity=v.sort((a,b)=>(b.ts||0)-(a.ts||0))));
     unsubs.push(live(collection(db,"users"),    v=>users=v.map(u=>({...u,email:u.id}))));
   }
@@ -5321,6 +5442,7 @@ function clientDetailView(cid){
     ${(c.retainerHistory&&c.retainerHistory.length>1)?`<div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:8px;letter-spacing:.05em">${c.retainerHistory.length} status change${c.retainerHistory.length===1?"":"s"} on record — ${c.retainerHistory.slice(-3).map(h=>`${h.status} ${isoShort(h.on)}`).join(" → ")}</div>`:""}</div>`:""}
   ${hasSocialManaged(cid)?readyToPostSection(cid):""}
   ${hasSocialManaged(cid)?`<section class="panel">${socialPanel(c)}</section>`:""}
+  ${contentIdeasSection(c)}
   <section class="panel"><div class="eyebrow">Projects &mdash; ${mine.length}
     <span class="spacer"></span><button class="btn outline mini" data-form="project" data-client="${esc(c.id)}">+ PROJECT</button></div>
     ${mine.length?`<div class="grid-gap cards">${mine.map(p=>projectCard(p,true)).join("")}</div>`
@@ -5336,6 +5458,119 @@ function clientDetailView(cid){
         <button class="btn ghost mini" data-form="invoice" data-id="${esc(i.id)}">EDIT</button></div></div>`).join("")
       :`<div style="font-size:13px;color:var(--dim)">No invoices yet.</div>`}
   </section>`;
+}
+
+/* ══════════ CONTENT IDEAS — per-client idea bank ══════════
+   Lives on the client doc as contentIdeas[] = {id,title,status,notes}.
+   Owner-only working notes: capture a title fast, click to expand and
+   drop scripts / notes into a plain text field so nothing gets lost. */
+const IDEA_STATUS={idea:"Idea",scripting:"Scripting",ready:"Ready to shoot",shot:"Shot",used:"Posted"};
+const ideasOf=c=>Array.isArray(c&&c.contentIdeas)?c.contentIdeas:[];
+async function saveIdeas(cid,ideas,msg){
+  await guard(()=>updateDoc(doc(db,"clients",cid),{contentIdeas:ideas}),msg||"Saved");
+}
+function contentIdeasSection(c){
+  const ideas=ideasOf(c);
+  const rows=ideas.length?ideas.map(it=>{
+    const open=openIdeas.has(it.id);
+    const st=IDEA_STATUS[it.status]?it.status:"idea";
+    const notesVal=(it.id in ideaBuf)?ideaBuf[it.id]:(it.notes||"");
+    const words=(it.notes||"").trim()?(it.notes.trim().split(/\s+/).length):0;
+    return `<div class="idea ${open?"open":""}">
+      <div class="idea-head" data-ci-toggle="${esc(c.id)}:${esc(it.id)}">
+        <span class="idea-caret">${open?"&#9662;":"&#9656;"}</span>
+        <span class="idea-title">${esc(it.title||"Untitled idea")}</span>
+        <span class="idea-pill st-${st}">${IDEA_STATUS[st]}</span>
+        <span class="idea-meta">${it.notes&&it.notes.trim()?`${words} word${words===1?"":"s"}`:"no notes yet"}</span>
+      </div>
+      ${open?`<div class="idea-body">
+        <textarea class="idea-notes" id="ci-notes-${esc(it.id)}" data-ci-input="${esc(it.id)}"
+          placeholder="Drop the script, hook, shot list, links — anything for this idea. Paste freely, it all saves.">${esc(notesVal)}</textarea>
+        <div class="idea-tools">
+          <label class="idea-statwrap">Status
+            <select class="sel" data-ci-status="${esc(c.id)}:${esc(it.id)}">
+              ${Object.entries(IDEA_STATUS).map(([k,v])=>`<option value="${k}" ${st===k?"selected":""}>${v}</option>`).join("")}
+            </select></label>
+          <span class="spacer"></span>
+          <button class="btn ghost mini" data-form="idea" data-client="${esc(c.id)}" data-id="${esc(it.id)}">RENAME</button>
+          <button class="btn ghost mini danger" data-ci-del="${esc(c.id)}:${esc(it.id)}">DELETE</button>
+          <button class="btn gold mini" data-ci-save="${esc(c.id)}:${esc(it.id)}">SAVE NOTES</button>
+        </div>
+      </div>`:""}
+    </div>`;}).join("")
+    :`<div style="font-size:13px;color:var(--dim)">No ideas captured yet. Type a title above and hit <b>Add</b> — then click it open to paste in scripts and notes.</div>`;
+  return `<section class="panel"><div class="eyebrow">Content Ideas &mdash; ${ideas.length}
+      <span class="spacer"></span>
+      <button class="btn outline mini" data-form="idea" data-client="${esc(c.id)}">+ IDEA WITH NOTES</button></div>
+    <div class="idea-quick">
+      <input id="ci-quick-${esc(c.id)}" placeholder="New idea title — e.g. &ldquo;3 signs your claim is being lowballed&rdquo;"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('[data-ci-quickadd=&quot;${esc(c.id)}&quot;]').click();}">
+      <button class="btn gold" data-ci-quickadd="${esc(c.id)}">ADD</button>
+    </div>
+    ${rows}
+  </section>`;
+}
+function ideaForm(cid,id){
+  const c=byId(clients,cid)||{}; const it=id?ideasOf(c).find(x=>x.id===id)||{}:{};
+  showModal(`<h3>${id?"Edit Idea":"New Content Idea"}</h3>
+  <div class="f-grid">
+    <div class="f"><label>Idea title</label><input id="if-title" value="${esc(it.title||"")}" placeholder="Short, punchy title"></div>
+    <div class="f"><label>Status</label>
+      <select id="if-status" class="sel">${Object.entries(IDEA_STATUS).map(([k,v])=>`<option value="${k}" ${(it.status||"idea")===k?"selected":""}>${v}</option>`).join("")}</select></div>
+    <div class="f"><label>Notes / script</label>
+      <textarea id="if-notes" class="idea-notes" placeholder="Hook, script, shot list, links… paste anything.">${esc(it.notes||"")}</textarea></div>
+  </div>
+  <div class="actions">
+    ${id?`<button class="btn ghost danger" data-ci-del="${esc(cid)}:${esc(id)}">DELETE</button>`:""}
+    <button class="btn ghost" data-close="1">CANCEL</button>
+    <button class="btn gold" data-save-idea="${esc(cid)}:${esc(id||"")}">${id?"SAVE":"ADD IDEA"}</button>
+  </div>`);
+}
+async function saveIdeaForm(cid,id){
+  const title=fv("if-title"); if(!title) return toast("Give the idea a title");
+  const status=document.getElementById("if-status")?.value||"idea";
+  const notes=document.getElementById("if-notes")?.value||"";
+  const c=byId(clients,cid)||{}; let ideas=ideasOf(c).slice();
+  if(id){ ideas=ideas.map(x=>x.id===id?{...x,title,status,notes}:x); }
+  else { ideas.push({id:uid(),title,status,notes}); }
+  delete ideaBuf[id];
+  await saveIdeas(cid,ideas,id?"Idea updated":"Idea added");
+  closeModal();
+}
+async function quickAddIdea(cid){
+  const el=document.getElementById("ci-quick-"+cid); const title=(el?.value||"").trim();
+  if(!title) return toast("Type a title first");
+  const c=byId(clients,cid)||{}; const nid=uid();
+  const ideas=[...ideasOf(c),{id:nid,title,status:"idea",notes:""}];
+  openIdeas.add(nid);
+  await saveIdeas(cid,ideas,"Idea added");
+}
+function toggleIdea(cid,id){
+  if(openIdeas.has(id)){ openIdeas.delete(id); }
+  else { openIdeas.add(id); }
+  paint();
+}
+async function saveIdeaNotes(cid,id){
+  const ta=document.getElementById("ci-notes-"+id);
+  const notes=ta?ta.value:(ideaBuf[id]||"");
+  const c=byId(clients,cid)||{};
+  const ideas=ideasOf(c).map(x=>x.id===id?{...x,notes}:x);
+  delete ideaBuf[id];
+  await saveIdeas(cid,ideas,"Notes saved");
+}
+async function setIdeaStatus(cid,id,status){
+  const c=byId(clients,cid)||{};
+  const ideas=ideasOf(c).map(x=>x.id===id?{...x,status}:x);
+  await saveIdeas(cid,ideas,IDEA_STATUS[status]||"Updated");
+}
+async function removeIdea(cid,id){
+  const c=byId(clients,cid)||{};
+  const it=ideasOf(c).find(x=>x.id===id);
+  if(!confirm(`Delete "${it?it.title:"this idea"}"? This can't be undone.`)) return;
+  const ideas=ideasOf(c).filter(x=>x.id!==id);
+  openIdeas.delete(id); delete ideaBuf[id];
+  await saveIdeas(cid,ideas,"Idea deleted");
+  closeModal();
 }
 
 /* ── Ready to Post: delivered deliverables from social-managed projects ── */
@@ -5383,6 +5618,162 @@ async function markUnposted(pid,i){
   const p=byId(projects,pid); if(!p) return;
   const pieces=(p.pieces||[]).map((x,ix)=>ix===i?{...x,postedOn:null}:x);
   await guard(()=>updateDoc(doc(db,"projects",pid),{pieces}),"Back to ready");
+}
+
+/* ══════════ STUDIO INVENTORY — insurance schedule ══════════
+   inventory[] = {id,name,category,qty,value(each),serial,notes}.
+   Grand total = Σ qty×value. Serial optional (add later). */
+const invLineTotal=it=>(+it.qty||0)*(+it.value||0);
+const invGrand=()=>inventory.reduce((s,it)=>s+invLineTotal(it),0);
+const invUnits=()=>inventory.reduce((s,it)=>s+(+it.qty||0),0);
+const invCategories=()=>{
+  const set=new Set(inventory.map(it=>it.category||"Other"));
+  /* keep the known order first, then any custom categories alphabetically */
+  const known=INV_CATEGORIES.filter(c=>set.has(c));
+  const extra=[...set].filter(c=>!INV_CATEGORIES.includes(c)).sort();
+  return [...known,...extra];
+};
+
+function inventoryView(){
+  const missingSerials=inventory.filter(it=>!(it.serial||"").trim()).length;
+  const cats=invCategories();
+
+  if(!inventory.length){
+    return `${backBar("Studio Inventory")}
+    <div class="hero"><div><h1>Inventory<span>.</span></h1><div class="sub">Gear &amp; replacement values for insurance</div></div></div>
+    <section class="panel"><div class="empty-state">
+      <div class="t">No inventory yet</div>
+      <div class="s">Load your starter list (${INVENTORY_SEED.length} items, ${money(INVENTORY_SEED.reduce((s,it)=>s+it.qty*it.value,0))}) to get going,<br>then add serial numbers and new gear as you buy it.</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px">
+        <button class="btn gold" data-invseed="1">LOAD STARTER INVENTORY</button>
+        <button class="btn outline" data-form="invitem">+ ADD ONE ITEM</button>
+      </div>
+    </div></section>`;
+  }
+
+  const catBlocks=cats.map(cat=>{
+    const items=inventory.filter(it=>(it.category||"Other")===cat)
+                         .slice().sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+    const subtotal=items.reduce((s,it)=>s+invLineTotal(it),0);
+    return `<section class="panel inv-cat">
+      <div class="eyebrow">${esc(cat)}
+        <span class="spacer"></span>
+        <span class="inv-subt">${items.length} item${items.length===1?"":"s"} &middot; ${money(subtotal)}</span></div>
+      <div class="inv-table">
+        <div class="inv-row inv-headrow">
+          <div class="inv-c-name">Item</div>
+          <div class="inv-c-qty">Qty</div>
+          <div class="inv-c-val">Value ea.</div>
+          <div class="inv-c-tot">Line total</div>
+          <div class="inv-c-ser">Serial #</div>
+          <div class="inv-c-act"></div>
+        </div>
+        ${items.map(it=>{
+          const ser=(it.serial||"").trim();
+          return `<div class="inv-row" data-openinv="${esc(it.id)}">
+            <div class="inv-c-name"><span class="inv-name">${esc(it.name||"Item")}</span>${it.notes?`<span class="inv-note">${esc(it.notes)}</span>`:""}</div>
+            <div class="inv-c-qty">${+it.qty||0}</div>
+            <div class="inv-c-val">${money(it.value)}</div>
+            <div class="inv-c-tot">${money(invLineTotal(it))}</div>
+            <div class="inv-c-ser">${ser?`<span class="inv-serial">${esc(ser)}</span>`:`<span class="inv-serial none">add later</span>`}</div>
+            <div class="inv-c-act"><button class="btn ghost mini" data-openinv="${esc(it.id)}">EDIT</button></div>
+          </div>`;}).join("")}
+      </div>
+    </section>`;}).join("");
+
+  return `${backBar("Studio Inventory")}
+    <div class="hero"><div><h1>Inventory<span>.</span></h1>
+      <div class="sub">Replacement values for insurance &middot; ${inventory.length} line items</div></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn outline" data-invexport="1">EXPORT CSV</button>
+        <button class="btn gold" data-form="invitem">+ ADD ITEM</button></div></div>
+    <div class="stats">
+      ${subStat("TOTAL VALUE",money(invGrand()),T.gold)}
+      ${subStat("LINE ITEMS",inventory.length)}
+      ${subStat("UNITS",invUnits())}
+      ${subStat("MISSING SERIALS",missingSerials,missingSerials?T.dim:T.green)}
+    </div>
+    ${catBlocks}
+    <section class="panel" style="display:block">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div style="font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.06em;text-transform:uppercase">Grand Total</div>
+        <div style="font-family:var(--mono);font-size:26px;font-weight:700;color:var(--gold)">${money(invGrand())}</div>
+      </div>
+      <div class="f" style="margin-top:8px"><div class="hint">Current replacement value — what it would cost to rebuild the kit today. Tap any row to edit, add a serial, or adjust the price. Export CSV gives you a clean schedule to hand your insurer.</div></div>
+    </section>`;
+}
+
+function inventoryForm(id){
+  const it=id?byId(inventory,id)||{}:{};
+  const cats=[...new Set([...INV_CATEGORIES,...inventory.map(x=>x.category).filter(Boolean)])];
+  showModal(`<h3>${id?"Edit Item":"Add Inventory Item"}</h3>
+  <div class="f-grid">
+    <div class="f"><label>Item name</label><input id="iv-name" value="${esc(it.name||"")}" placeholder="e.g. Sony A7S III"></div>
+    <div class="f"><label>Category</label>
+      <input id="iv-cat" list="iv-catlist" value="${esc(it.category||"Camera / Production")}" placeholder="Category">
+      <datalist id="iv-catlist">${cats.map(c=>`<option value="${esc(c)}">`).join("")}</datalist>
+      <div class="hint">pick one or type a new category</div></div>
+    <div class="f-grid" style="grid-template-columns:1fr 1fr;gap:12px">
+      <div class="f"><label>Quantity</label><input id="iv-qty" type="number" min="0" step="1" value="${it.qty??1}"></div>
+      <div class="f"><label>Value each ($)</label><input id="iv-val" type="number" min="0" step="10" value="${it.value??""}" placeholder="0"></div>
+    </div>
+    <div class="f"><label>Serial number ${id?"":"(optional — add later)"}</label>
+      <input id="iv-serial" value="${esc(it.serial||"")}" placeholder="leave blank for now">
+      <div class="hint">for insurance claims — you can fill these in over time</div></div>
+    <div class="f"><label>Notes</label><input id="iv-notes" value="${esc(it.notes||"")}" placeholder="condition, purchase date, kit it belongs to…"></div>
+  </div>
+  <div class="actions">
+    ${id?`<button class="btn ghost danger" data-del-invitem="${esc(id)}">DELETE</button>`:""}
+    <button class="btn ghost" data-close="1">CANCEL</button>
+    <button class="btn gold" data-save-invitem="${esc(id||"")}">${id?"SAVE":"ADD ITEM"}</button>
+  </div>`);
+}
+async function saveInvItem(id){
+  const name=fv("iv-name"); if(!name) return toast("Item name required");
+  const data={
+    name,
+    category:fv("iv-cat")||"Other",
+    qty:Math.max(0,+fv("iv-qty")||0),
+    value:Math.max(0,+fv("iv-val")||0),
+    serial:fv("iv-serial"),
+    notes:fv("iv-notes")
+  };
+  await guard(async()=>{
+    if(id) await updateDoc(doc(db,"inventory",id),data);
+    else await addDoc(collection(db,"inventory"),data);
+  },id?"Item updated":"Item added");
+  closeModal();
+}
+async function removeInvItem(id){
+  const it=byId(inventory,id);
+  if(!confirm(`Delete ${it?it.name:"this item"} from the inventory?`)) return;
+  await guard(()=>deleteDoc(doc(db,"inventory",id)),"Item removed");
+  closeModal();
+}
+async function seedInventory(){
+  if(inventory.length&&!confirm("Add the starter list on top of what's already here?")) return;
+  await guard(async()=>{
+    for(const it of INVENTORY_SEED){ await addDoc(collection(db,"inventory"),{...it,serial:"",notes:""}); }
+  },"Starter inventory loaded");
+}
+function exportInventoryCSV(){
+  const esc2=v=>{ v=String(v??""); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; };
+  const lines=[];
+  lines.push("Under The Sun Studios — Studio Inventory (Current Replacement Value)");
+  lines.push(`Exported,${new Date().toLocaleString()}`);
+  lines.push("");
+  lines.push(["Category","Item","Qty","Value Each","Line Total","Serial #","Notes"].join(","));
+  invCategories().forEach(cat=>{
+    inventory.filter(it=>(it.category||"Other")===cat)
+             .sort((a,b)=>(a.name||"").localeCompare(b.name||""))
+             .forEach(it=>lines.push([cat,it.name,+it.qty||0,+it.value||0,invLineTotal(it),it.serial||"",it.notes||""].map(esc2).join(",")));
+    const sub=inventory.filter(it=>(it.category||"Other")===cat).reduce((s,it)=>s+invLineTotal(it),0);
+    lines.push(["",`${cat} subtotal`,"","",sub,"",""].map(esc2).join(","));
+  });
+  lines.push("");
+  lines.push(["","GRAND TOTAL","","",invGrand(),"",""].map(esc2).join(","));
+  downloadFile(`uts-inventory-${new Date().toISOString().slice(0,10)}.csv`,lines.join("\n"),"text/csv;charset=utf-8");
+  toast("Inventory exported");
 }
 
 /* ── Hard-drive tracker page ── */
@@ -5702,6 +6093,7 @@ function paint(){
     <button class="tab ${view==="owner"?"on":""}" data-view="owner">Studio</button>
     <button class="tab ${view==="inbound"?"on":""}" data-view="inbound">Inbound${leads.filter(l=>!l.firstReplyAt).length?` <span style="color:var(--gold)">&bull;</span>`:""}</button>
     <button class="tab ${view==="drives"?"on":""}" data-view="drives">Drives</button>
+    <button class="tab ${view==="inventory"?"on":""}" data-view="inventory">Inventory</button>
     <button class="tab ${view==="money"?"on":""}" data-view="money">Money</button>
     <button class="tab ${view==="quote"?"on":""}" data-view="quote">Quote Builder</button>
     <button class="tab ${view==="editor"?"on":""}" data-view="editor">Editor</button>
@@ -5723,6 +6115,7 @@ function paint(){
   else if(view==="ar")           body=arView();
   else if(view==="database")     body=databaseView();
   else if(view==="drives")       body=drivesView();
+  else if(view==="inventory")    body=inventoryView();
   else if(view==="money")        body=moneyView();
   else if(view==="sms")          body=smsView();
   else if(view==="access")       body=accessView();
@@ -5745,7 +6138,7 @@ function paint(){
           <button class="linkbtn" data-logout="1">Sign out</button></div>
       </div>
     </header>
-    <main class="${view==="quote"||view==="drives"?"wide":""}">${body}</main>
+    <main class="${view==="quote"||view==="drives"||view==="inventory"?"wide":""}">${body}</main>
     <footer>Under The Sun Studios · Long Beach, CA</footer>
     ${reminderDue()?reminderOverlayHTML():""}`;
   const _routeKey=[me.role,view,previewClient,previewEditor,openClient,asEditor].join("|");
@@ -5759,7 +6152,7 @@ function paint(){
 
 /* ── events ── */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test],[data-openclient],[data-postnow],[data-unpost],[data-readytab],[data-dbtab],[data-save-drive],[data-del-drive],[data-save-log],[data-del-log],[data-backto],[data-asedit],[data-exitedit],[data-export],[data-eom],[data-bank]");
+  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test],[data-openclient],[data-postnow],[data-unpost],[data-readytab],[data-dbtab],[data-save-drive],[data-del-drive],[data-save-log],[data-del-log],[data-backto],[data-asedit],[data-exitedit],[data-export],[data-eom],[data-bank],[data-ci-toggle],[data-ci-quickadd],[data-ci-save],[data-ci-del],[data-save-idea],[data-save-invitem],[data-del-invitem],[data-openinv],[data-invexport],[data-invseed]");
   if(!t) return;
   const d=t.dataset;
   if(d.close!==undefined){ if(t===e.target||t.tagName==="BUTTON") closeModal(); return; }
@@ -5780,6 +6173,18 @@ document.addEventListener("click",e=>{
   if(d.postnow){ const [id,i]=d.postnow.split(":"); markPosted(id,+i); return; }
   if(d.unpost){ const [id,i]=d.unpost.split(":"); markUnposted(id,+i); return; }
   if(d.backto){ openProject=byId(projects,d.backto)?d.backto:null; renderDetail(); return; }
+  if(d.ciToggle){ const [cid,iid]=d.ciToggle.split(":"); return toggleIdea(cid,iid); }
+  if(d.ciQuickadd){ return quickAddIdea(d.ciQuickadd); }
+  if(d.ciSave){ const [cid,iid]=d.ciSave.split(":"); return saveIdeaNotes(cid,iid); }
+  if(d.ciDel){ const [cid,iid]=d.ciDel.split(":"); return removeIdea(cid,iid); }
+  if(d.form==="idea") return ideaForm(d.client||openClient||null,d.id||null);
+  if(d.saveIdea!==undefined){ const [cid,iid]=d.saveIdea.split(":"); return saveIdeaForm(cid,iid||null); }
+  if(d.form==="invitem") return inventoryForm(d.id||null);
+  if(d.openinv!==undefined) return inventoryForm(d.openinv||null);
+  if(d.saveInvitem!==undefined) return saveInvItem(d.saveInvitem||null);
+  if(d.delInvitem) return removeInvItem(d.delInvitem);
+  if(d.invexport){ return exportInventoryCSV(); }
+  if(d.invseed){ return seedInventory(); }
   if(d.form==="drive")  return driveForm(d.id||null);
   if(d.form==="drivelog") return driveLogForm(d.drive||null, d.logi!==undefined?d.logi:null);
   if(d.saveLog!==undefined){ const [did,li]=d.saveLog.split(":"); return saveDriveLog(did, li===undefined?null:li); }
@@ -5822,6 +6227,7 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("change",e=>{
   if(e.target.dataset.retoggle!==undefined) riToggle();
+  if(e.target.dataset.ciStatus){ const [cid,iid]=e.target.dataset.ciStatus.split(":"); setIdeaStatus(cid,iid,e.target.value); }
   if(e.target.id==="cSel"){ previewClient=e.target.value; paint(); }
   if(e.target.id==="eSel"){ previewEditor=e.target.value; paint(); }
   if(e.target.id==="asEdSel"){ asEditor=e.target.value; paint(); }
@@ -5844,6 +6250,11 @@ document.addEventListener("change",e=>{
     if(labs[0]) labs[0].parentNode.lastChild.textContent="Deposit paid ($"+h+")";
     if(labs[1]) labs[1].parentNode.lastChild.textContent="Final paid ($"+(v-h)+")";
   }
+});
+/* keep in-flight content-idea notes in memory so any re-render (e.g. an
+   alert firing) doesn't wipe what Cody is typing before he hits save */
+document.addEventListener("input",e=>{
+  if(e.target.dataset.ciInput) ideaBuf[e.target.dataset.ciInput]=e.target.value;
 });
 /* ── drive tracker: live search (oninput, not onchange) ── */
 document.addEventListener("input",e=>{
