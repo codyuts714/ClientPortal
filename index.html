@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Under The Sun Studios — Client OS</title>
+<title>Under The Sun Studio Brain</title>
 
 <meta name="description" content="Under The Sun Studios — project status, review links, and invoices in one place." />
 
@@ -23,8 +23,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Client OS" />
-<meta name="application-name" content="Client OS" />
+<meta name="apple-mobile-web-app-title" content="Studio Brain" />
+<meta name="application-name" content="Studio Brain" />
 
 <!-- iOS launch screens -->
 <link rel="apple-touch-startup-image" href="splash/splash-1290x2796.png" media="(device-width:430px) and (device-height:932px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)" />
@@ -40,7 +40,7 @@
 <link rel="apple-touch-startup-image" href="splash/splash-2048x2732.png" media="(device-width:1024px) and (device-height:1366px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)" />
 
 <!-- link previews when you text a client the URL -->
-<meta property="og:title" content="Under The Sun Studios — Client OS" />
+<meta property="og:title" content="Under The Sun Studio Brain" />
 <meta property="og:description" content="Your projects, review links, and invoices in one place." />
 <meta property="og:image" content="icons/icon-512.png" />
 <meta property="og:type" content="website" />
@@ -1765,7 +1765,7 @@ function leadPayload(extra){
     quoteLink:clientURL()
   },extra||{});
 }
-// Client OS hook: define window.UTS_PUSH_LEAD(payload) in the portal and these write straight to the board.
+// Studio Brain hook: define window.UTS_PUSH_LEAD(payload) in the portal and these write straight to the board.
 function sendToInbound(){
   const p=leadPayload();
   if(typeof window.UTS_PUSH_LEAD==='function'){
@@ -1840,51 +1840,6 @@ if(window.CFG && String(window.CFG.apiKey||"").startsWith("PASTE")){
 </script>
 <script>
 (async()=>{
-/* CFG, APP_VERSION, FEATURES now come from config/settings.js (Phase 1, Step 6) */
-const FORCE_DEMO = /[?&]demo=1/.test(location.search);
-const CONFIGURED = !CFG.apiKey.startsWith("PASTE") && !FORCE_DEMO;
-let DEMO = !CONFIGURED;
-
-/* Firebase when configured; a self-contained sandbox when it isn't, so the
-   file is fully clickable before you have keys. Same function signatures,
-   so nothing below this line changes between the two. */
-let initializeApp, getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
-    sendPasswordResetEmail, getFirestore, collection, doc, getDoc, setDoc, addDoc,
-    updateDoc, deleteDoc, query, where, onSnapshot, getFunctions, httpsCallable;
-let app, auth, db, fns;
-
-let loadError = null;
-if (CONFIGURED) {
-  try {
-    const [A, U, F] = await Promise.all([
-      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
-      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"),
-      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
-    ]);
-    ({ initializeApp } = A);
-    ({ getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } = U);
-    ({ getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
-       query, where, onSnapshot } = F);
-    app = initializeApp(CFG); auth = getAuth(app); db = getFirestore(app);
-    try{
-      const Fn = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js");
-      ({ getFunctions, httpsCallable } = Fn); fns = getFunctions(app);
-    }catch(e){ errorLog(e,"initFirebase:functions (optional — banking features degrade gracefully)"); }
-  } catch (err) {
-    errorLog(err,"initFirebase:core");
-    loadError = "Can't reach Firebase. Check your connection, then reload.";
-  }
-}
-if (!CONFIGURED || loadError) {
-  DEMO = !loadError;
-  const S = sandbox();
-  ({ getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail,
-     getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
-     query, where, onSnapshot } = S);
-  auth = {}; db = {}; fns = {};
-  getFunctions = ()=>({}); httpsCallable = ()=>(async()=>{ toast("Connect Firebase to link a bank"); return {data:{}}; });
-}
-
 /* ── Studio inventory starter list (Cody's pasted insurance schedule) ──
    Used to seed demo mode AND offered as a one-tap import into live data. */
 const INVENTORY_SEED=[
@@ -1936,6 +1891,51 @@ const INVENTORY_SEED=[
   {name:"Hi8 Camcorder",category:"Camera / Production",qty:1,value:200}
 ];
 const INV_CATEGORIES=["Storage","Computer / Office","Camera / Production","Audio","Lighting","Grip / Support","Other"];
+
+/* CFG, APP_VERSION, FEATURES now come from config/settings.js (Phase 1, Step 6) */
+const FORCE_DEMO = /[?&]demo=1/.test(location.search);
+const CONFIGURED = !CFG.apiKey.startsWith("PASTE") && !FORCE_DEMO;
+let DEMO = !CONFIGURED;
+
+/* Firebase when configured; a self-contained sandbox when it isn't, so the
+   file is fully clickable before you have keys. Same function signatures,
+   so nothing below this line changes between the two. */
+let initializeApp, getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
+    sendPasswordResetEmail, getFirestore, collection, doc, getDoc, setDoc, addDoc,
+    updateDoc, deleteDoc, query, where, onSnapshot, getFunctions, httpsCallable;
+let app, auth, db, fns;
+
+let loadError = null;
+if (CONFIGURED) {
+  try {
+    const [A, U, F] = await Promise.all([
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
+    ]);
+    ({ initializeApp } = A);
+    ({ getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } = U);
+    ({ getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
+       query, where, onSnapshot } = F);
+    app = initializeApp(CFG); auth = getAuth(app); db = getFirestore(app);
+    try{
+      const Fn = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js");
+      ({ getFunctions, httpsCallable } = Fn); fns = getFunctions(app);
+    }catch(e){ errorLog(e,"initFirebase:functions (optional — banking features degrade gracefully)"); }
+  } catch (err) {
+    errorLog(err,"initFirebase:core");
+    loadError = "Can't reach Firebase. Check your connection, then reload.";
+  }
+}
+if (!CONFIGURED || loadError) {
+  DEMO = !loadError;
+  const S = sandbox();
+  ({ getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail,
+     getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
+     query, where, onSnapshot } = S);
+  auth = {}; db = {}; fns = {};
+  getFunctions = ()=>({}); httpsCallable = ()=>(async()=>{ toast("Connect Firebase to link a bank"); return {data:{}}; });
+}
 
 /* ── demo sandbox: in-memory stand-in for Firebase (resets on refresh) ── */
 function sandbox(){
@@ -3297,7 +3297,7 @@ async function smsTest(){
   if(!ep) return toast("Add the Function URL first");
   try{
     const p=new URLSearchParams({kind:"studio",to:fv("sf-studio")||"",
-      body:"Client OS test — alerts are wired up.",token:fv("sf-tok")});
+      body:"Studio Brain test — alerts are wired up.",token:fv("sf-tok")});
     const r=await fetch(ep,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:p.toString()});
     toast(r.ok?"Test sent — check your phone":"Endpoint returned "+r.status);
   }catch(e){ toast("Couldn't reach that URL"); }
@@ -4952,7 +4952,7 @@ function buildExport(){
       nextShootBy:c.nextShootBy||null
     }))
   };
-  return { meta:{app:"UTS Client OS", exportedAt:new Date().toISOString(), by:me?.email||""},
+  return { meta:{app:"UTS Studio Brain", exportedAt:new Date().toISOString(), by:me?.email||""},
     summary, clients, projects, invoices, payables, activity, drives, users, leads,
     config:{ public:smsPub, tracking } };
 }
@@ -4967,7 +4967,7 @@ async function exportCSV(){
   const s=buildExport().summary;
   const esc2=v=>{ v=String(v??""); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; };
   const lines=[];
-  lines.push("UTS Client OS — Month Report");
+  lines.push("Under The Sun Studio Brain — Month Report");
   lines.push(`Month,${s.month}`);
   lines.push(`Exported,${new Date().toLocaleString()}`);
   lines.push("");
@@ -5471,6 +5471,7 @@ function clientDetailView(cid){
    Owner-only working notes: capture a title fast, click to expand and
    drop scripts / notes into a plain text field so nothing gets lost. */
 const IDEA_STATUS={idea:"Idea",scripting:"Scripting",ready:"Ready to shoot",shot:"Shot",used:"Posted"};
+const newIdeaId=()=>"ci"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const ideasOf=c=>Array.isArray(c&&c.contentIdeas)?c.contentIdeas:[];
 async function saveIdeas(cid,ideas,msg){
   await guard(()=>updateDoc(doc(db,"clients",cid),{contentIdeas:ideas}),msg||"Saved");
@@ -5550,7 +5551,7 @@ async function saveIdeaForm(cid,id){
   const notes=document.getElementById("if-notes")?.value||"";
   const c=byId(clients,cid)||{}; let ideas=ideasOf(c).slice();
   if(id){ ideas=ideas.map(x=>x.id===id?{...x,title,status,notes}:x); }
-  else { ideas.push({id:uid(),title,status,notes}); }
+  else { ideas.push({id:newIdeaId(),title,status,notes}); }
   delete ideaBuf[id];
   await saveIdeas(cid,ideas,id?"Idea updated":"Idea added");
   closeModal();
@@ -5576,7 +5577,7 @@ async function saveIdeaDraft(cid){
   const title=(ideaDraft?.title||"").trim();
   if(!title) return toast("Give the idea a title");
   const c=byId(clients,cid)||{};
-  const ideas=[...ideasOf(c),{id:uid(),title,status:ideaDraft.status||"idea",notes:ideaDraft.notes||""}];
+  const ideas=[...ideasOf(c),{id:newIdeaId(),title,status:ideaDraft.status||"idea",notes:ideaDraft.notes||""}];
   ideaDraft=null;
   await saveIdeas(cid,ideas,"Idea added");
 }
