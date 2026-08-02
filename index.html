@@ -2673,7 +2673,7 @@ async function loadFor(user){
     unsubs.push(live(collection(db,"invoices"), v=>invoices=v));
     unsubs.push(live(collection(db,"payables"), v=>payables=v));
     unsubs.push(live(collection(db,"drives"),   v=>drives=v));
-    unsubs.push(live(collection(db,"inventory"),v=>{ inventory=v; invLoaded=true; maybeSeedInventory(); }));
+    unsubs.push(live(collection(db,"inventory"),v=>{ inventory=v; invLoaded=true; }));
     unsubs.push(live(collection(db,"activity"), v=>activity=v.sort((a,b)=>(b.ts||0)-(a.ts||0))));
     unsubs.push(live(collection(db,"users"),    v=>users=v.map(u=>({...u,email:u.id}))));
   }
@@ -5657,40 +5657,48 @@ async function markUnposted(pid,i){
 }
 
 /* ══════════ STUDIO INVENTORY — insurance schedule ══════════
-   inventory[] = {id,name,category,qty,value(each),serial,notes}.
-   Grand total = Σ qty×value. Serial optional (add later). */
+   The 43-item starter list lives in code (INVENTORY_SEED) and ALWAYS
+   renders, with zero Firebase dependency. The `inventory` collection
+   only stores changes layered on top:
+     • an edit to a starter item  → a doc carrying that item's `sku`
+     • a brand-new item you add    → a doc with no `sku`
+     • a starter item you delete   → a doc {sku, deleted:true} (tombstone)
+   So even if Firestore rules block the collection, you still see all 43. */
+const invSlug=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
 const invLineTotal=it=>(+it.qty||0)*(+it.value||0);
-const invGrand=()=>inventory.reduce((s,it)=>s+invLineTotal(it),0);
-const invUnits=()=>inventory.reduce((s,it)=>s+(+it.qty||0),0);
+
+/* Merge the built-in seed list with any Firebase overrides / additions. */
+function inventoryAll(){
+  const seed=INVENTORY_SEED.map((it,i)=>({...it,serial:"",notes:"",sku:invSlug(it.name),_seed:true,_ord:i,ref:"seed:"+invSlug(it.name)}));
+  const bySku={}; seed.forEach((it,i)=>bySku[it.sku]=i);
+  const tomb=new Set(); const extras=[];
+  (inventory||[]).forEach(fb=>{
+    const sku=fb.sku||invSlug(fb.name);
+    if(fb.deleted){ if(fb.sku) tomb.add(fb.sku); return; }
+    const i=bySku[sku];
+    if(i!=null){ seed[i]={...seed[i],...fb,sku,_id:fb.id,_seed:true,ref:"id:"+fb.id,_ord:seed[i]._ord}; }
+    else { extras.push({...fb,_id:fb.id,ref:"id:"+fb.id,_ord:9999}); }
+  });
+  return seed.filter(it=>!tomb.has(it.sku)).concat(extras);
+}
+const invByRef=ref=>inventoryAll().find(x=>x.ref===ref)||null;
+const invGrand=()=>inventoryAll().reduce((s,it)=>s+invLineTotal(it),0);
+const invUnits=()=>inventoryAll().reduce((s,it)=>s+(+it.qty||0),0);
 const invCategories=()=>{
-  const set=new Set(inventory.map(it=>it.category||"Other"));
-  /* keep the known order first, then any custom categories alphabetically */
+  const set=new Set(inventoryAll().map(it=>it.category||"Other"));
   const known=INV_CATEGORIES.filter(c=>set.has(c));
   const extra=[...set].filter(c=>!INV_CATEGORIES.includes(c)).sort();
   return [...known,...extra];
 };
 
 function inventoryView(){
-  const missingSerials=inventory.filter(it=>!(it.serial||"").trim()).length;
+  const all=inventoryAll();
+  const missingSerials=all.filter(it=>!(it.serial||"").trim()).length;
   const cats=invCategories();
 
-  if(!inventory.length){
-    return `${backBar("Studio Inventory")}
-    <div class="hero"><div><h1>Inventory<span>.</span></h1><div class="sub">Gear &amp; replacement values for insurance</div></div></div>
-    <section class="panel"><div class="empty-state">
-      <div class="t">Loading your inventory…</div>
-      <div class="s">Your ${INVENTORY_SEED.length}-item starter list (${money(INVENTORY_SEED.reduce((s,it)=>s+it.qty*it.value,0))}) loads automatically.<br>
-        If it stays empty, Firestore is blocking the <b>inventory</b> collection — add it to your rules, then tap below.</div>
-      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px">
-        <button class="btn gold" data-invseed="1">LOAD STARTER INVENTORY</button>
-        <button class="btn outline" data-form="invitem">+ ADD ONE ITEM</button>
-      </div>
-    </div></section>`;
-  }
-
   const catBlocks=cats.map(cat=>{
-    const items=inventory.filter(it=>(it.category||"Other")===cat)
-                         .slice().sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+    const items=all.filter(it=>(it.category||"Other")===cat)
+                   .slice().sort((a,b)=>(a._ord-b._ord)||(a.name||"").localeCompare(b.name||""));
     const subtotal=items.reduce((s,it)=>s+invLineTotal(it),0);
     return `<section class="panel inv-cat">
       <div class="eyebrow">${esc(cat)}
@@ -5707,26 +5715,26 @@ function inventoryView(){
         </div>
         ${items.map(it=>{
           const ser=(it.serial||"").trim();
-          return `<div class="inv-row" data-openinv="${esc(it.id)}">
+          return `<div class="inv-row" data-openinv="${esc(it.ref)}">
             <div class="inv-c-name"><span class="inv-name">${esc(it.name||"Item")}</span>${it.notes?`<span class="inv-note">${esc(it.notes)}</span>`:""}</div>
             <div class="inv-c-qty">${+it.qty||0}</div>
             <div class="inv-c-val">${money(it.value)}</div>
             <div class="inv-c-tot">${money(invLineTotal(it))}</div>
             <div class="inv-c-ser">${ser?`<span class="inv-serial">${esc(ser)}</span>`:`<span class="inv-serial none">add later</span>`}</div>
-            <div class="inv-c-act"><button class="btn ghost mini" data-openinv="${esc(it.id)}">EDIT</button></div>
+            <div class="inv-c-act"><button class="btn ghost mini" data-openinv="${esc(it.ref)}">EDIT</button></div>
           </div>`;}).join("")}
       </div>
     </section>`;}).join("");
 
   return `${backBar("Studio Inventory")}
     <div class="hero"><div><h1>Inventory<span>.</span></h1>
-      <div class="sub">Replacement values for insurance &middot; ${inventory.length} line items</div></div>
+      <div class="sub">Replacement values for insurance &middot; ${all.length} line items</div></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn outline" data-invexport="1">EXPORT CSV</button>
         <button class="btn gold" data-form="invitem">+ ADD ITEM</button></div></div>
     <div class="stats">
       ${subStat("TOTAL VALUE",money(invGrand()),T.gold)}
-      ${subStat("LINE ITEMS",inventory.length)}
+      ${subStat("LINE ITEMS",all.length)}
       ${subStat("UNITS",invUnits())}
       ${subStat("MISSING SERIALS",missingSerials,missingSerials?T.dim:T.green)}
     </div>
@@ -5736,14 +5744,14 @@ function inventoryView(){
         <div style="font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.06em;text-transform:uppercase">Grand Total</div>
         <div style="font-family:var(--mono);font-size:26px;font-weight:700;color:var(--gold)">${money(invGrand())}</div>
       </div>
-      <div class="f" style="margin-top:8px"><div class="hint">Current replacement value — what it would cost to rebuild the kit today. Tap any row to edit, add a serial, or adjust the price. Export CSV gives you a clean schedule to hand your insurer.</div></div>
+      <div class="f" style="margin-top:8px"><div class="hint">The full kit is built in and always shown. Tap any row to add a serial, adjust a price, or delete it; use + Add Item for new gear. Your changes save to Firebase; the list shows even if they don't.</div></div>
     </section>`;
 }
 
-function inventoryForm(id){
-  const it=id?byId(inventory,id)||{}:{};
-  const cats=[...new Set([...INV_CATEGORIES,...inventory.map(x=>x.category).filter(Boolean)])];
-  showModal(`<h3>${id?"Edit Item":"Add Inventory Item"}</h3>
+function inventoryForm(ref){
+  const it=ref?(invByRef(ref)||{}):{};
+  const cats=[...new Set([...INV_CATEGORIES,...inventoryAll().map(x=>x.category).filter(Boolean)])];
+  showModal(`<h3>${ref?"Edit Item":"Add Inventory Item"}</h3>
   <div class="f-grid">
     <div class="f"><label>Item name</label><input id="iv-name" value="${esc(it.name||"")}" placeholder="e.g. Sony A7S III"></div>
     <div class="f"><label>Category</label>
@@ -5754,18 +5762,18 @@ function inventoryForm(id){
       <div class="f"><label>Quantity</label><input id="iv-qty" type="number" min="0" step="1" value="${it.qty??1}"></div>
       <div class="f"><label>Value each ($)</label><input id="iv-val" type="number" min="0" step="10" value="${it.value??""}" placeholder="0"></div>
     </div>
-    <div class="f"><label>Serial number ${id?"":"(optional — add later)"}</label>
+    <div class="f"><label>Serial number ${ref?"":"(optional — add later)"}</label>
       <input id="iv-serial" value="${esc(it.serial||"")}" placeholder="leave blank for now">
       <div class="hint">for insurance claims — you can fill these in over time</div></div>
     <div class="f"><label>Notes</label><input id="iv-notes" value="${esc(it.notes||"")}" placeholder="condition, purchase date, kit it belongs to…"></div>
   </div>
   <div class="actions">
-    ${id?`<button class="btn ghost danger" data-del-invitem="${esc(id)}">DELETE</button>`:""}
+    ${ref?`<button class="btn ghost danger" data-del-invitem="${esc(ref)}">DELETE</button>`:""}
     <button class="btn ghost" data-close="1">CANCEL</button>
-    <button class="btn gold" data-save-invitem="${esc(id||"")}">${id?"SAVE":"ADD ITEM"}</button>
+    <button class="btn gold" data-save-invitem="${esc(ref||"")}">${ref?"SAVE":"ADD ITEM"}</button>
   </div>`);
 }
-async function saveInvItem(id){
+async function saveInvItem(ref){
   const name=fv("iv-name"); if(!name) return toast("Item name required");
   const data={
     name,
@@ -5776,43 +5784,25 @@ async function saveInvItem(id){
     notes:fv("iv-notes")
   };
   await guard(async()=>{
-    if(id) await updateDoc(doc(db,"inventory",id),data);
-    else await addDoc(collection(db,"inventory"),data);
-  },id?"Item updated":"Item added");
+    if(ref&&ref.startsWith("id:")){ await updateDoc(doc(db,"inventory",ref.slice(3)),data); }
+    else if(ref&&ref.startsWith("seed:")){ await addDoc(collection(db,"inventory"),{...data,sku:ref.slice(5)}); }
+    else { await addDoc(collection(db,"inventory"),data); }
+  },ref?"Item updated":"Item added");
   closeModal();
 }
-async function removeInvItem(id){
-  const it=byId(inventory,id);
+async function removeInvItem(ref){
+  const it=invByRef(ref);
   if(!confirm(`Delete ${it?it.name:"this item"} from the inventory?`)) return;
-  await guard(()=>deleteDoc(doc(db,"inventory",id)),"Item removed");
-  closeModal();
-}
-async function seedInventory(){
-  if(inventory.length&&!confirm("Add the starter list on top of what's already here?")) return;
   await guard(async()=>{
-    for(const it of INVENTORY_SEED){ await addDoc(collection(db,"inventory"),{...it,serial:"",notes:""}); }
-  },"Starter inventory loaded");
-}
-/* Auto-load: the moment an owner's empty inventory finishes loading, write the
-   starter list once (ever) so the tab is always populated — no button press.
-   Runs only after the first snapshot (invLoaded) so we never double-seed, and
-   records a flag in config/tracking so it won't refill a list you emptied on
-   purpose. If Firestore rules block writes it stays un-flagged and retries. */
-async function maybeSeedInventory(){
-  if(_invSeeding) return;
-  if(!me||me.role!=="owner"||asEditor) return;   /* owner only */
-  if(!invLoaded) return;                          /* wait for the real snapshot */
-  if(inventory.length) return;                    /* already has data */
-  if(tracking&&tracking.inventorySeeded) return;  /* seeded before, then intentionally emptied */
-  _invSeeding=true;
-  try{
-    for(const it of INVENTORY_SEED){ await addDoc(collection(db,"inventory"),{...it,serial:"",notes:""}); }
-    try{ await setDoc(doc(db,"config","tracking"),{inventorySeeded:true},{merge:true}); }catch(e){}
-    toast("Inventory loaded");
-  }catch(e){
-    _invSeeding=false;   /* likely a rules permission error — allow a later retry */
-    if(e&&e.code==="permission-denied") toast("Inventory blocked by Firestore rules");
-  }
+    if(ref.startsWith("seed:")){ await addDoc(collection(db,"inventory"),{sku:ref.slice(5),name:it?it.name:"",deleted:true}); }
+    else if(ref.startsWith("id:")){
+      const id=ref.slice(3), d=byId(inventory,id);
+      if(d&&(d.sku||invSlug(d.name)&&INVENTORY_SEED.some(s=>invSlug(s.name)===(d.sku||invSlug(d.name))))){
+        await updateDoc(doc(db,"inventory",id),{deleted:true,sku:d.sku||invSlug(d.name)});
+      } else { await deleteDoc(doc(db,"inventory",id)); }
+    }
+  },"Item removed");
+  closeModal();
 }
 function exportInventoryCSV(){
   const esc2=v=>{ v=String(v??""); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; };
@@ -5821,11 +5811,12 @@ function exportInventoryCSV(){
   lines.push(`Exported,${new Date().toLocaleString()}`);
   lines.push("");
   lines.push(["Category","Item","Qty","Value Each","Line Total","Serial #","Notes"].join(","));
+  const all=inventoryAll();
   invCategories().forEach(cat=>{
-    inventory.filter(it=>(it.category||"Other")===cat)
-             .sort((a,b)=>(a.name||"").localeCompare(b.name||""))
-             .forEach(it=>lines.push([cat,it.name,+it.qty||0,+it.value||0,invLineTotal(it),it.serial||"",it.notes||""].map(esc2).join(",")));
-    const sub=inventory.filter(it=>(it.category||"Other")===cat).reduce((s,it)=>s+invLineTotal(it),0);
+    all.filter(it=>(it.category||"Other")===cat)
+       .sort((a,b)=>(a._ord-b._ord)||(a.name||"").localeCompare(b.name||""))
+       .forEach(it=>lines.push([cat,it.name,+it.qty||0,+it.value||0,invLineTotal(it),it.serial||"",it.notes||""].map(esc2).join(",")));
+    const sub=all.filter(it=>(it.category||"Other")===cat).reduce((s,it)=>s+invLineTotal(it),0);
     lines.push(["",`${cat} subtotal`,"","",sub,"",""].map(esc2).join(","));
   });
   lines.push("");
@@ -6206,12 +6197,11 @@ function paint(){
   if(view==="quote"&&me.role==="owner") mountQB();
   if(openProject) renderDetail();
   fireAlerts();
-  maybeSeedInventory();
 }
 
 /* ── events ── */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test],[data-openclient],[data-postnow],[data-unpost],[data-readytab],[data-dbtab],[data-save-drive],[data-del-drive],[data-save-log],[data-del-log],[data-backto],[data-asedit],[data-exitedit],[data-export],[data-eom],[data-bank],[data-ci-toggle],[data-ci-quickadd],[data-ci-save],[data-ci-del],[data-save-idea],[data-idea-new],[data-idea-cancel],[data-idea-savedraft],[data-save-invitem],[data-del-invitem],[data-openinv],[data-invexport],[data-invseed]");
+  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test],[data-openclient],[data-postnow],[data-unpost],[data-readytab],[data-dbtab],[data-save-drive],[data-del-drive],[data-save-log],[data-del-log],[data-backto],[data-asedit],[data-exitedit],[data-export],[data-eom],[data-bank],[data-ci-toggle],[data-ci-quickadd],[data-ci-save],[data-ci-del],[data-save-idea],[data-idea-new],[data-idea-cancel],[data-idea-savedraft],[data-save-invitem],[data-del-invitem],[data-openinv],[data-invexport]");
   if(!t) return;
   const d=t.dataset;
   if(d.close!==undefined){ if(t===e.target||t.tagName==="BUTTON") closeModal(); return; }
@@ -6245,7 +6235,6 @@ document.addEventListener("click",e=>{
   if(d.saveInvitem!==undefined) return saveInvItem(d.saveInvitem||null);
   if(d.delInvitem) return removeInvItem(d.delInvitem);
   if(d.invexport){ return exportInventoryCSV(); }
-  if(d.invseed){ return seedInventory(); }
   if(d.form==="drive")  return driveForm(d.id||null);
   if(d.form==="drivelog") return driveLogForm(d.drive||null, d.logi!==undefined?d.logi:null);
   if(d.saveLog!==undefined){ const [did,li]=d.saveLog.split(":"); return saveDriveLog(did, li===undefined?null:li); }
