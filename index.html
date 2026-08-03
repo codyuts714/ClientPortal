@@ -420,6 +420,11 @@ main.wide{max-width:1520px}
 input.sel{font-family:var(--mono);font-size:10.5px;color-scheme:dark}
 .deliv-acts{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .pf-row{display:flex;gap:8px;align-items:center;margin-bottom:7px}
+.pf-bulk{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.pf-bulk-lbl{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.pf-bulk textarea{width:100%;min-height:96px;resize:vertical;background:var(--panel);color:var(--cream);
+  border:1px solid var(--line);border-radius:8px;padding:10px 11px;font-family:var(--mono);font-size:13px;line-height:1.6;margin-bottom:8px}
+.pf-bulk textarea:focus{outline:none;border-color:var(--gold-soft)}
 .pf-row input{flex:1;min-width:0;background:var(--panel);color:var(--cream);border:1px solid var(--line);
   border-radius:8px;padding:8px 10px;font-family:var(--body);font-size:13px;outline:none}
 .pf-row input:focus{border-color:var(--gold)}
@@ -3129,7 +3134,12 @@ function pfRender(){
       <input id="pf-f${i}" value="${esc(pc.frameUrl||"")}" placeholder="Frame.io link" style="flex:1;min-width:110px">
       <button class="btn ghost mini" data-pf-del="${i}" title="remove">&#10005;</button>
     </div>`).join("")
-    +`<button class="btn outline mini" data-pf-add="1">+ ADD DELIVERABLE</button>`;
+    +`<button class="btn outline mini" data-pf-add="1">+ ADD DELIVERABLE</button>
+    <div class="pf-bulk">
+      <div class="pf-bulk-lbl">Paste a list — one per line — to create them all at once</div>
+      <textarea id="pf-bulk-in" placeholder="Reel 1&#10;Reel 2&#10;Reel 3"></textarea>
+      <button class="btn gold mini" data-pf-bulk="1">+ ADD THESE AS DELIVERABLES</button>
+    </div>`;
 }
 function projectForm(id,preClient){
   const p=id?byId(projects,id)||{}:{};
@@ -6201,7 +6211,7 @@ function paint(){
 
 /* ── events ── */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test],[data-openclient],[data-postnow],[data-unpost],[data-readytab],[data-dbtab],[data-save-drive],[data-del-drive],[data-save-log],[data-del-log],[data-backto],[data-asedit],[data-exitedit],[data-export],[data-eom],[data-bank],[data-ci-toggle],[data-ci-quickadd],[data-ci-save],[data-ci-del],[data-save-idea],[data-idea-new],[data-idea-cancel],[data-idea-savedraft],[data-save-invitem],[data-del-invitem],[data-openinv],[data-invexport]");
+  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-pf-bulk],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test],[data-openclient],[data-postnow],[data-unpost],[data-readytab],[data-dbtab],[data-save-drive],[data-del-drive],[data-save-log],[data-del-log],[data-backto],[data-asedit],[data-exitedit],[data-export],[data-eom],[data-bank],[data-ci-toggle],[data-ci-quickadd],[data-ci-save],[data-ci-del],[data-save-idea],[data-idea-new],[data-idea-cancel],[data-idea-savedraft],[data-save-invitem],[data-del-invitem],[data-openinv],[data-invexport]");
   if(!t) return;
   const d=t.dataset;
   if(d.close!==undefined){ if(t===e.target||t.tagName==="BUTTON") closeModal(); return; }
@@ -6246,6 +6256,19 @@ document.addEventListener("click",e=>{
   if(d.riAdd){ riSync(); RI.push({name:"",qty:""}); riRender(); return; }
   if(d.riDel!==undefined){ riSync(); RI.splice(+d.riDel,1); if(!RI.length) RI.push({name:"",qty:""}); riRender(); return; }
   if(d.pfAdd){ pfSync(); PF.push({name:"",status:"queued"}); pfRender(); return; }
+  if(d.pfBulk){
+    pfSync();
+    const raw=document.getElementById("pf-bulk-in")?.value||"";
+    const names=raw.split(/\r?\n/)
+      .map(s=>s.replace(/^\s*(?:[-*•]|\d+[.)])\s+/,"").trim())  /* strip bullets / "1." numbering */
+      .filter(Boolean);
+    if(!names.length){ toast("Paste some names first"); return; }
+    if(PF.length===1 && !(PF[0].name||"").trim()) PF=[];   /* drop the single empty starter row */
+    names.forEach(nm=>PF.push({name:nm,status:"queued"}));
+    pfRender();
+    toast(`Added ${names.length} deliverable${names.length===1?"":"s"}`);
+    return;
+  }
   if(d.pfDel!==undefined){ pfSync(); PF.splice(+d.pfDel,1); if(!PF.length) PF.push({name:"",status:"queued"}); pfRender(); return; }
   if(d.paydate){ const [id,w]=d.paydate.split(":"); return payDateForm(id,w); }
   if(d.savePay){ const [id,w]=d.savePay.split(":"); return savePayDate(id,w); }
