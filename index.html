@@ -380,6 +380,41 @@ main.wide{max-width:1520px}
 .stagebar button.on{border-color:rgba(242,201,76,.5);background:rgba(242,201,76,.13);color:var(--gold)}
 .lead-last{display:flex;justify-content:space-between;gap:8px;margin-top:9px;font-size:11.5px;color:var(--muted)}
 .lead-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.lead-offer{display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(242,201,76,.08);
+  border:1px solid rgba(242,201,76,.22);border-radius:8px;padding:8px 11px;margin-top:10px}
+.lead-offer .lo-l{font-size:12px;color:var(--gold-pale)}
+.lead-offer .lo-v{font-family:var(--display);font-weight:700;font-size:14px;color:var(--gold)}
+
+/* ── inbound: pipeline-overview / execution-queue tabs ── */
+.ib-tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line-soft);border-radius:11px;
+  padding:4px;margin:14px 0}
+.ib-tabs button{flex:1;border:0;border-radius:8px;background:transparent;color:var(--dim);padding:10px;
+  font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.ib-tabs button.on{background:var(--panel-up);color:var(--cream);box-shadow:0 3px 10px rgba(0,0,0,.25)}
+
+.funnel{display:grid;gap:2px}
+.funnel button{width:100%;display:grid;grid-template-columns:130px 1fr 34px;align-items:center;gap:10px;
+  border:0;background:transparent;color:var(--cream);padding:9px 6px;cursor:pointer;text-align:left;
+  font-family:var(--body);font-size:12.5px;border-radius:8px}
+.funnel button:hover{background:var(--panel-up)}
+.funnel-track{height:9px;background:var(--track);border-radius:8px;overflow:hidden}
+.funnel-track i{display:block;height:100%;background:linear-gradient(90deg,var(--gold-soft),var(--gold));border-radius:8px}
+.funnel button b{font-family:var(--mono);font-size:12px;text-align:right}
+
+.consistency{height:150px;display:grid;grid-template-columns:repeat(14,1fr);gap:5px;align-items:end;
+  border-bottom:1px solid var(--line-soft)}
+.consistency > div{height:132px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px}
+.consistency i{width:70%;min-height:3px;background:linear-gradient(180deg,var(--gold-pale),var(--gold));border-radius:4px 4px 0 0}
+.consistency b{font-family:var(--mono);font-size:8.5px;color:var(--muted)}
+.consistency small{font-family:var(--mono);font-size:8px;color:var(--dim)}
+
+.ib-filters{position:sticky;top:64px;z-index:2;display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:8px;
+  background:var(--panel);border:1px solid var(--line-soft);border-radius:11px;padding:10px;margin-bottom:12px}
+@media(max-width:700px){.ib-filters{grid-template-columns:1fr}}
+.ib-filters input{background:var(--panel-up);color:var(--cream);border:1px solid var(--line);border-radius:8px;
+  padding:9px 11px;font-family:var(--body);font-size:13px;outline:none}
+.ib-filters input:focus{border-color:var(--gold)}
+.ib-queue{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px}
 .tl{list-style:none;margin:12px 0 0;padding:0;border-left:1px solid var(--line)}
 .tl li{position:relative;padding:0 0 15px 17px}
 .tl li::before{content:'';position:absolute;left:-4px;top:6px;width:7px;height:7px;border-radius:50%;background:var(--gold)}
@@ -448,6 +483,69 @@ input.sel{font-family:var(--mono);font-size:10.5px;color-scheme:dark}
 .db-actions .btn{font-size:10px;padding:6px 10px}
 .eyebrow .spacer{flex:1}
 .eyebrow .btn{margin-left:auto}
+
+/* ── Studio dashboard: chart row, kanban pipeline, mini calendar, quick actions ── */
+.dash-charts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:1050px){.dash-charts{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.dash-charts{grid-template-columns:1fr}}
+.chartcard .chart-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px}
+.chartcard .chart-lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+.chartcard .chart-delta{font-family:var(--mono);font-size:10px;letter-spacing:.03em}
+.chartcard .chart-val{font-family:var(--display);font-weight:700;font-size:21px;margin:2px 0 8px}
+.donut-panel{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.donut-wrap{position:relative;flex:0 0 auto}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.donut-center b{font-family:var(--display);font-weight:700;font-size:16px;color:var(--cream);line-height:1.1}
+.donut-center span{font-family:var(--mono);font-size:8.5px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase}
+.donut-legend{display:grid;gap:6px;flex:1;min-width:110px}
+.dl-row{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted)}
+.dl-row .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+.dl-row b{margin-left:auto;color:var(--cream);font-family:var(--mono);font-size:11px}
+
+.dash-grid{display:grid;grid-template-columns:2.1fr 1fr;gap:16px;align-items:start}
+@media(max-width:1050px){.dash-grid{grid-template-columns:1fr}}
+.dash-side{display:grid;gap:16px}
+
+.kanban{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;align-items:start}
+@media(max-width:1300px){.kanban{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.kanban{grid-template-columns:repeat(2,1fr)}}
+.kcol-h{display:flex;justify-content:space-between;align-items:baseline;padding:0 2px 8px;margin-bottom:9px;
+  border-bottom:1px solid var(--line);font-family:var(--display);font-weight:700;font-size:10.5px;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.kcol-h span{color:var(--dim);font-family:var(--mono);font-weight:400}
+.kcol-body{display:grid;gap:8px;min-height:8px}
+.kcol-body .pmini{padding:9px 10px 10px}
+.kcol-body .pmini .m-title,.kcol-body .pmini .m-id{padding-right:38px}
+.kcol-body .pmini .m-pct{font-size:19px}
+.kcol-empty{font-family:var(--mono);font-size:10px;color:var(--dim);padding:6px 2px}
+
+.topclients{display:grid;gap:11px}
+.tc-row{display:grid;gap:2px}
+.tc-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.tc-name{font-size:13px;color:var(--cream)}
+.tc-amt{font-family:var(--mono);font-size:12px;color:var(--gold)}
+.tc-track{height:6px;background:var(--track);border-radius:4px;overflow:hidden}
+.tc-track i{display:block;height:100%;background:linear-gradient(90deg,var(--gold-soft),var(--gold));border-radius:4px}
+
+.minical{display:grid;gap:6px}
+.mc-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 2px;border-top:1px solid var(--line-soft)}
+.mc-row:first-child{border-top:none}
+.mc-date{font-family:var(--mono);font-size:10.5px;color:var(--dim);min-width:44px}
+.mc-what{font-size:12.5px;color:var(--cream);flex:1}
+
+.tasklist{display:grid;gap:2px}
+.task-row{display:flex;align-items:flex-start;gap:9px;padding:8px 2px;border-top:1px solid var(--line-soft);cursor:pointer}
+.task-row:first-child{border-top:none}
+.task-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;flex:0 0 auto}
+.task-t{font-size:12.5px;color:var(--cream);line-height:1.4}
+.task-m{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:1px}
+
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qa-card{background:var(--panel-up);border:1px solid var(--line-soft);border-radius:10px;padding:11px 10px;
+  text-align:left;color:var(--cream);font-family:var(--display);font-weight:700;font-size:11.5px;
+  letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:.15s}
+.qa-card:hover{border-color:rgba(242,201,76,.45);background:rgba(242,201,76,.06)}
+
 footer{text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--dim);
   padding:14px 0 calc(28px + env(safe-area-inset-bottom));text-transform:uppercase;position:relative;z-index:1}
 /* ── login gate ── */
@@ -2155,6 +2253,7 @@ let _invSeeding=false;       /* prevents concurrent auto-seed writes */
 let folderPresets={presets:[],defaultName:null};  /* config/folderPresets — saved "go-to" folder structures */
 let settings={}, smsPub={};   /* config/sms (owner only) + config/public (everyone) */
 let view="owner", previewClient=null, previewEditor=null;
+let inboundTab="overview", ibStageFilter="all", ibChannelFilter="all", ibSearch="";
 let tracking={};        /* config/tracking — last export + month-end reminder dismissal */
 let asEditor=null;      /* owner impersonating an editor's view */
 let bankAccounts=[], bankTxns=[], bankRecurring=[], txnRules=[];  /* Plaid money data */
@@ -2181,6 +2280,60 @@ const byId=(arr,id)=>arr.find(x=>x.id===id);
 /* local YYYY-MM-DD (not UTC) — matches the dates you type into the app */
 const localISO=d=>{ const z=new Date(d); z.setMinutes(z.getMinutes()-z.getTimezoneOffset());
   return z.toISOString().slice(0,10); };
+
+/* ── lightweight inline-SVG charts (no library — keeps the file dependency-free) ── */
+function sparklineSVG(data,opts={}){
+  const w=opts.w||280,h=opts.h||64,color=opts.color||"var(--gold)";
+  if(!data.length) return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}"></svg>`;
+  const max=Math.max(...data,1),min=Math.min(...data,0),range=(max-min)||1;
+  const stepX=data.length>1?w/(data.length-1):w;
+  const pts=data.map((v,i)=>[i*stepX,4+(h-8)-((v-min)/range)*(h-8)]);
+  const path="M"+pts.map(p=>p.join(",")).join(" L");
+  const area=path+` L${w},${h} L0,${h} Z`;
+  const last=pts[pts.length-1];
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none" class="spark">
+    <path d="${area}" fill="${color}" opacity=".14"></path>
+    <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${last[0]}" cy="${last[1]}" r="3" fill="${color}"/>
+  </svg>`;
+}
+function barsChartSVG(bars,opts={}){
+  const w=opts.w||280,h=opts.h||96,color=opts.color||"var(--gold)";
+  if(!bars.length) return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}"></svg>`;
+  const max=Math.max(...bars.map(b=>b.v),1),n=bars.length,gap=4,bw=(w-gap*(n-1))/n;
+  const body=bars.map((b,i)=>{
+    const bh=Math.max(2,(b.v/max)*(h-16)),x=i*(bw+gap),y=h-16-bh;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${bh.toFixed(1)}" rx="2" fill="${color}"/>
+      <text x="${(x+bw/2).toFixed(1)}" y="${h-4}" text-anchor="middle" font-size="8" fill="var(--dim)" font-family="var(--mono)">${esc(b.l)}</text>`;
+  }).join("");
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${body}</svg>`;
+}
+function groupedBarsSVG(bars,opts={}){
+  const w=opts.w||280,h=opts.h||110,colA=opts.colA||"var(--gold)",colB=opts.colB||"var(--dim)";
+  if(!bars.length) return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}"></svg>`;
+  const max=Math.max(...bars.map(x=>Math.max(x.a,x.b)),1),n=bars.length,gap=10,groupW=(w-gap*(n-1))/n,bw=groupW/2-2;
+  const body=bars.map((b,i)=>{
+    const gx=i*(groupW+gap),ah=Math.max(1,(b.a/max)*(h-18)),bh=Math.max(1,(b.b/max)*(h-18));
+    return `<rect x="${gx.toFixed(1)}" y="${(h-18-ah).toFixed(1)}" width="${bw.toFixed(1)}" height="${ah.toFixed(1)}" rx="2" fill="${colA}"/>
+      <rect x="${(gx+bw+2).toFixed(1)}" y="${(h-18-bh).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="2" fill="${colB}"/>
+      <text x="${(gx+groupW/2-1).toFixed(1)}" y="${h-6}" text-anchor="middle" font-size="8" fill="var(--dim)" font-family="var(--mono)">${esc(b.l)}</text>`;
+  }).join("");
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">${body}</svg>`;
+}
+function donutSVG(segs,opts={}){
+  const size=opts.size||118,sw=opts.stroke||14,r=(size-sw)/2,c=2*Math.PI*r;
+  const total=segs.reduce((s,x)=>s+(x.v||0),0)||1;
+  let off=0;
+  const circles=segs.filter(s=>s.v>0).map(s=>{
+    const frac=s.v/total,len=frac*c,rotate=-90+(off/total)*360;
+    off+=s.v;
+    return `<circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-dasharray="${len.toFixed(1)} ${(c-len).toFixed(1)}" transform="rotate(${rotate.toFixed(1)} ${size/2} ${size/2})"/>`;
+  }).join("");
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--track)" stroke-width="${sw}"/>
+    ${circles}
+  </svg>`;
+}
 
 /* ── project timer: start-to-delivery clock in days + hours ── */
 const elapsedDH=ms=>{ ms=Math.max(0,ms); const h=Math.floor(ms/3.6e6), dd=Math.floor(h/24), hh=h%24;
@@ -2360,6 +2513,19 @@ function payments(){
 const collectedMonth=m=>payments().filter(x=>(x.when||"").startsWith(m))
   .reduce((s,x)=>s+x.amount,0);
 const paymentsOf=cid=>payments().filter(x=>x.clientId===cid);
+/* revenue collected per client, all-time — powers "Top Clients by Revenue" */
+function paymentsByClient(){
+  const map=new Map();
+  payments().forEach(x=>{
+    if(!x.clientId) return;
+    const g=map.get(x.clientId)||{clientId:x.clientId,total:0};
+    g.total+=x.amount; map.set(x.clientId,g);
+  });
+  return [...map.values()].sort((a,b)=>b.total-a.total);
+}
+/* editor payables actually paid out in a given YYYY-MM — the "expenses" side of cash flow */
+const expensesMonth=m=>payables.filter(p=>p.status==="paid"&&(p.paidOnISO||"").startsWith(m))
+  .reduce((s,p)=>s+(+p.amount||0),0);
 const projectsOf=cid=>projects.filter(p=>p.clientId===cid);
 const invoicesOf=cid=>invoices.filter(i=>i.clientId===cid);
 const activityOf=cid=>activity.filter(a=>a.clientId===cid).slice(0,8);
@@ -4492,23 +4658,67 @@ Tell me what you're picturing for ${l.ask||"this"} and roughly when you need it,
   ];
 }
 
+/* rough dollar read on a lead, for the funnel/goal + card "offer" box —
+   prefers a real attached quote, falls back to the midpoint of its budget bucket */
+const LEAD_BUDGET_EST={"Unknown":0,"$1-3k":2000,"$3-6k":4500,"$6k+":7500,"Retainer":3000};
+const leadValue=l=>(l.quote&&l.quote.value)?+l.quote.value:(LEAD_BUDGET_EST[l.budget]||0);
+
 function inboundView(){
   const waiting=leads.filter(l=>!l.firstReplyAt).length;
   const late=leads.filter(l=>!l.firstReplyAt&&leadMins(l.createdAt)>=SLA_MIN).length;
   const due=leads.filter(leadOverdue).length;
   const n=k=>leads.filter(l=>l.leadStage===k).length;
   const stat=(l,v,c)=>`<div class="stat"><div class="l">${l}</div><div class="v" style="color:${c||"var(--cream)"}">${v}</div></div>`;
+  const pipelineValue=leads.reduce((s,l)=>s+leadValue(l),0);
 
-  const cols=LEAD_STAGES.map(([key,label])=>{
-    const list=leads.filter(l=>l.leadStage===key).sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));
-    return `<section><div class="lead-col-h">${label}<span>${list.length}</span></div>
-      ${list.length?list.map(leadCard).join(""):`<div class="lead-card" style="border-left-color:var(--line)">
-        <div class="ask">Nothing here.</div></div>`}</section>`;
-  }).join("");
+  const tabBtn=(k,lbl)=>`<button class="${inboundTab===k?"on":""}" data-ibtab="${k}">${lbl}</button>`;
+
+  const overviewHTML=()=>{
+    const maxN=Math.max(1,...LEAD_STAGES.map(([k])=>n(k)));
+    const funnelRows=LEAD_STAGES.map(([k,lbl])=>{
+      const c=n(k);
+      return `<button data-ibopen="${esc(k)}"><span>${esc(lbl)}</span><div class="funnel-track"><i style="width:${Math.max(3,c/maxN*100)}%"></i></div><b>${c}</b></button>`;
+    }).join("");
+    const days=[...Array(14)].map((_,i)=>{
+      const d=new Date(); d.setDate(d.getDate()-(13-i));
+      const iso=localISO(d);
+      const cnt=leads.reduce((s,l)=>s+(l.touches||[]).filter(t=>(t.at||"").slice(0,10)===iso).length,0);
+      return {l:["Su","Mo","Tu","We","Th","Fr","Sa"][d.getDay()],n:cnt};
+    });
+    const maxD=Math.max(1,...days.map(d=>d.n));
+    return `<div class="two-col">
+      <section class="panel"><div class="eyebrow">Sales Funnel<span class="spacer"></span>
+        <span style="font-family:var(--mono);font-size:10.5px;color:var(--dim)">click a stage to work it</span></div>
+        <div class="funnel">${funnelRows}</div></section>
+      <section class="panel"><div class="eyebrow">Touch Consistency · 14 Days</div>
+        <div class="consistency">${days.map(d=>`<div title="${d.n} touches"><b>${d.n||""}</b><i style="height:${Math.max(4,d.n/maxD*100)}px"></i><small>${d.l}</small></div>`).join("")}</div>
+      </section>
+    </div>`;
+  };
+
+  const queueHTML=()=>{
+    const q=ibSearch.toLowerCase();
+    const shown=leads.filter(l=>(ibStageFilter==="all"||l.leadStage===ibStageFilter)
+      &&(ibChannelFilter==="all"||l.channel===ibChannelFilter)
+      &&(!q||`${l.name||""} ${l.ask||""} ${l.contact||""}`.toLowerCase().includes(q)))
+      .sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));
+    return `<div class="ib-filters">
+      <select class="sel" id="ibStage">
+        <option value="all" ${ibStageFilter==="all"?"selected":""}>All stages</option>
+        ${LEAD_STAGES.map(([k,lbl])=>`<option value="${esc(k)}" ${ibStageFilter===k?"selected":""}>${esc(lbl)}</option>`).join("")}
+      </select>
+      <select class="sel" id="ibChannel">
+        <option value="all" ${ibChannelFilter==="all"?"selected":""}>All channels</option>
+        ${LEAD_CHANNELS.map(c=>`<option value="${esc(c)}" ${ibChannelFilter===c?"selected":""}>${esc(c)}</option>`).join("")}
+      </select>
+      <input id="ibSearch" placeholder="Search prospects…" value="${esc(ibSearch)}">
+    </div>
+    <div class="ib-queue">${shown.length?shown.map(leadCard).join(""):`<div class="panel" style="text-align:center;color:var(--dim);padding:30px">No prospects match these filters.</div>`}</div>`;
+  };
 
   return `
   <div class="hero"><div><h1>Inbound<span>.</span></h1>
-    <div class="sub">${leads.length} live lead${leads.length===1?"":"s"} · ${waiting} waiting on you</div></div>
+    <div class="sub">${leads.length} live lead${leads.length===1?"":"s"} · ${waiting} waiting on you · ${money(pipelineValue)} pipeline value</div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn gold" data-lead-new="1">+ NEW LEAD</button>
     </div></div>
@@ -4520,11 +4730,12 @@ function inboundView(){
     ${stat("PAST 1 HOUR",late,late?T.red:T.green)}
     ${stat("FOLLOW-UP DUE",due,due?T.red:T.green)}
   </div>
-  <div class="lead-cols">${cols}</div>`;
+  <div class="ib-tabs">${tabBtn("overview","Pipeline Overview")}${tabBtn("queue","Execution Queue")}</div>
+  ${inboundTab==="queue"?queueHTML():overviewHTML()}`;
 }
 
 function leadCard(l){
-  const c=leadClock(l), tch=lastTouch(l), n=(l.touches||[]).length;
+  const c=leadClock(l), tch=lastTouch(l), n=(l.touches||[]).length, val=leadValue(l);
   return `<article class="lead-card tk-${c.k}">
     <div class="nm">${esc(l.name||"Unnamed")}</div>
     <div class="ask">${esc(l.ask||"No detail yet")}</div>
@@ -4534,6 +4745,7 @@ function leadCard(l){
       ${l.quote&&l.quote.number?`<span class="tag" style="color:var(--gold);border-color:rgba(242,201,76,.35);background:rgba(242,201,76,.1)">QUOTE ${esc(l.quote.number)}</span>`:""}
       <span class="lead-clock" style="color:${c.c}">${esc(c.t)}</span>
     </div>
+    ${val?`<div class="lead-offer"><span class="lo-l">${l.quote&&l.quote.value?"Quoted value":"Est. value"}</span><span class="lo-v">${money(val)}</span></div>`:""}
     <div class="stagebar">
       ${LEAD_STAGES.map(([k,lab])=>`<button class="${l.leadStage===k?"on":""}" data-lead-stage="${esc(l.id)}:${k}">${lab}</button>`).join("")}
     </div>
@@ -4743,6 +4955,30 @@ document.addEventListener("click",e=>{
     guard(()=>deleteDoc(doc(db,"projects",d.leadDel)),"Lead deleted").then(closeModal); return; }
 });
 const chipVal=g=>{const el=document.querySelector(`[data-chipgroup="${g}"] .on`);return el?el.dataset.chip:"";};
+
+/* ── inbound: pipeline-overview / execution-queue tabs + queue filters ── */
+document.addEventListener("click",e=>{
+  const tab=e.target.closest("[data-ibtab]");
+  if(tab){ inboundTab=tab.dataset.ibtab; paint(); return; }
+  const open=e.target.closest("[data-ibopen]");
+  if(open){ inboundTab="queue"; ibStageFilter=open.dataset.ibopen; paint(); return; }
+});
+document.addEventListener("change",e=>{
+  if(e.target.id==="ibStage"){ ibStageFilter=e.target.value; paint(); }
+  if(e.target.id==="ibChannel"){ ibChannelFilter=e.target.value; paint(); }
+});
+document.addEventListener("input",e=>{
+  if(e.target.id==="ibSearch"){ ibSearch=e.target.value;
+    const grid=document.querySelector(".ib-queue");
+    if(grid){ /* re-render just the queue without losing input focus */
+      const shownIds=leads.filter(l=>(ibStageFilter==="all"||l.leadStage===ibStageFilter)
+        &&(ibChannelFilter==="all"||l.channel===ibChannelFilter)
+        &&(!ibSearch||`${l.name||""} ${l.ask||""} ${l.contact||""}`.toLowerCase().includes(ibSearch.toLowerCase())))
+        .sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));
+      grid.innerHTML=shownIds.length?shownIds.map(leadCard).join(""):`<div class="panel" style="text-align:center;color:var(--dim);padding:30px">No prospects match these filters.</div>`;
+    }
+  }
+});
 
 
 /* ═══════════ OWNER VIEW ═══════════ */
@@ -5171,6 +5407,92 @@ function moneyView(){
   </section>`;
 }
 
+/* ── Studio dashboard: Project Pipeline kanban (5 stage columns) ── */
+function pipelineKanban(){
+  const cols=STAGES.map((label,i)=>({i,label}));
+  const live=projects.filter(p=>pct(p)<100||+p.stage===4);
+  return `<section class="panel"><div class="eyebrow">Project Pipeline
+    <span class="spacer"></span>
+    <button class="btn gold mini" data-form="project">+ NEW PROJECT</button></div>
+    <div class="kanban">
+      ${cols.map(c=>{
+        const list=live.filter(p=>(+p.stage||0)===c.i)
+          .sort((a,b)=>(dayDiff(a.dueISO)??999)-(dayDiff(b.dueISO)??999));
+        const label=c.i===1?"Shoot / Download":c.label;
+        return `<div><div class="kcol-h">${esc(label)}<span>${list.length}</span></div>
+          <div class="kcol-body">${list.length?list.map(miniCard).join(""):`<div class="kcol-empty">—</div>`}</div></div>`;
+      }).join("")}
+    </div></section>`;
+}
+/* ── Studio dashboard: Top Clients by Revenue ── */
+function topClientsPanel(){
+  const rows=paymentsByClient().slice(0,6);
+  const max=Math.max(...rows.map(r=>r.total),1);
+  return `<section class="panel"><div class="eyebrow">Top Clients by Revenue</div>
+    ${rows.length?`<div class="topclients">${rows.map(r=>{
+      const c=byId(clients,r.clientId)||{name:"—"};
+      return `<div class="tc-row">
+        <div class="tc-top"><span class="tc-name">${esc(c.name)}</span><span class="tc-amt">${money(r.total)}</span></div>
+        <div class="tc-track"><i style="width:${Math.max(4,r.total/max*100)}%"></i></div>
+      </div>`;}).join("")}</div>`
+      :`<div style="font-size:13px;color:var(--dim)">No revenue collected yet.</div>`}
+  </section>`;
+}
+/* ── Studio dashboard: Alerts & Tasks (restyled digest + follow-up leads) ── */
+function alertsTasksPanel(){
+  const d=digest();
+  const unread=leads.filter(l=>!l.firstReplyAt).length;
+  const dueFollowUp=leads.filter(l=>l.leadStage&&l.leadStage!=="lost"&&leadOverdue(l)).length;
+  const warm=k=>k==="delivery-soon"||k==="post-tomorrow";
+  const rows=[
+    ...(unread?[{t:`${unread} new lead${unread===1?"":"s"} need a first reply`,m:"Inbound",view:"inbound",c:T.red}]:[]),
+    ...(dueFollowUp?[{t:`${dueFollowUp} lead follow-up${dueFollowUp===1?"":"s"} due`,m:"Inbound",view:"inbound",c:T.gold}]:[]),
+    ...d.slice(0,7).map(x=>({t:x.title,m:`${x.meta} · ${x.label}`,openId:x.openId,openKind:x.openKind,c:warm(x.kind)?T.gold:T.red}))
+  ];
+  return `<section class="panel"><div class="eyebrow">Alerts &amp; Tasks
+    <span class="spacer"></span>
+    <button class="btn ghost mini" data-alerts="1">${notifyOn()?"ON":"ALERTS"}</button></div>
+    ${rows.length?`<div class="tasklist">${rows.map(r=>`<div class="task-row" ${r.view?`data-view="${r.view}"`:r.openKind==="client"?`data-openclient="${esc(r.openId)}"`:r.openId?`data-open="${esc(r.openId)}"`:""}>
+      <span class="task-dot" style="background:${r.c}"></span>
+      <div><div class="task-t">${esc(r.t)}</div><div class="task-m">${esc(r.m)}</div></div>
+    </div>`).join("")}</div>`:`<div style="font-size:12.5px;color:var(--dim)">Nothing needs you right now.</div>`}
+  </section>`;
+}
+/* ── Studio dashboard: compact Mini Calendar (next 14 days, list form) ── */
+function miniCalendarPanel(){
+  const base=new Date(); base.setHours(0,0,0,0);
+  const rows=[];
+  for(let i=0;i<14&&rows.length<8;i++){
+    const d=new Date(base); d.setDate(d.getDate()+i);
+    const iso=localISO(d);
+    calItems(iso).forEach(it=>{
+      const attr=it.id?`data-open="${esc(it.id)}"`:it.cid?`data-form="client" data-id="${esc(it.cid)}"`:"";
+      rows.push(`<div class="mc-row" ${attr}>
+        <span class="mc-date">${esc(isoShort(iso))}</span>
+        <span class="mc-what">${esc(it.t)}</span>
+        <span class="sla" style="color:${CAL_COL[it.k]};border:1px solid ${CAL_COL[it.k]}55;background:${CAL_COL[it.k]}12">${CAL_LAB[it.k]||""}</span>
+      </div>`);
+    });
+  }
+  return `<section class="panel"><div class="eyebrow">Mini Calendar
+    <span class="spacer"></span>
+    <span style="font-family:var(--mono);font-size:10px;color:var(--dim)">next 14 days</span></div>
+    <div class="minical">${rows.length?rows.join(""):`<div style="font-size:12.5px;color:var(--dim)">Nothing on the calendar.</div>`}</div>
+  </section>`;
+}
+/* ── Studio dashboard: Quick Actions ── */
+function quickActionsPanel(){
+  return `<section class="panel"><div class="eyebrow">Quick Actions</div>
+    <div class="qa-grid">
+      <button class="qa-card" data-form="project">+ New Project</button>
+      <button class="qa-card" data-form="client">+ Add Client</button>
+      <button class="qa-card" data-view="inbound">+ New Lead</button>
+      <button class="qa-card" data-form="invoice">+ New Invoice</button>
+      <button class="qa-card" data-view="payments">Record Payment</button>
+      <button class="qa-card" data-view="sms">Send SMS</button>
+    </div></section>`;
+}
+
 function ownerView(){
   const open=projects.filter(p=>pct(p)<100);
   const thisMonth=new Date().toISOString().slice(0,7);
@@ -5196,8 +5518,31 @@ function ownerView(){
       </div></section>`;
   }
 
+  /* ── chart data: all derived from real records, no fabricated history ── */
   const day0=new Date(); day0.setHours(0,0,0,0);
-  const dleft=p=>p.dueISO?Math.round((new Date(p.dueISO+"T00:00:00")-day0)/864e5):999;
+  const cashDaily=[...Array(14)].map((_,i)=>{
+    const d=new Date(day0); d.setDate(d.getDate()-(13-i));
+    const iso=localISO(d);
+    return {l:MONTHS[d.getMonth()].slice(0,1)+d.getDate(),v:pays.filter(x=>(x.when||"").startsWith(iso)).reduce((s,x)=>s+x.amount,0)};
+  });
+  const monthsBack=6;
+  const revMonthly=[...Array(monthsBack)].map((_,i)=>{
+    const d=new Date(); d.setMonth(d.getMonth()-(monthsBack-1-i));
+    const m=d.toISOString().slice(0,7);
+    return {l:MONTHS[d.getMonth()],v:collectedMonth(m)};
+  });
+  const incomeMTD=collectedMonth(thisMonth), expenseMTD=expensesMonth(thisMonth), netMTD=incomeMTD-expenseMTD;
+  const cashFlowWeeks=[0,1,2,3].map(w=>{
+    const from=new Date(); from.setDate(1); from.setDate(from.getDate()+w*7);
+    const to=new Date(from); to.setDate(to.getDate()+6);
+    const inRange=iso=>iso&&iso>=localISO(from)&&iso<=localISO(to);
+    return {l:"W"+(w+1),
+      a:pays.filter(x=>inRange(x.when)).reduce((s,x)=>s+x.amount,0),
+      b:payables.filter(p=>p.status==="paid"&&inRange(p.paidOnISO)).reduce((s,p)=>s+(+p.amount||0),0)};
+  });
+
+  const day0r=new Date(); day0r.setHours(0,0,0,0);
+  const dleft=p=>p.dueISO?Math.round((new Date(p.dueISO+"T00:00:00")-day0r)/864e5):999;
   const radarRow=p=>{
     const d=dleft(p), c=d<0?T.red:d<=3?T.gold:T.muted;
     const lbl=d<0?`${-d}d OVERDUE`:d===0?"TODAY":d===1?"TOMORROW":d>900?"NO DATE":`IN ${d} DAYS`;
@@ -5240,9 +5585,8 @@ function ownerView(){
     </div></div>
   <div class="stats">
     ${stat("OPEN PROJECTS",open.length)}
-    ${stat("MONTHLY RETAINERS",money(monthlyRetainerTotal()),monthlyRetainerTotal()?T.gold:T.dim)}
-    ${stat("COLLECTED THIS MONTH",money(collectedMonth(thisMonth)),T.green)}
-    ${stat("COLLECTED LAST MONTH",money(collectedMonth(lastMonth)),T.dim)}
+    ${stat("MONTHLY RETAINER",money(monthlyRetainerTotal()),monthlyRetainerTotal()?T.gold:T.dim)}
+    ${stat("CASH COLLECTED",money(collectedMonth(thisMonth)),T.green)}
     ${stat("BILLED THIS MONTH",money(sumMonth(thisMonth)),T.gold)}
     <div class="stat-wrap">
       <div class="stat statlink" data-view="ar" role="button" tabindex="0">
@@ -5254,19 +5598,72 @@ function ownerView(){
     ${stat("ACCOUNTS PAYABLE",money(apOwed),apOwed?T.red:T.green)}
     ${stat("SLA WATCH (DAY 5+)",risk,risk?T.red:T.green)}
   </div>
-  ${calendarStrip()}
-  ${updateShootsPanel()}
-  ${alertStrip()}
-  ${projectBoard()}
-  <div class="two-col">
-    <section class="panel"><div class="eyebrow">Delivery Radar</div>${radar}</section>
-    <section class="panel"><div class="eyebrow">Editor Payments
-      <span class="spacer"></span><button class="btn outline mini" data-form="payable">+ LOG PAYMENT</button></div>
-      ${edPay||`<div style="font-size:13px;color:var(--dim)">No editors yet — add one under Access below.</div>`}
-      <div class="list-row" style="border-top:1px solid rgba(232,181,66,.27)">
-        <span style="font-family:var(--mono);font-size:11px;color:var(--gold-soft);letter-spacing:.1em">OWED NOW + ON DELIVERY</span>
-        <span class="amount" style="color:var(--gold);font-weight:600">${money(apOwed+onDel)}</span></div>
-    </section>
+
+  <div class="dash-charts">
+    <div class="panel chartcard">
+      <div class="chart-head"><span class="chart-lbl">Cash Collected · Daily</span>
+        <span class="chart-delta" style="color:${collectedMonth(thisMonth)>=collectedMonth(lastMonth)?T.green:T.red}">${collectedMonth(lastMonth)?(collectedMonth(thisMonth)>=collectedMonth(lastMonth)?"↑":"↓")+" vs last mo":""}</span></div>
+      <div class="chart-val">${money(cashDaily.reduce((s,x)=>s+x.v,0))}</div>
+      ${sparklineSVG(cashDaily.map(x=>x.v),{color:T.gold})}
+    </div>
+    <div class="panel chartcard">
+      <div class="chart-head"><span class="chart-lbl">Revenue · Monthly</span></div>
+      <div class="chart-val">${money(revMonthly[revMonthly.length-1].v)}</div>
+      ${barsChartSVG(revMonthly,{color:T.gold})}
+    </div>
+    <div class="panel chartcard">
+      <div class="chart-head"><span class="chart-lbl">Profit · This Month</span></div>
+      <div class="donut-panel">
+        <div class="donut-wrap">${donutSVG([{v:Math.max(0,netMTD),color:T.gold},{v:expenseMTD,color:T.dim}],{size:96,stroke:11})}
+          <div class="donut-center"><b>${money(netMTD)}</b><span>NET</span></div></div>
+        <div class="donut-legend">
+          <div class="dl-row"><span class="dot" style="background:${T.gold}"></span>Income<b>${money(incomeMTD)}</b></div>
+          <div class="dl-row"><span class="dot" style="background:${T.dim}"></span>Expenses<b>${money(expenseMTD)}</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel chartcard">
+      <div class="chart-head"><span class="chart-lbl">Cash Flow · This Month</span></div>
+      <div class="chart-val" style="font-size:15px">
+        <span style="color:${T.gold}">■</span> in &nbsp; <span style="color:${T.dim}">■</span> out</div>
+      ${groupedBarsSVG(cashFlowWeeks,{colA:T.gold,colB:T.dim})}
+    </div>
+  </div>
+
+  <div class="dash-grid">
+    <div class="grid-gap">
+      ${pipelineKanban()}
+      <div class="two-col">
+        ${topClientsPanel()}
+        <section class="panel"><div class="eyebrow">A/R vs Payables</div>
+          <div class="donut-panel">
+            <div class="donut-wrap">${donutSVG([{v:outst,color:T.gold},{v:apOwed,color:T.red}],{size:96,stroke:11})}
+              <div class="donut-center"><b>${money(outst+apOwed)}</b><span>TOTAL</span></div></div>
+            <div class="donut-legend">
+              <div class="dl-row"><span class="dot" style="background:${T.gold}"></span>Outstanding (A/R)<b>${money(outst)}</b></div>
+              <div class="dl-row"><span class="dot" style="background:${T.red}"></span>Payable<b>${money(apOwed)}</b></div>
+            </div>
+          </div>
+        </section>
+      </div>
+      ${updateShootsPanel()}
+      ${projectBoard()}
+      <div class="two-col">
+        <section class="panel"><div class="eyebrow">Delivery Radar</div>${radar}</section>
+        <section class="panel"><div class="eyebrow">Editor Payments
+          <span class="spacer"></span><button class="btn outline mini" data-form="payable">+ LOG PAYMENT</button></div>
+          ${edPay||`<div style="font-size:13px;color:var(--dim)">No editors yet — add one under Access below.</div>`}
+          <div class="list-row" style="border-top:1px solid rgba(232,181,66,.27)">
+            <span style="font-family:var(--mono);font-size:11px;color:var(--gold-soft);letter-spacing:.1em">OWED NOW + ON DELIVERY</span>
+            <span class="amount" style="color:var(--gold);font-weight:600">${money(apOwed+onDel)}</span></div>
+        </section>
+      </div>
+    </div>
+    <div class="dash-side">
+      ${alertsTasksPanel()}
+      ${miniCalendarPanel()}
+      ${quickActionsPanel()}
+    </div>
   </div>
 
   <section class="panel"><div class="eyebrow">Retainers Held
