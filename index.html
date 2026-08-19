@@ -222,6 +222,7 @@ main.wide{max-width:1520px}
   background:linear-gradient(90deg,transparent,rgba(242,201,76,.3),transparent);opacity:.5}
 .stat .l{font-family:var(--mono);font-size:9.5px;color:var(--dim);letter-spacing:.13em}
 .stat .v{font-family:var(--display);font-weight:700;font-size:24px;letter-spacing:.02em;margin-top:4px}
+.stat .d{font-family:var(--mono);font-size:10.5px;margin-top:3px;letter-spacing:.02em}
 
 .two-col{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
 .grid-gap{display:grid;gap:10px}
@@ -513,7 +514,7 @@ input.sel{font-family:var(--mono);font-size:10.5px;color-scheme:dark}
   border-bottom:1px solid var(--line);font-family:var(--display);font-weight:700;font-size:10.5px;
   letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .kcol-h span{color:var(--dim);font-family:var(--mono);font-weight:400}
-.kcol-body{display:grid;gap:8px;min-height:8px}
+.kcol-body{display:grid;gap:8px;min-height:8px;max-height:480px;overflow-y:auto;padding-right:4px}
 .kcol-body .pmini{padding:9px 10px 10px}
 .kcol-body .pmini .m-title,.kcol-body .pmini .m-id{padding-right:38px}
 .kcol-body .pmini .m-pct{font-size:19px}
@@ -533,12 +534,16 @@ input.sel{font-family:var(--mono);font-size:10.5px;color-scheme:dark}
 .mc-date{font-family:var(--mono);font-size:10.5px;color:var(--dim);min-width:44px}
 .mc-what{font-size:12.5px;color:var(--cream);flex:1}
 
-.tasklist{display:grid;gap:2px}
+.tasklist{display:grid;gap:2px;max-height:420px;overflow-y:auto;padding-right:2px}
 .task-row{display:flex;align-items:flex-start;gap:9px;padding:8px 2px;border-top:1px solid var(--line-soft);cursor:pointer}
 .task-row:first-child{border-top:none}
 .task-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;flex:0 0 auto}
 .task-t{font-size:12.5px;color:var(--cream);line-height:1.4}
 .task-m{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:1px}
+.task-x{flex:0 0 auto;width:20px;height:20px;border-radius:6px;border:1px solid var(--line);
+  background:var(--panel-up);color:var(--dim);font-size:12px;line-height:1;display:flex;
+  align-items:center;justify-content:center;transition:.15s;margin-left:auto}
+.task-x:hover{color:var(--red);border-color:var(--red)}
 
 .qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .qa-card{background:var(--panel-up);border:1px solid var(--line-soft);border-radius:10px;padding:11px 10px;
@@ -2271,7 +2276,7 @@ let inboundTab="overview", ibStageFilter="all", ibChannelFilter="all", ibSearch=
 let tracking={};        /* config/tracking — last export + month-end reminder dismissal */
 let asEditor=null;      /* owner impersonating an editor's view */
 let bankAccounts=[], bankTxns=[], bankRecurring=[], txnRules=[];  /* Plaid money data */
-let openProject=null, projFilter="all", projClient="all";
+let openProject=null;
 let openClient=null;         /* owner drilled into a client's detail page */
 let openIdeas=new Set();      /* content-idea ids expanded on a client detail page */
 let ideaBuf={};              /* ideaId -> in-flight notes text so re-renders don't lose typing */
@@ -4451,35 +4456,6 @@ function miniCard(p){
 }
 
 /* ── the board ── */
-function projectBoard(){
-  const live=projects.filter(p=>pct(p)<100);
-  const pool=projFilter==="done"?projects.filter(p=>pct(p)===100)
-            :projFilter==="late"?live.filter(p=>projState(p)==="late")
-            :projFilter==="attention"?live.filter(p=>projState(p)!=="ok")
-            :live;
-  const list=(projClient==="all"?pool:pool.filter(p=>p.clientId===projClient))
-    .sort((a,b)=>{ const r={late:0,soon:1,ok:2};
-      const d=r[projState(a)]-r[projState(b)]; if(d) return d;
-      return (dayDiff(a.dueISO)??999)-(dayDiff(b.dueISO)??999); });
-  const f=(k,lbl,n)=>`<button class="${projFilter===k?"on":""}" data-pfilter="${k}">${lbl}${n!==undefined?` ${n}`:""}</button>`;
-  return `<section class="panel"><div class="eyebrow">Projects
-    <span class="spacer"></span>
-    <button class="btn gold mini" data-form="project">+ NEW PROJECT</button></div>
-    <div class="filterbar">
-      ${f("all","All",live.length)}
-      ${f("attention","Needs attention",live.filter(p=>projState(p)!=="ok").length)}
-      ${f("late","Late",live.filter(p=>projState(p)==="late").length)}
-      ${f("done","Delivered",projects.filter(p=>pct(p)===100).length)}
-      <span class="spacer"></span>
-      <select class="sel" id="pClientFilter" style="max-width:180px">
-        <option value="all" ${projClient==="all"?"selected":""}>All clients</option>
-        ${clients.map(c=>`<option value="${esc(c.id)}" ${projClient===c.id?"selected":""}>${esc(c.name)}</option>`).join("")}
-      </select>
-    </div>
-    ${list.length?`<div class="proj-grid">${list.map(miniCard).join("")}</div>`
-      :`<div style="font-size:13px;color:var(--dim)">Nothing in this filter.</div>`}
-  </section>`;
-}
 
 /* ── alerts ── */
 function digest(){
@@ -4530,6 +4506,15 @@ async function askAlerts(){
   paint();
 }
 const seenKey=(id,kind)=>`uts-alert:${id}:${kind}:${todayISO()}`;
+/* "clear" on the Alerts & Tasks panel — dated into the key so it auto-expires
+   at midnight; still-unresolved items just reappear the next day on their own */
+const clearedKey=(id,kind)=>`uts-cleared:${id}:${kind}:${todayISO()}`;
+const isCleared=(id,kind)=>{ try{ return !!localStorage.getItem(clearedKey(id,kind)); }catch(e){ return false; } };
+function clearAlert(id,kind){ try{ localStorage.setItem(clearedKey(id,kind),"1"); }catch(e){} paint(); }
+function clearAllAlerts(rows){
+  rows.forEach(r=>{ try{ localStorage.setItem(clearedKey(r.id,r.kind),"1"); }catch(e){} });
+  paint();
+}
 function fireAlerts(){
   if(!me||me.role!=="owner"||!notifyOn()) return;
   digest().filter(x=>x.kind!=="delivery-soon").forEach(x=>{
@@ -4617,18 +4602,16 @@ async function setDraftDue(pid,v){
 
 /* ── events ── */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-open],[data-pfilter],[data-alerts],[data-digest]");
+  const t=e.target.closest("[data-open],[data-alerts],[data-digest]");
   if(!t) return;
   const d=t.dataset;
   if(d.open){ if(t.classList.contains("pmini")&&e.target.closest("select,input,a")) return;
              return projectDetail(d.open); }
-  if(d.pfilter){ projFilter=d.pfilter; return paint(); }
   if(d.alerts) return askAlerts();
   if(d.digest) return textDigest();
 });
 document.addEventListener("change",e=>{
   const t=e.target;
-  if(t.id==="pClientFilter"){ projClient=t.value; return paint(); }
   if(t.dataset.pstart!==undefined&&t.dataset.pstart) return setStart(t.dataset.pstart,t.value);
   if(t.dataset.pedit!==undefined&&t.dataset.pedit)  return setEditStart(t.dataset.pedit,t.value);
   if(t.dataset.pdraft!==undefined&&t.dataset.pdraft)return setDraftDue(t.dataset.pdraft,t.value);
@@ -5453,22 +5436,28 @@ function topClientsPanel(){
   </section>`;
 }
 /* ── Studio dashboard: Alerts & Tasks (restyled digest + follow-up leads) ── */
-function alertsTasksPanel(){
+function alertsTasksRows(){
   const d=digest();
   const unread=leads.filter(l=>!l.firstReplyAt).length;
   const dueFollowUp=leads.filter(l=>l.leadStage&&l.leadStage!=="lost"&&leadOverdue(l)).length;
   const warm=k=>k==="delivery-soon"||k==="post-tomorrow";
-  const rows=[
-    ...(unread?[{t:`${unread} new lead${unread===1?"":"s"} need a first reply`,m:"Inbound",view:"inbound",c:T.red}]:[]),
-    ...(dueFollowUp?[{t:`${dueFollowUp} lead follow-up${dueFollowUp===1?"":"s"} due`,m:"Inbound",view:"inbound",c:T.gold}]:[]),
-    ...d.slice(0,7).map(x=>({t:x.title,m:`${x.meta} · ${x.label}`,openId:x.openId,openKind:x.openKind,c:warm(x.kind)?T.gold:T.red}))
+  const all=[
+    ...(unread?[{id:"leads-unread",kind:"unread",t:`${unread} new lead${unread===1?"":"s"} need a first reply`,m:"Inbound",view:"inbound",c:T.red}]:[]),
+    ...(dueFollowUp?[{id:"leads-followup",kind:"followup",t:`${dueFollowUp} lead follow-up${dueFollowUp===1?"":"s"} due`,m:"Inbound",view:"inbound",c:T.gold}]:[]),
+    ...d.map(x=>({id:x.openId,kind:x.kind,t:x.title,m:`${x.meta} · ${x.label}`,openId:x.openId,openKind:x.openKind,c:warm(x.kind)?T.gold:T.red}))
   ];
+  return all.filter(r=>!isCleared(r.id,r.kind)).slice(0,7);
+}
+function alertsTasksPanel(){
+  const rows=alertsTasksRows();
   return `<section class="panel"><div class="eyebrow">Alerts &amp; Tasks
     <span class="spacer"></span>
+    ${rows.length?`<button class="btn ghost mini" data-clearallalerts="1">CLEAR ALL</button>`:""}
     <button class="btn ghost mini" data-alerts="1">${notifyOn()?"ON":"ALERTS"}</button></div>
     ${rows.length?`<div class="tasklist">${rows.map(r=>`<div class="task-row" ${r.view?`data-view="${r.view}"`:r.openKind==="client"?`data-openclient="${esc(r.openId)}"`:r.openId?`data-open="${esc(r.openId)}"`:""}>
       <span class="task-dot" style="background:${r.c}"></span>
       <div><div class="task-t">${esc(r.t)}</div><div class="task-m">${esc(r.m)}</div></div>
+      <button class="task-x" title="Clear — reappears tomorrow if still unresolved" data-clearalert="${esc(r.id)}|${esc(r.kind)}">&times;</button>
     </div>`).join("")}</div>`:`<div style="font-size:12.5px;color:var(--dim)">Nothing needs you right now.</div>`}
   </section>`;
 }
@@ -5588,7 +5577,35 @@ function ownerView(){
       ${paidRows.map(p=>row(p.ref||"—",`paid ${p.paidOn||""}`,p.amount,`<span class="tag paid">PAID</span>`,p.id)).join("")}
     </div>`;}).join("");
 
-  const stat=(l,v,c)=>`<div class="stat"><div class="l">${l}</div><div class="v" style="color:${c||"var(--cream)"}">${v}</div></div>`;
+  const stat=(l,v,c,d)=>`<div class="stat"><div class="l">${l}</div><div class="v" style="color:${c||"var(--cream)"}">${v}</div>${d||""}</div>`;
+  /* % vs last month, for money/flow numbers that have a real prior-month figure to compare to */
+  const deltaPct=(cur,prev)=>{
+    if(!prev) return "";
+    const p=Math.round((cur-prev)/prev*100), up=p>=0;
+    return `<div class="d" style="color:${up?T.green:T.red}">${up?"↑":"↓"} ${Math.abs(p)}% vs last mo</div>`;
+  };
+  /* small counts (e.g. deliveries) read clearer as a signed diff than a % — 0→1 isn't "∞%" */
+  const deltaCount=(cur,prev)=>{
+    if(cur===prev) return `<div class="d" style="color:${T.dim}">→ same as last</div>`;
+    const up=cur>prev;
+    return `<div class="d" style="color:${up?T.green:T.red}">${up?"↑":"↓"} ${Math.abs(cur-prev)} vs last</div>`;
+  };
+  const cashCollectedPrev=collectedMonth(lastMonth), billedPrev=sumMonth(lastMonth);
+  const netLastMonth=collectedMonth(lastMonth)-expensesMonth(lastMonth);
+  const chartDelta=(cur,prev)=>{
+    if(!prev) return "";
+    const p=Math.round((cur-prev)/prev*100), up=p>=0;
+    return `<span class="chart-delta" style="color:${up?T.green:T.red}">${up?"↑":"↓"} ${Math.abs(p)}% vs last mo</span>`;
+  };
+
+  const wkStart=(()=>{ const d=new Date(); d.setHours(0,0,0,0); const wd=d.getDay(); d.setDate(d.getDate()+(wd===0?-6:1-wd)); return d.getTime(); })();
+  const lastWkStart=wkStart-7*864e5;
+  const moStart=(()=>{ const d=new Date(); d.setDate(1); d.setHours(0,0,0,0); return d.getTime(); })();
+  const lastMoStart=(()=>{ const d=new Date(); d.setMonth(d.getMonth()-1); d.setDate(1); d.setHours(0,0,0,0); return d.getTime(); })();
+  const deliveredThisWeek=projects.filter(p=>p.deliveredTS>=wkStart).length;
+  const deliveredLastWeek=projects.filter(p=>p.deliveredTS>=lastWkStart&&p.deliveredTS<wkStart).length;
+  const deliveredThisMonth=projects.filter(p=>p.deliveredTS>=moStart).length;
+  const deliveredLastMonth=projects.filter(p=>p.deliveredTS>=lastMoStart&&p.deliveredTS<moStart).length;
 
   return `
   <div class="hero"><div><h1>Studio<span>.</span></h1>
@@ -5600,8 +5617,10 @@ function ownerView(){
   <div class="stats">
     ${stat("OPEN PROJECTS",open.length)}
     ${stat("MONTHLY RETAINER",money(monthlyRetainerTotal()),monthlyRetainerTotal()?T.gold:T.dim)}
-    ${stat("CASH COLLECTED",money(collectedMonth(thisMonth)),T.green)}
-    ${stat("BILLED THIS MONTH",money(sumMonth(thisMonth)),T.gold)}
+    ${stat("CASH COLLECTED",money(collectedMonth(thisMonth)),T.green,deltaPct(collectedMonth(thisMonth),cashCollectedPrev))}
+    ${stat("BILLED THIS MONTH",money(sumMonth(thisMonth)),T.gold,deltaPct(sumMonth(thisMonth),billedPrev))}
+    ${stat("DELIVERED THIS WEEK",deliveredThisWeek,T.cream,deltaCount(deliveredThisWeek,deliveredLastWeek))}
+    ${stat("DELIVERED THIS MONTH",deliveredThisMonth,T.cream,deltaCount(deliveredThisMonth,deliveredLastMonth))}
     <div class="stat-wrap">
       <div class="stat statlink" data-view="ar" role="button" tabindex="0">
         <div class="l">OUTSTANDING (A/R)</div>
@@ -5616,17 +5635,19 @@ function ownerView(){
   <div class="dash-charts">
     <div class="panel chartcard">
       <div class="chart-head"><span class="chart-lbl">Cash Collected · Daily</span>
-        <span class="chart-delta" style="color:${collectedMonth(thisMonth)>=collectedMonth(lastMonth)?T.green:T.red}">${collectedMonth(lastMonth)?(collectedMonth(thisMonth)>=collectedMonth(lastMonth)?"↑":"↓")+" vs last mo":""}</span></div>
+        ${chartDelta(collectedMonth(thisMonth),cashCollectedPrev)}</div>
       <div class="chart-val">${money(cashDaily.reduce((s,x)=>s+x.v,0))}</div>
       ${sparklineSVG(cashDaily.map(x=>x.v),{color:T.gold})}
     </div>
     <div class="panel chartcard">
-      <div class="chart-head"><span class="chart-lbl">Revenue · Monthly</span></div>
+      <div class="chart-head"><span class="chart-lbl">Revenue · Monthly</span>
+        ${chartDelta(revMonthly[revMonthly.length-1].v,revMonthly[revMonthly.length-2]?.v)}</div>
       <div class="chart-val">${money(revMonthly[revMonthly.length-1].v)}</div>
       ${barsChartSVG(revMonthly,{color:T.gold})}
     </div>
     <div class="panel chartcard">
-      <div class="chart-head"><span class="chart-lbl">Profit · This Month</span></div>
+      <div class="chart-head"><span class="chart-lbl">Profit · This Month</span>
+        ${chartDelta(netMTD,netLastMonth)}</div>
       <div class="donut-panel">
         <div class="donut-wrap">${donutSVG([{v:Math.max(0,netMTD),color:T.gold},{v:expenseMTD,color:T.dim}],{size:96,stroke:11})}
           <div class="donut-center"><b>${money(netMTD)}</b><span>NET</span></div></div>
@@ -5661,7 +5682,6 @@ function ownerView(){
         </section>
       </div>
       ${updateShootsPanel()}
-      ${projectBoard()}
       <div class="two-col">
         <section class="panel"><div class="eyebrow">Delivery Radar</div>${radar}</section>
         <section class="panel"><div class="eyebrow">Editor Payments
@@ -5679,29 +5699,6 @@ function ownerView(){
       ${quickActionsPanel()}
     </div>
   </div>
-
-  <section class="panel"><div class="eyebrow">Retainers Held
-    <span class="spacer"></span>
-    <span style="font-family:var(--mono);font-size:11px;color:var(--gold)">${money(monthlyRetainerTotal())} / MO · ${money(monthlyRetainerTotal()*12)} / YR</span></div>
-    ${retainerClients().length?retainerClients()
-      .sort((a,b)=>{ const ai=isActiveRetainer(a)?0:1, bi=isActiveRetainer(b)?0:1;
-        return ai-bi || retainerValue(b)-retainerValue(a); }).map(c=>{
-        const items=(c.retainerItems||[]).filter(x=>x.name);
-        const active=isActiveRetainer(c), since=retainerSince(c);
-        const share=active&&monthlyRetainerTotal()?Math.round(retainerValue(c)/monthlyRetainerTotal()*100):0;
-        return `<div class="list-row" style="${active?"":"opacity:.62"}">
-        <div><div class="inv-label">${esc(c.name)}${c.company?` <span style="color:var(--dim);font-weight:400">· ${esc(c.company)}</span>`:""}
-          <span class="ret-tag ${active?"on":"off"}">${active?"ACTIVE":"INACTIVE"}${since?` · since ${esc(isoShort(since))}`:""}</span></div>
-          <div class="inv-meta">${items.length?items.map(x=>esc(x.name)+(x.qty?` (${esc(x.qty)})`:"")).join(" · "):"no line items set"}${c.retainerDay?` &middot; bills the ${c.retainerDay}`:""}</div></div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="inv-meta" style="font-family:var(--mono)">${active?share+"%":"—"}</span>
-          <span class="amount" style="color:${active?"var(--gold)":"var(--dim)"}">${money(retainerValue(c))}<span style="font-size:10px;color:var(--dim)">/mo</span></span>
-          <button class="btn ghost mini" data-form="client" data-id="${esc(c.id)}">EDIT</button></div></div>`;}).join("")
-      +`<div class="list-row" style="border-top:1px solid rgba(232,181,66,.27)">
-        <span style="font-family:var(--mono);font-size:11px;color:var(--gold-soft);letter-spacing:.1em">TOTAL HELD PER MONTH — ${activeRetainerClients().length} ACTIVE${(retainerClients().length-activeRetainerClients().length)?` · ${retainerClients().length-activeRetainerClients().length} INACTIVE`:""}</span>
-        <span class="amount" style="color:var(--gold);font-weight:600;font-size:16px">${money(monthlyRetainerTotal())}</span></div>`
-      :`<div style="font-size:13px;color:var(--dim)">No retainer clients yet. Edit a client and set their retainer status to Active to start tracking recurring revenue here.</div>`}
-  </section>
 
   ${revs.length?`<section class="panel"><div class="eyebrow" style="color:var(--red)">Client Revisions Requested — ${revs.length}</div>
     ${revs.map(p=>`<div class="list-row"><div><div class="inv-label">${esc(p.title)}</div>
@@ -6622,7 +6619,7 @@ function paint(){
 
 /* ── events ── */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-pf-bulk],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test],[data-openclient],[data-postnow],[data-unpost],[data-readytab],[data-dbtab],[data-save-drive],[data-del-drive],[data-save-log],[data-del-log],[data-backto],[data-asedit],[data-exitedit],[data-export],[data-eom],[data-bank],[data-ci-toggle],[data-ci-quickadd],[data-ci-save],[data-ci-del],[data-save-idea],[data-idea-new],[data-idea-cancel],[data-idea-savedraft],[data-save-invitem],[data-del-invitem],[data-openinv],[data-invexport]");
+  const t=e.target.closest("[data-demo],[data-view],[data-approve],[data-preview],[data-form],[data-close],[data-login],[data-reset],[data-logout],[data-save-client],[data-save-project],[data-save-invoice],[data-save-payable],[data-save-access],[data-del-client],[data-del-project],[data-del-invoice],[data-del-payable],[data-del-access],[data-pf-add],[data-pf-del],[data-pf-bulk],[data-ri-add],[data-ri-del],[data-paydate],[data-save-pay],[data-clear-pay],[data-link],[data-save-link],[data-revform],[data-save-rev],[data-plink],[data-save-plink],[data-save-sms],[data-sms-test],[data-openclient],[data-postnow],[data-unpost],[data-readytab],[data-dbtab],[data-save-drive],[data-del-drive],[data-save-log],[data-del-log],[data-backto],[data-asedit],[data-exitedit],[data-export],[data-eom],[data-bank],[data-ci-toggle],[data-ci-quickadd],[data-ci-save],[data-ci-del],[data-save-idea],[data-idea-new],[data-idea-cancel],[data-idea-savedraft],[data-save-invitem],[data-del-invitem],[data-openinv],[data-invexport],[data-clearalert],[data-clearallalerts]");
   if(!t) return;
   const d=t.dataset;
   if(d.close!==undefined){ if(t===e.target||t.tagName==="BUTTON") closeModal(); return; }
@@ -6708,6 +6705,8 @@ document.addEventListener("click",e=>{
   if(d.delInvoice) return removeInvoice(d.delInvoice);
   if(d.delPayable) return removePayable(d.delPayable);
   if(d.delAccess)  return removeAccess(d.delAccess);
+  if(d.clearalert){ const i=d.clearalert.indexOf("|"); return clearAlert(d.clearalert.slice(0,i),d.clearalert.slice(i+1)); }
+  if(d.clearallalerts!==undefined) return clearAllAlerts(alertsTasksRows());
 });
 document.addEventListener("change",e=>{
   if(e.target.dataset.retoggle!==undefined) riToggle();
