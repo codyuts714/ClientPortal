@@ -853,6 +853,20 @@ select.bkt{font-family:var(--mono);font-weight:600;letter-spacing:.02em}
   .inv-c-ser{grid-column:1/-1}
   .inv-c-act{grid-column:2;grid-row:1}
 }
+
+/* ── in-app zoom control (TV displays: scales the portal + embedded
+   Quote Builder together, without relying on inconsistent browser zoom) ── */
+.zoom-ctrl{position:fixed;right:14px;bottom:14px;z-index:9999;display:flex;align-items:center;gap:2px;
+  background:rgba(10,11,13,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--line-soft);border-radius:12px;padding:5px;box-shadow:0 14px 30px -18px rgba(0,0,0,.6)}
+.zoom-ctrl button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--panel-up);
+  color:var(--cream);font-family:var(--display);font-weight:700;font-size:18px;line-height:1;display:flex;
+  align-items:center;justify-content:center;transition:.15s}
+.zoom-ctrl button:hover{background:var(--panel-hover);border-color:var(--gold-dim)}
+.zoom-ctrl .zoom-pct{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:42px;text-align:center;
+  cursor:pointer;user-select:none}
+.zoom-ctrl .zoom-pct:hover{color:var(--gold)}
+@media print{.zoom-ctrl{display:none}}
 </style>
 <script type="text/plain" id="qbSrc"><!DOCTYPE html>
 <html lang="en">
@@ -7545,6 +7559,40 @@ if("serviceWorker" in navigator){
 						<labels>
 						</labels>
 					</clipitem>
+</script>
+
+<div class="zoom-ctrl" id="zoomCtrl" role="group" aria-label="Zoom controls">
+  <button type="button" id="zoomOut" aria-label="Zoom out">&minus;</button>
+  <span class="zoom-pct" id="zoomPct" title="Reset to 100%">100%</span>
+  <button type="button" id="zoomIn" aria-label="Zoom in">+</button>
+</div>
+<script>
+/* Scales #root/#modal/#toast (the portal AND the embedded Quote Builder
+   iframe sitting inside it) together as one unit, so there's one predictable
+   zoom control instead of the browser's Ctrl+scroll zoom pulling the whole
+   page — including this control — out of proportion on a TV. */
+(function(){
+  const MIN=0.6, MAX=1.8, STEP=0.1;
+  const targets=()=>["root","modal","toast"].map(id=>document.getElementById(id)).filter(Boolean);
+  let z=parseFloat(localStorage.getItem("utsZoom"));
+  if(!z||isNaN(z)||z<MIN||z>MAX) z=1;
+  function apply(){
+    targets().forEach(el=>{ el.style.zoom=z; });
+    const pct=document.getElementById("zoomPct");
+    if(pct) pct.textContent=Math.round(z*100)+"%";
+    localStorage.setItem("utsZoom",z);
+  }
+  document.getElementById("zoomOut").addEventListener("click",()=>{ z=Math.max(MIN,+(z-STEP).toFixed(2)); apply(); });
+  document.getElementById("zoomIn").addEventListener("click",()=>{ z=Math.min(MAX,+(z+STEP).toFixed(2)); apply(); });
+  document.getElementById("zoomPct").addEventListener("click",()=>{ z=1; apply(); });
+  window.addEventListener("keydown",e=>{
+    if(!(e.ctrlKey||e.metaKey)) return;
+    if(e.key==="="||e.key==="+"){ e.preventDefault(); z=Math.min(MAX,+(z+STEP).toFixed(2)); apply(); }
+    else if(e.key==="-"){ e.preventDefault(); z=Math.max(MIN,+(z-STEP).toFixed(2)); apply(); }
+    else if(e.key==="0"){ e.preventDefault(); z=1; apply(); }
+  });
+  apply();
+})();
 </script>
 </body>
 </html>
