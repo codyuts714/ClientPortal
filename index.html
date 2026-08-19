@@ -7576,8 +7576,28 @@ if("serviceWorker" in navigator){
   const targets=()=>["root","modal","toast"].map(id=>document.getElementById(id)).filter(Boolean);
   let z=parseFloat(localStorage.getItem("utsZoom"));
   if(!z||isNaN(z)||z<MIN||z>MAX) z=1;
+
+  /* `zoom` scales #root's whole subtree uniformly, so shrinking it also
+     shrinks main's fixed max-width — leaving dead space on either side on a
+     wide screen instead of using the room that freed up. Once zoomed away
+     from 100%, override main's max-width (in #root's pre-zoom coordinate
+     space) so it re-fills the actual screen width post-scale; the existing
+     auto-fit grids inside it then reflow into more columns on their own. */
+  let fillStyle=document.getElementById("zoomFillStyle");
+  if(!fillStyle){
+    fillStyle=document.createElement("style");
+    fillStyle.id="zoomFillStyle";
+    document.head.appendChild(fillStyle);
+  }
+  function updateFill(){
+    if(z===1){ fillStyle.textContent=""; return; }
+    const availPhysical=document.body.getBoundingClientRect().width;
+    const targetLocal=Math.round((availPhysical*0.97)/z);
+    fillStyle.textContent=`main,main.wide{max-width:${targetLocal}px!important}`;
+  }
   function apply(){
     targets().forEach(el=>{ el.style.zoom=z; });
+    updateFill();
     const pct=document.getElementById("zoomPct");
     if(pct) pct.textContent=Math.round(z*100)+"%";
     localStorage.setItem("utsZoom",z);
@@ -7591,6 +7611,7 @@ if("serviceWorker" in navigator){
     else if(e.key==="-"){ e.preventDefault(); z=Math.max(MIN,+(z-STEP).toFixed(2)); apply(); }
     else if(e.key==="0"){ e.preventDefault(); z=1; apply(); }
   });
+  window.addEventListener("resize",()=>updateFill());
   apply();
 })();
 </script>
