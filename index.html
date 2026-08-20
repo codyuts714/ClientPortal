@@ -288,6 +288,18 @@ main.wide{max-width:1520px}
 .addonrow{display:flex;gap:7px;align-items:center;margin-bottom:6px}
 .addonrow input[type=text]{flex:1;min-width:90px}
 .addonrow input[type=number]{width:100px;flex:none}
+
+/* ── gear checklist (project-attached) ── */
+.gear-row{display:flex;align-items:center;gap:10px;padding:7px 2px;border-top:1px solid var(--line-soft)}
+.gear-row:first-child{border-top:none}
+.gear-chk{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9.5px;color:var(--dim);letter-spacing:.08em;cursor:pointer;user-select:none}
+.gear-chk input{accent-color:var(--gold);width:15px;height:15px;cursor:pointer}
+.gear-name{flex:1;font-size:12.5px;color:var(--cream)}
+.gear-val{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.gear-task{display:flex;align-items:center;gap:8px;padding:6px 2px;border-top:1px solid var(--line-soft);font-size:12.5px;cursor:pointer;user-select:none}
+.gear-task:first-child{border-top:none}
+.gear-task input{accent-color:var(--gold);width:15px;height:15px;flex:0 0 auto}
+.gear-task input:checked+span{color:var(--dim);text-decoration:line-through}
 .cal-foot{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:9px}
 .socialtoggle{display:flex;align-items:center;gap:9px;padding:11px 13px;border:1px solid var(--line-soft);
   border-radius:10px;margin-bottom:13px;cursor:pointer}
@@ -2267,6 +2279,7 @@ let clients=[], projects=[], invoices=[], payables=[], activity=[], users=[];
 let leads=[];
 let drives=[];               /* hard-drive tracker */
 let inventory=[];            /* studio inventory — insurance schedule */
+let gearLists=[];            /* saved, reusable gear-list templates built from inventory */
 let invLoaded=false;         /* true once the first inventory snapshot has arrived (guards auto-seed) */
 let _invSeeding=false;       /* prevents concurrent auto-seed writes */
 let folderPresets={presets:[],defaultName:null};  /* config/folderPresets — saved "go-to" folder structures */
@@ -2864,6 +2877,7 @@ async function loadFor(user){
     unsubs.push(live(collection(db,"payables"), v=>payables=v));
     unsubs.push(live(collection(db,"drives"),   v=>drives=v));
     unsubs.push(live(collection(db,"inventory"),v=>{ inventory=v; invLoaded=true; }));
+    unsubs.push(live(collection(db,"gearLists"),v=>gearLists=v));
     unsubs.push(live(collection(db,"activity"), v=>activity=v.sort((a,b)=>(b.ts||0)-(a.ts||0))));
     unsubs.push(live(collection(db,"users"),    v=>users=v.map(u=>({...u,email:u.id}))));
   }
@@ -4348,9 +4362,23 @@ function postDigest(){
 }
 
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-calnav],[data-calday],[data-calchip],[data-calrule],[data-addtype],[data-savetype],[data-social],[data-backto],[data-rule-form],[data-rule-save],[data-rule-del],[data-addon-form],[data-addon-save],[data-addon-paid],[data-addon-del],[data-estep-add],[data-estep-del]");
+  const t=e.target.closest("[data-calnav],[data-calday],[data-calchip],[data-calrule],[data-addtype],[data-savetype],[data-social],[data-backto],[data-rule-form],[data-rule-save],[data-rule-del],[data-addon-form],[data-addon-save],[data-addon-paid],[data-addon-del],[data-estep-add],[data-estep-del],[data-gear-list-new],[data-gear-list-edit],[data-gear-builder-save],[data-gear-builder-del],[data-gli-addpick],[data-gli-del],[data-glt-add],[data-glt-del],[data-gear-new],[data-gear-pick],[data-gear-pickone],[data-gear-edit],[data-gear-remove],[data-gear-reset]");
   if(!t) return;
   const d=t.dataset;
+  if(d.gearListNew!==undefined) return gearListNew();
+  if(d.gearListEdit) return gearListEdit(d.gearListEdit);
+  if(d.gearBuilderSave!==undefined) return gearBuilderSave();
+  if(d.gearBuilderDel!==undefined) return gearBuilderDelete();
+  if(d.gliAddpick!==undefined) return gliAddFromPicker();
+  if(d.gliDel!==undefined){ gliSync(); GLI.splice(+d.gliDel,1); return gliRender(); }
+  if(d.gltAdd!==undefined){ gltSync(); GLT.push({text:""}); return gltRender(); }
+  if(d.gltDel!==undefined){ gltSync(); GLT.splice(+d.gltDel,1); return gltRender(); }
+  if(d.gearNew) return gearNewForProject(d.gearNew);
+  if(d.gearPick) return gearPickForProject(d.gearPick);
+  if(d.gearPickone){ const [pid,glId]=d.gearPickone.split(":"); return gearPickOne(pid,glId); }
+  if(d.gearEdit) return gearEditForProject(d.gearEdit);
+  if(d.gearRemove) return gearRemoveFromProject(d.gearRemove);
+  if(d.gearReset) return gearResetChecks(d.gearReset);
   if(d.calnav){ calMonth=shiftMonth(calMonth,+d.calnav); return reflowSocial(); }
   if(d.calrule){ e.stopPropagation();
     const cut=d.calrule.indexOf("|");
@@ -4386,6 +4414,9 @@ document.addEventListener("change",e=>{
   if(t.dataset.caltype!==undefined){ calType=t.value; return reflowSocial(); }
   if(t.dataset.estepDone){ const [pid,i]=t.dataset.estepDone.split(":"); return toggleStep(pid,+i); }
   if(t.dataset.estepName){ const [pid,i]=t.dataset.estepName.split(":"); return setStepName(pid,+i,t.value); }
+  if(t.dataset.gearOut){ const [pid,i]=t.dataset.gearOut.split(":"); return toggleGearOut(pid,i); }
+  if(t.dataset.gearIn){ const [pid,i]=t.dataset.gearIn.split(":"); return toggleGearIn(pid,i); }
+  if(t.dataset.gearTask){ const [pid,i]=t.dataset.gearTask.split(":"); return toggleGearTask(pid,i); }
 });
 
 
@@ -4583,6 +4614,7 @@ function renderDetail(){
     ${retainerBox(byId(clients,p.clientId))}
     ${stepsPanel(p)}
     ${addonPanel(p)}
+    ${(p.workflow||"shoot")!=="edit"?gearPanel(p):""}
     ${projectCard(p,true)}
     <div class="modal-actions">
       <button class="btn ghost" data-form="project" data-id="${esc(p.id)}">FULL FORM</button>
@@ -6163,7 +6195,8 @@ function inventoryView(){
         <div style="font-family:var(--mono);font-size:26px;font-weight:700;color:var(--gold)">${money(invGrand())}</div>
       </div>
       <div class="f" style="margin-top:8px"><div class="hint">The full kit is built in and always shown. Tap any row to add a serial, adjust a price, or delete it; use + Add Item for new gear. Your changes save to Firebase; the list shows even if they don't.</div></div>
-    </section>`;
+    </section>
+    ${gearListsSection()}`;
 }
 
 function inventoryForm(ref){
@@ -6241,6 +6274,229 @@ function exportInventoryCSV(){
   lines.push(["","GRAND TOTAL","","",invGrand(),"",""].map(esc2).join(","));
   downloadFile(`uts-inventory-${new Date().toISOString().slice(0,10)}.csv`,lines.join("\n"),"text/csv;charset=utf-8");
   toast("Inventory exported");
+}
+
+/* ══════════ GEAR LISTS — reusable kits built from Inventory ══════════
+   A gear list is {name, items:[{ref,nickname,qty}], tasks:[{text}]}, saved
+   to the "gearLists" collection so it can be reused on any future shoot.
+   Attaching one to a project copies it onto that project's own `gear` field
+   with per-item out/in checkboxes and per-task done flags — a snapshot, so
+   checking things off on one shoot never touches the saved template or any
+   other shoot that loaded the same kit. */
+const gliName=it=>(it.nickname||"").trim()||((invByRef(it.ref)||{}).name)||"Item";
+const gliValue=it=>(+((invByRef(it.ref)||{}).value)||0)*(+it.qty||1);
+const gearListTotal=items=>(items||[]).reduce((s,it)=>s+gliValue(it),0);
+
+let GLI=[], GLT=[], GEAR_BUILDER_SAVE=null, GEAR_BUILDER_DEL=null;
+function gliSync(){
+  GLI=GLI.map((x,i)=>({ref:x.ref,
+    nickname:document.getElementById("gli-n"+i)?.value ?? x.nickname,
+    qty:document.getElementById("gli-q"+i)?.value ?? x.qty}));
+}
+function gliRender(){
+  const box=document.getElementById("gli-box"); if(!box) return;
+  box.innerHTML=GLI.length?GLI.map((it,i)=>{
+    const inv=invByRef(it.ref);
+    return `<div class="addonrow">
+      <span style="flex:1;min-width:130px;font-size:12px;color:var(--muted)">${esc(inv?inv.name:"— item missing —")}</span>
+      <input type="text" id="gli-n${i}" value="${esc(it.nickname||"")}" placeholder="nickname (optional)">
+      <input type="number" id="gli-q${i}" min="1" step="1" value="${it.qty||1}">
+      <button class="btn ghost mini" data-gli-del="${i}" title="remove">&#10005;</button>
+    </div>`;}).join("") : `<div class="hint">No items yet — add some from inventory above.</div>`;
+}
+function gliAddFromPicker(){
+  const sel=document.getElementById("gli-add-pick");
+  const ref=sel&&sel.value; if(!ref) return;
+  gliSync();
+  const existing=GLI.find(x=>x.ref===ref);
+  if(existing) existing.qty=(+existing.qty||1)+1;
+  else GLI.push({ref,nickname:"",qty:1});
+  sel.value="";
+  gliRender();
+}
+function gltSync(){
+  GLT=GLT.map((x,i)=>({text:document.getElementById("glt-t"+i)?.value ?? x.text}));
+}
+function gltRender(){
+  const box=document.getElementById("glt-box"); if(!box) return;
+  box.innerHTML=GLT.map((t,i)=>`<div class="addonrow">
+      <input type="text" id="glt-t${i}" value="${esc(t.text||"")}" placeholder="Charge A7S batteries">
+      <button class="btn ghost mini" data-glt-del="${i}" title="remove">&#10005;</button>
+    </div>`).join("")
+    +`<button class="btn outline mini" data-glt-add="1">+ ADD CHECK-IN TASK</button>`;
+}
+
+/* generic builder modal — persistence is entirely up to whoever calls it */
+function gearBuilderModal(title,initialName,onSave,onDelete){
+  GEAR_BUILDER_SAVE=onSave; GEAR_BUILDER_DEL=onDelete||null;
+  const cats=invCategories();
+  showModal(`<h3>${esc(title)}</h3>
+  <div class="f-grid">
+    <div class="f"><label>List name</label><input id="gl-name" value="${esc(initialName||"")}" placeholder="Standard Run &amp; Gun Kit"></div>
+    <div class="f"><label>Add from inventory</label>
+      <div style="display:flex;gap:8px">
+        <select class="sel" id="gli-add-pick" style="flex:1">
+          <option value="">— choose an item —</option>
+          ${cats.map(cat=>`<optgroup label="${esc(cat)}">${inventoryAll().filter(it=>(it.category||"Other")===cat).map(it=>`<option value="${esc(it.ref)}">${esc(it.name)}</option>`).join("")}</optgroup>`).join("")}
+        </select>
+        <button class="btn outline mini" type="button" data-gli-addpick="1">+ ADD</button>
+      </div></div>
+    <div class="f"><label>Items in this kit</label><div id="gli-box"></div></div>
+    <div class="f"><label>Check-in tasks <span style="color:var(--dim);font-weight:400">— things to do once gear is back, like charging batteries</span></label><div id="glt-box"></div></div>
+  </div>
+  <div class="actions">
+    ${onDelete?`<button class="btn ghost danger" data-gear-builder-del="1">DELETE</button>`:""}
+    <button class="btn ghost" data-close="1">CANCEL</button>
+    <button class="btn gold" data-gear-builder-save="1">SAVE</button>
+  </div>`,true);
+  gliRender(); gltRender();
+}
+function gearBuilderSave(){
+  gliSync(); gltSync();
+  const name=fv("gl-name")||"Gear List";
+  const items=GLI.filter(x=>x.ref).map(x=>({ref:x.ref,nickname:(x.nickname||"").trim(),qty:Math.max(1,+x.qty||1)}));
+  const tasks=GLT.map(x=>({text:(x.text||"").trim()})).filter(x=>x.text);
+  if(GEAR_BUILDER_SAVE) GEAR_BUILDER_SAVE(name,items,tasks);
+}
+function gearBuilderDelete(){ if(GEAR_BUILDER_DEL) GEAR_BUILDER_DEL(); }
+
+/* ── saved gear list templates (managed from the Inventory page) ── */
+function gearListsSection(){
+  return `<section class="panel"><div class="eyebrow">Saved Gear Lists
+    <span class="spacer"></span>
+    <button class="btn gold mini" data-gear-list-new="1">+ NEW GEAR LIST</button></div>
+    ${gearLists.length?gearLists.map(gl=>`<div class="list-row">
+      <div><div class="inv-label">${esc(gl.name)}</div>
+        <div class="inv-meta">${(gl.items||[]).length} item${(gl.items||[]).length===1?"":"s"}${(gl.tasks||[]).length?` · ${(gl.tasks||[]).length} check-in task${(gl.tasks||[]).length===1?"":"s"}`:""}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="amount">${money(gearListTotal(gl.items||[]))}</span>
+        <button class="btn ghost mini" data-gear-list-edit="${esc(gl.id)}">EDIT</button>
+      </div></div>`).join("")
+      :`<div style="font-size:13px;color:var(--dim)">No gear lists yet — build one once and reuse it on every shoot.</div>`}
+  </section>`;
+}
+function gearListNew(){
+  GLI=[]; GLT=[];
+  gearBuilderModal("New Gear List","",async(name,items,tasks)=>{
+    await guard(()=>addDoc(collection(db,"gearLists"),{name,items,tasks}),"Gear list saved");
+    closeModal();
+  });
+}
+function gearListEdit(id){
+  const gl=byId(gearLists,id); if(!gl) return;
+  GLI=(gl.items||[]).map(x=>({ref:x.ref,nickname:x.nickname||"",qty:x.qty||1}));
+  GLT=(gl.tasks||[]).map(x=>({text:x.text||""}));
+  gearBuilderModal("Edit Gear List",gl.name,async(name,items,tasks)=>{
+    await guard(()=>updateDoc(doc(db,"gearLists",id),{name,items,tasks}),"Gear list saved");
+    closeModal();
+  },async()=>{
+    if(!confirm(`Delete "${gl.name}"? Shoots that already loaded it keep their own copy.`)) return;
+    await guard(()=>deleteDoc(doc(db,"gearLists",id)),"Gear list deleted");
+    closeModal();
+  });
+}
+
+/* ── the checklist attached to one project (shoot day) ── */
+async function attachGearListToProject(pid,gearData){
+  await guard(()=>updateDoc(doc(db,"projects",pid),{gear:gearData}),"Gear checklist ready");
+}
+function gearPanel(p){
+  const g=p.gear;
+  if(!g||!((g.items||[]).length||(g.tasks||[]).length)){
+    return `<section class="panel" style="margin-top:14px"><div class="eyebrow">Gear Checklist</div>
+      <div class="hint" style="margin-bottom:10px">No gear list on this shoot yet — build one from inventory, or load one you've saved before.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn outline mini" data-gear-new="${esc(p.id)}">+ NEW GEAR LIST</button>
+        ${gearLists.length?`<button class="btn outline mini" data-gear-pick="${esc(p.id)}">LOAD SAVED LIST</button>`:""}
+      </div></section>`;
+  }
+  const items=g.items||[], tasks=g.tasks||[];
+  const outN=items.filter(x=>x.out).length, inN=items.filter(x=>x.in).length;
+  return `<section class="panel" style="margin-top:14px"><div class="eyebrow">Gear Checklist — ${esc(g.name||"Untitled")}
+    <span class="spacer"></span>
+    <span style="font-family:var(--mono);font-size:10px;color:var(--dim)">${money(gearListTotal(items))} out the door</span></div>
+    ${items.length?`<div style="font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-bottom:8px">OUT ${outN}/${items.length} packed &middot; IN ${inN}/${items.length} back</div>
+    <div class="gear-items">${items.map((it,i)=>`<div class="gear-row">
+      <label class="gear-chk" title="Packed / checked out"><input type="checkbox" ${it.out?"checked":""} data-gear-out="${esc(p.id)}:${i}"><span>OUT</span></label>
+      <label class="gear-chk" title="Back / checked in"><input type="checkbox" ${it.in?"checked":""} data-gear-in="${esc(p.id)}:${i}"><span>IN</span></label>
+      <div class="gear-name">${esc(gliName(it))}${(+it.qty||1)>1?` &times;${+it.qty}`:""}</div>
+      <div class="gear-val">${money(gliValue(it))}</div>
+    </div>`).join("")}</div>`:""}
+    ${tasks.length?`<div class="eyebrow" style="margin-top:14px;font-size:11px">Check-In Tasks</div>
+    <div class="gear-tasks">${tasks.map((t,i)=>`<label class="gear-task">
+      <input type="checkbox" ${t.done?"checked":""} data-gear-task="${esc(p.id)}:${i}"><span>${esc(t.text)}</span></label>`).join("")}</div>`:""}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+      <button class="btn ghost mini" data-gear-reset="${esc(p.id)}">RESET CHECKS</button>
+      <button class="btn ghost mini" data-gear-edit="${esc(p.id)}">EDIT LIST</button>
+      <button class="btn ghost danger mini" data-gear-remove="${esc(p.id)}">REMOVE LIST</button>
+    </div>
+  </section>`;
+}
+function gearNewForProject(pid){
+  GLI=[]; GLT=[];
+  const p=byId(projects,pid);
+  gearBuilderModal("New Gear List — also saved to your kit library",p?`${p.title} Kit`:"",async(name,items,tasks)=>{
+    let templateId=null;
+    await guard(async()=>{ const ref=await addDoc(collection(db,"gearLists"),{name,items,tasks}); templateId=ref.id; },"Saved to your gear lists");
+    await attachGearListToProject(pid,{name,sourceListId:templateId,
+      items:items.map(x=>({...x,out:false,in:false})), tasks:tasks.map(x=>({...x,done:false}))});
+    closeModal();
+  });
+}
+function gearEditForProject(pid){
+  const p=byId(projects,pid); if(!p||!p.gear) return;
+  GLI=(p.gear.items||[]).map(x=>({ref:x.ref,nickname:x.nickname||"",qty:x.qty||1}));
+  GLT=(p.gear.tasks||[]).map(x=>({text:x.text||""}));
+  gearBuilderModal("Edit This Shoot's Gear List",p.gear.name||"",async(name,items,tasks)=>{
+    /* keep existing checkmarks for items/tasks that are still in the list */
+    const prevByRef={}; (p.gear.items||[]).forEach(x=>{ (prevByRef[x.ref]=prevByRef[x.ref]||[]).push(x); });
+    const newItems=items.map(x=>{ const prev=(prevByRef[x.ref]||[]).shift();
+      return {...x,out:prev?!!prev.out:false,in:prev?!!prev.in:false}; });
+    const prevTaskDone={}; (p.gear.tasks||[]).forEach(t=>prevTaskDone[t.text]=t.done);
+    const newTasks=tasks.map(t=>({...t,done:!!prevTaskDone[t.text]}));
+    await attachGearListToProject(pid,{name,sourceListId:p.gear.sourceListId||null,items:newItems,tasks:newTasks});
+    closeModal();
+  });
+}
+function gearPickForProject(pid){
+  showModal(`<h3>Load Saved Gear List</h3>
+  ${gearLists.length?gearLists.map(gl=>`<div class="list-row" data-gear-pickone="${esc(pid)}:${esc(gl.id)}" style="cursor:pointer">
+    <div><div class="inv-label">${esc(gl.name)}</div><div class="inv-meta">${(gl.items||[]).length} items${(gl.tasks||[]).length?` · ${(gl.tasks||[]).length} check-in tasks`:""}</div></div>
+    <span class="amount">${money(gearListTotal(gl.items||[]))}</span>
+  </div>`).join(""):`<div class="hint">No saved gear lists yet — build one first.</div>`}
+  <div class="actions"><button class="btn ghost" data-close="1">CANCEL</button></div>`);
+}
+async function gearPickOne(pid,glId){
+  const gl=byId(gearLists,glId); if(!gl) return;
+  await attachGearListToProject(pid,{name:gl.name,sourceListId:glId,
+    items:(gl.items||[]).map(x=>({...x,out:false,in:false})),
+    tasks:(gl.tasks||[]).map(x=>({...x,done:false}))});
+  closeModal();
+}
+async function gearRemoveFromProject(pid){
+  if(!confirm("Remove this gear checklist from the shoot? Your saved gear list template is unaffected.")) return;
+  await guard(()=>updateDoc(doc(db,"projects",pid),{gear:null}),"Gear checklist removed");
+}
+async function gearResetChecks(pid){
+  const p=byId(projects,pid); if(!p||!p.gear) return;
+  const items=(p.gear.items||[]).map(x=>({...x,out:false,in:false}));
+  const tasks=(p.gear.tasks||[]).map(x=>({...x,done:false}));
+  await guard(()=>updateDoc(doc(db,"projects",pid),{gear:{...p.gear,items,tasks}}),"Checklist reset");
+}
+async function toggleGearOut(pid,i){
+  const p=byId(projects,pid); if(!p||!p.gear) return;
+  const items=(p.gear.items||[]).map((x,ix)=>ix===+i?{...x,out:!x.out}:x);
+  await guard(()=>updateDoc(doc(db,"projects",pid),{gear:{...p.gear,items}}));
+}
+async function toggleGearIn(pid,i){
+  const p=byId(projects,pid); if(!p||!p.gear) return;
+  const items=(p.gear.items||[]).map((x,ix)=>ix===+i?{...x,in:!x.in}:x);
+  await guard(()=>updateDoc(doc(db,"projects",pid),{gear:{...p.gear,items}}));
+}
+async function toggleGearTask(pid,i){
+  const p=byId(projects,pid); if(!p||!p.gear) return;
+  const tasks=(p.gear.tasks||[]).map((x,ix)=>ix===+i?{...x,done:!x.done}:x);
+  await guard(()=>updateDoc(doc(db,"projects",pid),{gear:{...p.gear,tasks}}));
 }
 
 /* ── Hard-drive tracker page ── */
